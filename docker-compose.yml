@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=http://database:5003
+    depends_on:
+      - database
+    restart: unless-stopped
+
+  database:
+    build: ./database
+    ports:
+      - "5003:5003"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=jobmatch
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=jobmatch
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
