@@ -143,6 +143,9 @@ def allowed_file(filename):
 
 @app.route('/jobseeker_dashboard')
 def jobseeker_dashboard():
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     return render_template('jobseeker_dashboard.html')
 
 if __name__ == '__main__':
