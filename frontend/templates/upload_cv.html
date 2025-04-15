@@ -1,0 +1,46 @@
+{% extends "base_jobseeker.html" %}
+
+{% block content %}
+<div class="main-content">
+  <header class="dashboard-header">
+    <button class="sidebar-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+    <h1 class="dashboard-title">File Upload</h1>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">CSV or PDF File Upload</h3>
+      </div>
+      <div class="card-content">
+        <div id="csvAlert" class="alert hidden"></div>
+
+        <form id="csvForm" class="csv-form" method="POST" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="csvFile" class="form-label">Upload File</label>
+            <div class="file-upload-container">
+              <input type="file" id="csvFile" name="csvFile" accept=".pdf" class="form-input">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Upload
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div id="fileInfo" class="mt-3 hidden">
+          <strong>Selected File:</strong> <span id="fileName"></span> <span id="fileSize"></span>
+        </div>
+
+        <div id="csvPreview" class="csv-preview hidden">
+          <h4>Preview:</h4>
+          <div class="table-container">
+            <table id="previewTable" class="data-table"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

@@ -9,6 +9,7 @@ app.secret_key = 'dev-key-123-abc!@#'
 DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5003')
 
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -83,6 +84,66 @@ def signup():
         return redirect(url_for('signup'))
     
     return render_template('signup.html')
+
+@app.route('/upload_cv', methods=['GET', 'POST'])
+def upload_cv():
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file selected', 'error')
+            return redirect(request.url)
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(request.url)
+        
+        if file and allowed_file(file.filename):
+            try:
+                # Send file to CV extraction service
+                files = {'file': (file.filename, file.stream, file.mimetype)}
+                response = requests.post(
+                    "http://cv-extraction:5001/extract-cv",
+                    files=files
+                )
+                
+                if response.status_code == 200:
+                    cv_data = response.json().get('cv_data', {})
+                    
+                    # Save to database with user_id
+                    save_response = requests.post(
+                        f"{DATABASE_URL}/add_application",
+                        json={
+                            'cv_data': cv_data,
+                            'user_id': session['user_id']
+                        }
+                    )
+                    
+                    if save_response.status_code == 201:
+                        flash('CV uploaded and processed successfully!', 'success')
+                        return redirect(url_for('jobseeker_dashboard'))
+                    else:
+                        flash('Error saving CV data', 'error')
+                else:
+                    flash('Error processing CV', 'error')
+            except Exception as e:
+                flash(f'Error: {str(e)}', 'error')
+        
+        return redirect(request.url)
+    
+    return render_template('upload_cv.html')
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ['pdf']
+
+
+@app.route('/jobseeker_dashboard')
+def jobseeker_dashboard():
+    return render_template('jobseeker_dashboard.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 

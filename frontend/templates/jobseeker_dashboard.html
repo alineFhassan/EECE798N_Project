@@ -1,0 +1,93 @@
+{% extends "base_jobseeker.html" %}
+
+
+
+
+    {% block content %}
+        <!-- Main Content -->
+        <div class="main-content">
+          <header class="dashboard-header">
+            <button class="sidebar-toggle" id="sidebarToggle">
+              <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="dashboard-title">Dashboard</h1>
+          </header>
+    
+          <main class="dashboard-main">
+            <div class="dashboard-stats">
+              <div class="card stat-card">
+                <div class="card-header">
+                  <h3 class="card-title">Total Users</h3>
+                </div>
+                <div class="card-content">
+                  <div class="stat-value">1,234</div>
+                  <p class="stat-change">+12% from last month</p>
+                </div>
+              </div>
+    
+              <div class="card stat-card">
+                <div class="card-header">
+                  <h3 class="card-title">Active Projects</h3>
+                </div>
+                <div class="card-content">
+                  <div class="stat-value">23</div>
+                  <p class="stat-change">+2 since last week</p>
+                </div>
+              </div>
+    
+              <div class="card stat-card">
+                <div class="card-header">
+                  <h3 class="card-title">Completed Tasks</h3>
+                </div>
+                <div class="card-content">
+                  <div class="stat-value">573</div>
+                  <p class="stat-change">+18% from last month</p>
+                </div>
+              </div>
+            </div>
+    
+            <!-- Job Listings Section -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Job Offerings</h3>
+              </div>
+              <div class="card-content">
+                <!-- Search and Filter -->
+                <div class="job-search-container">
+                  <div class="search-box">
+                    <input type="text" id="jobSearch" class="form-input" placeholder="Search job titles...">
+                    <button id="searchBtn" class="btn btn-primary">
+                      <i class="fas fa-search"></i> Search
+                    </button>
+                  </div>
+                  <div class="filter-box">
+                    <select id="jobFilter" class="form-input">
+                      <option value="">All Categories</option>
+                      <option value="Development">Development</option>
+                      <option value="Design">Design</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Management">Management</option>
+                    </select>
+                  </div>
+                </div>
+    
+                <!-- Job Listings -->
+                <div class="job-listings" id="jobListings">
+                  <!-- Job listings will be populated by JavaScript -->
+                </div>
+    
+                <!-- Pagination -->
+                <div class="pagination">
+                  <button class="btn btn-outline pagination-btn" id="prevPage" disabled>
+                    <i class="fas fa-chevron-left"></i> Previous
+                  </button>
+                  <span id="pageInfo">Page 1 of 1</span>
+                  <button class="btn btn-outline pagination-btn" id="nextPage">
+                    Next <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+        {% endblock %}
