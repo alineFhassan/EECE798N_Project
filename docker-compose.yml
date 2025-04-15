@@ -1,25 +1,31 @@
 version: '3.8'
 
 services:
+  # Frontend Flask application
   frontend:
     build: ./frontend
     ports:
-      - "5000:5000"
+      - "5000:5000"  # Exposed to host
     volumes:
       - ./frontend:/app
     environment:
       - FLASK_ENV=development
-      - DATABASE_URL=http://database:5003
+      - DATABASE_URL=http://backend:5003  # Points to backend service
+      - CV_EXTRACTION_URL=http://cv-extraction:5001
     depends_on:
-      - database
+      - backend
+      - cv-extraction
     restart: unless-stopped
+    networks:
+      - jobmatch-network
 
-  database:
-    build: ./database
+  # Backend/API service (your app.py)
+  backend:
+    build: ./backend  # Directory with your Dockerfile and app.py
     ports:
-      - "5003:5003"
+      - "5003:5003"  # Exposed for debugging
     environment:
-      - DB_HOST=db
+      - DB_HOST=db  # Points to PostgreSQL service
       - DB_PORT=5432
       - DB_NAME=jobmatch
       - DB_USER=postgres
@@ -27,17 +33,45 @@ services:
     depends_on:
       - db
     restart: unless-stopped
+    networks:
+      - jobmatch-network
 
+  # PostgreSQL database
   db:
     image: postgres:13
     environment:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=jobmatch
     ports:
-      - "5433:5432"
+      - "5433:5432"  # Host:Container mapping
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
+    networks:
+      - jobmatch-network
+
+  # CV Extraction service
+  cv-extraction:
+    build: ./CV-Extraction
+    ports:
+      - "5001:5001"  # Exposed for debugging
+    environment:
+      - OPENAI_API_KEY=your-actual-key-here  # Replace with your key
+      - DATABASE_API_URL=http://backend:5003/add_application
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - jobmatch-network
 
 volumes:
   postgres_data:
+
+networks:
+  jobmatch-network:
+    driver: bridge
