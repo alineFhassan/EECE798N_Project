@@ -1,49 +1,50 @@
 version: '3.8'
 
 services:
-  # Frontend Flask application
+  # Frontend Service
   frontend:
     build: ./frontend
     ports:
-      - "5000:5000"  # Exposed to host
+      - "5000:5000"
     volumes:
       - ./frontend:/app
     environment:
       - FLASK_ENV=development
-      - DATABASE_URL=http://backend:5003  # Points to backend service
+      - DATABASE_URL=http://backend:5003
+      - JOB_GENERATOR_URL=http://job-generator:5002
       - CV_EXTRACTION_URL=http://cv-extraction:5001
     depends_on:
       - backend
+      - job-generator
       - cv-extraction
-    restart: unless-stopped
     networks:
       - jobmatch-network
 
-  # Backend/API service (your app.py)
+  # Backend/API Service
   backend:
-    build: ./backend  # Directory with your Dockerfile and app.py
+    build: ./backend
     ports:
-      - "5003:5003"  # Exposed for debugging
+      - "5003:5003"
     environment:
-      - DB_HOST=db  # Points to PostgreSQL service
+      - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=jobmatch
       - DB_USER=postgres
       - DB_PASSWORD=password
+      - JOB_GENERATOR_URL=http://job-generator:5002
     depends_on:
       - db
-    restart: unless-stopped
     networks:
       - jobmatch-network
 
-  # PostgreSQL database
+  # PostgreSQL Database
   db:
     image: postgres:13
     environment:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=jobmatch
     ports:
-      - "5433:5432"  # Host:Container mapping
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -51,21 +52,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
     networks:
       - jobmatch-network
 
-  # CV Extraction service
+  # Job Generator Service
+  job-generator:
+    build: ./job-generator
+    ports:
+      - "5002:5002"
+    environment:
+      - OPENAI_API_KEY=your-actual-openai-key
+      - FLASK_ENV=development
+    networks:
+      - jobmatch-network
+
+  # CV Extraction Service
   cv-extraction:
     build: ./CV-Extraction
     ports:
-      - "5001:5001"  # Exposed for debugging
+      - "5001:5001"
     environment:
-      - OPENAI_API_KEY=your-actual-key-here  # Replace with your key
+      - OPENAI_API_KEY=your-actual-openai-key
       - DATABASE_API_URL=http://backend:5003/add_application
-    depends_on:
-      - backend
-    restart: unless-stopped
     networks:
       - jobmatch-network
 
