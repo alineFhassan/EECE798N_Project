@@ -87,9 +87,9 @@ def signup():
 
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
     
     if request.method == 'POST':
         if 'file' not in request.files:
@@ -147,6 +147,88 @@ def jobseeker_dashboard():
         flash('Please login first', 'error')
         return redirect(url_for('login'))
     return render_template('jobseeker_dashboard.html')
+
+@app.route('/company_dashboard')
+def company_dashboard():
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
+    return render_template('company_dashboard.html')
+
+@app.route('/post_job', methods=['GET', 'POST'])
+def post_job():
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        try:
+            # Get form data
+            form_data = request.form
+            company_id = session.get('user_id')  # Get company ID from session
+            
+            # Prepare data for job generator
+            job_data = {
+                'job_title': form_data.get('jobTitle'),
+                'job_level': form_data.get('jobLevel'),
+                'years_experience': form_data.get('yearsExperience'),
+                'company_id': company_id
+            }
+
+            # Validate required fields
+            required_fields = ['job_title', 'job_level', 'years_experience', 'company_id']
+            if not all(job_data[field] for field in required_fields):
+                flash('Please fill all required fields', 'error')
+                return redirect(url_for('post_job'))
+
+            # Call job generator service
+            generator_response = requests.post(
+                "http://job-generator:6000/generate-job-description",
+                json=job_data,
+                timeout=10
+            )
+
+            if generator_response.status_code != 200:
+                flash('Failed to generate job description', 'error')
+                return redirect(url_for('post_job'))
+
+            generated_data = generator_response.json().get('job_description', {})
+            
+            # Prepare data for database
+            db_payload = {
+                'title': generated_data.get('job_title', job_data['job_title']),
+                'description': job_data['additional_info'],
+                'company_id': job_data['company_id'],
+                'job_level': generated_data.get('job_level', job_data['job_level']),
+                'years_experience': generated_data.get('years_experience', job_data['years_experience']),
+                'responsibilities': generated_data.get('responsibilities', []),
+                'requirements': generated_data.get('requirements', []),
+                'required_certifications': generated_data.get('required_certifications', [])
+            }
+
+            # Save to database
+            db_response = requests.post(
+                "http://backend:5003/jobs",
+                json=db_payload,
+                timeout=5
+            )
+
+            if db_response.status_code == 201:
+                job_id = db_response.json().get('job_id')
+                flash('Job posted successfully!', 'success')
+                return redirect(url_for('view_job', job_id=job_id))
+            else:
+                error_msg = db_response.json().get('message', 'Failed to save job')
+                flash(f'Database error: {error_msg}', 'error')
+
+        except requests.exceptions.RequestException as e:
+            flash(f'Service error: {str(e)}', 'error')
+        except Exception as e:
+            flash(f'Unexpected error: {str(e)}', 'error')
+
+        return redirect(url_for('post_job'))
+
+    # GET request - show the form
+    return render_template('post_job.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 

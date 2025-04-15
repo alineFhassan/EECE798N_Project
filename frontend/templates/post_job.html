@@ -1,0 +1,60 @@
+{% extends "base_company.html" %}
+
+{% block content %}
+<div class="main-content">
+  <header class="dashboard-header">
+    <h1 class="dashboard-title">Post New Job</h1>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Job Details</h3>
+      </div>
+      <div class="card-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('post_job') }}">
+          <div class="form-group">
+            <label for="jobTitle" class="form-label">Job Title *</label>
+            <input type="text" id="jobTitle" name="jobTitle" class="form-input" required>
+          </div>
+
+          <div class="form-group">
+            <label for="jobLevel" class="form-label">Job Level *</label>
+            <select id="jobLevel" name="jobLevel" class="form-input" required>
+              <option value="Entry Level">Entry Level</option>
+              <option value="Junior">Junior</option>
+              <option value="Mid Level">Mid Level</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="yearsExperience" class="form-label">Years of Experience *</label>
+            <select id="yearsExperience" name="yearsExperience" class="form-input" required>
+              <option value="0-1 years">0-1 years</option>
+              <option value="1-2 years">1-2 years</option>
+              <option value="2-3 years">2-3 years</option>
+              <option value="3-5 years">3-5 years</option>
+            </select>
+          </div>
+
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Generate & Post Job</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
