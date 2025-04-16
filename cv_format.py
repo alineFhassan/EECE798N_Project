@@ -9,7 +9,6 @@ app = Flask(__name__)
 
 OPENAI_API_KEY=''
 client = OpenAI(api_key=OPENAI_API_KEY) 
-DATABASE_API_URL = ""
 
 def extract_text_from_pdf(pdf_file):
     """Extract text from PDF file."""
@@ -19,19 +18,6 @@ def extract_text_from_pdf(pdf_file):
         text += page.extract_text()
     return text
 
-def save_to_database(cv_data):
-   """ Send formatted CV data to database service."""
-   try:
-        response = requests.post(
-            DATABASE_API_URL,
-            json=cv_data,
-            headers={'Content-Type': 'application/json'}
-        )
-        response.raise_for_status()  # Raise exception for HTTP errors
-        return response.json()
-   except requests.exceptions.RequestException as e:
-        raise Exception(f"Database API error: {str(e)}")
-    
 def format_cv_with_gpt4(cv_text):
     """Send CV text to GPT-4 for formatting."""
     prompt = f"""Extract the following details from this CV (if available) and return in a structured JSON format:
@@ -109,12 +95,9 @@ def extract_cv():
         # Format with GPT-4
         formatted_cv = format_cv_with_gpt4(cv_text)
         
-        db_response = save_to_database(formatted_cv)
-        
         return jsonify({
             "status": "success",
             "cv_data": formatted_cv,
-            "database_response": db_response
         })
     
     
