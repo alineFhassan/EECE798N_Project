@@ -17,7 +17,7 @@ CREATE TABLE application (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
-    phone_number VARCHAR(20),  -- New field for phone number
+    phone_number VARCHAR(30),  -- New field for phone number
     achievements JSONB,        -- Stores list of achievements/accomplishments
     skills JSONB,              -- Stores technical/professional skills
     experience JSONB,          -- Stores work experience history
@@ -25,7 +25,7 @@ CREATE TABLE application (
     education JSONB,           -- Stores educational background
     address JSONB,             -- Stores address details
     date_of_birth DATE,        -- Stores date of birth
-    gender VARCHAR(10),        -- Stores gender
+    gender VARCHAR(40),        -- Stores gender
     embedding vector(384)      -- OpenAI embedding vector
 );
 
@@ -38,13 +38,29 @@ REFERENCES users(id);
 
 DROP TABLE IF EXISTS jobs;
 
--- Then create new table with proper schema
+
+
 CREATE TABLE jobs (
     id SERIAL PRIMARY KEY,
-    position VARCHAR(255),
-    long_description TEXT,
-    english_level VARCHAR(50),
-    required_skills JSONB, 
-    exp_years VARCHAR(50),
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    company_id INTEGER NOT NULL REFERENCES users(id),
+    job_level VARCHAR(50) NOT NULL,
+    years_experience VARCHAR(50) NOT NULL,
+    responsibilities JSONB NOT NULL,
+    requirements JSONB NOT NULL,
+    required_certifications JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     embedding vector(384)  
+);
+
+
+
+CREATE TABLE interview (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date_of_interview TIMESTAMP NOT NULL,
+    interview_questions JSONB,
+    answers JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

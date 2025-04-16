@@ -2,6 +2,23 @@ from flask import Flask, request, jsonify
 import psycopg2
 import os
 import json
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
+
+def get_embedding(text):
+    if not text.strip():
+        return np.zeros(384).tolist()  # Return empty embedding if no text
+    
+    # Generate embedding
+    embedding = model.encode(
+        text,
+        convert_to_numpy=True,
+        normalize_embeddings=True
+    )
+    return embedding.tolist()
 
 app = Flask(__name__)
 
@@ -57,6 +74,42 @@ def signup():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+# login route
+@app.route('/login', methods=['POST'])
+def login():
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')  # In production, compare hashed passwords
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id, email, password, user_type FROM users 
+            WHERE email = %s AND password = %s;
+        """, (email, password))
+
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if user:
+            return jsonify({
+                "status": "success",
+                "user_id": user[0],
+                "email": user[1],
+                "user_type": user[3]
+            }), 200
+        else:
+            return jsonify({"status": "error", "message": "Invalid credentials"}), 401
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+
+
 @app.route('/check_db', methods=['GET'])
 def check_db():
     try:
@@ -66,7 +119,7 @@ def check_db():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/users', methods=['GET'])
+@app.route('/get_users', methods=['GET'])
 def get_users():
     try:
         conn = get_db_connection()
@@ -101,43 +154,68 @@ def add_application():
         data = request.json
         cv_data = data.get('cv_data', {})
 
-        # Extract fields from cv_data
-        name = cv_data.get('name', 'Default Name')  # You can set a default name or adjust accordingly
-        email = cv_data.get('email', 'default@example.com')  # Set a default email if needed
-        phone_number = cv_data.get('phone_number', '000-000-0000')  # Default phone number
-        achievements = json.dumps(cv_data.get('certifications', []))  # Convert certifications to JSON
-        skills = json.dumps(cv_data.get('skills', []))  # Convert skills to JSON
-        experience = json.dumps(cv_data.get('experience', []))  # Convert experience to JSON
-        exp_years = sum(exp.get('years', 0) for exp in cv_data.get('experience', []) if isinstance(exp.get('years', 0), (int, float)))  # Calculate total experience years
-        education = json.dumps(cv_data.get('education', []))  # Convert education to JSON
-        address = json.dumps(cv_data.get('address', {}))  # Assuming address is included in cv_data
-        date_of_birth = cv_data.get('date_of_birth', '1970-01-01')  # Default date of birth
-        gender = cv_data.get('gender', 'Not Specified')  # Default gender
-        user_id = data.get('user_id')  # Include user_id from the main request
+        # Generate combined text for embedding
+        embedding_text = ""
+        
+        # 1. Skills
+        if 'skills' in cv_data:
+            embedding_text += "Skills: " + ", ".join(cv_data['skills']) + "\n"
 
-        # Validate required fields
-        #if not all([name, email, phone_number, achievements, skills, experience, exp_years, education, date_of_birth, gender, user_id]):
-         #   return jsonify({"status": "error", "message": "All fields are required."}), 400
+        # 2. Projects
+        if 'projects' in cv_data:
+            embedding_text += "Projects: " + " | ".join(cv_data['projects']) + "\n"
+        
+        # 3. Experience
+        for exp in cv_data.get('experience', []):
+            embedding_text += f"Role: {exp.get('role', '')} at {exp.get('company', '')}\n"
+            for resp in exp.get('responsibilities', []):
+                embedding_text += f"- {resp}\n"
+        
+        # 4. Education
+        for edu in cv_data.get('education', []):
+            embedding_text += f"Education: {edu.get('degree', '')} from {edu.get('school', '')}\n"
+        
+        # 5. Certifications
+        for cert in cv_data.get('certifications', []):
+            embedding_text += f"Certification: {cert.get('name', '')} by {cert.get('issuer', '')}\n"
 
+        # Generate embedding
+        embedding = get_embedding(embedding_text)
+
+        # Extract other fields
+        name = cv_data.get('name', 'Default Name')
+        email = cv_data.get('email', 'default@example.com')
+        phone_number = cv_data.get('phone_number', '000-000-0000')
+        achievements = json.dumps(cv_data.get('certifications', []))
+        skills = json.dumps(cv_data.get('skills', []))
+        experience = json.dumps(cv_data.get('experience', []))
+        exp_years = sum(
+            exp.get('years', 0) 
+            for exp in cv_data.get('experience', []) 
+            if isinstance(exp.get('years', 0), (int, float))
+        )
+        education = json.dumps(cv_data.get('education', []))
+        address = json.dumps(cv_data.get('address', {}))
+        date_of_birth = cv_data.get('date_of_birth', '1970-01-01')
+        gender = cv_data.get('gender', 'Undefined')
+        user_id = data.get('user_id')
+
+        # Database insertion
         conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
             INSERT INTO application (
-                name,
-                email,
-                phone_number,
-                achievements,
-                skills,
-                experience,
-                exp_years,
-                education,
-                address,
-                date_of_birth,
-                gender,
-                user_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-        """, (name, email, phone_number, achievements, skills, experience, exp_years, education, address, date_of_birth, gender, user_id))
+                name, email, phone_number, achievements,
+                skills, experience, exp_years, education,
+                address, date_of_birth, gender, user_id, embedding
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """, (
+            name, email, phone_number, achievements,
+            skills, experience, exp_years, education,
+            address, date_of_birth, gender, user_id,
+            json.dumps(embedding)  # Serialize embedding array
+        ))
 
         conn.commit()
         cursor.close()
@@ -147,8 +225,7 @@ def add_application():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     
-    
-@app.route('/applications', methods=['GET'])
+@app.route('/get_applications', methods=['GET'])
 def get_applications():
     try:
         conn = get_db_connection()
@@ -184,6 +261,305 @@ def get_applications():
         return jsonify({"status": "success", "applications": application_list}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
+#Create Job
+@app.route('/job', methods=['POST'])
+def create_job():
+    try:
+        data = request.json
+        required_fields = ['title', 'description', 'company_id', 'job_level', 'years_experience']
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO jobs (
+                title, description, company_id, 
+                job_level, years_experience,
+                responsibilities, requirements, 
+                created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            RETURNING id
+        """, (
+            data['title'],
+            data['description'],
+            data['company_id'],
+            data['job_level'],
+            data['years_experience'],
+            json.dumps(data.get('responsibilities', [])),
+            json.dumps(data.get('requirements', []))
+        ))
+        
+        job_id = cursor.fetchone()[0]
+        conn.commit()
+        
+        return jsonify({
+            "status": "success",
+            "job_id": job_id,
+            "message": "Job created successfully"
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+#GEt all jobs
+@app.route('/job', methods=['GET'])
+def get_all_jobs():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT j.id, j.title, j.description, j.job_level, j.years_experience,
+                   j.responsibilities, j.requirements, j.created_at,
+                   u.id as company_id, u.full_name as company_name
+            FROM jobs j
+            JOIN users u ON j.company_id = u.id
+        """)
+        
+        jobs = []
+        for job in cursor.fetchall():
+            jobs.append({
+                "id": job[0],
+                "title": job[1],
+                "description": job[2],
+                "job_level": job[3],
+                "years_experience": job[4],
+                "responsibilities": json.loads(job[5]),
+                "requirements": json.loads(job[6]),
+                "created_at": job[7].isoformat(),
+                "company": {
+                    "id": job[8],
+                    "name": job[9]
+                }
+            })
+
+        return jsonify({"status": "success", "jobs": jobs}), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+#Get specific job
+@app.route('/jobs/<int:job_id>', methods=['GET'])
+def get_job(job_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT j.id, j.title, j.description, j.job_level, j.years_experience,
+                   j.responsibilities, j.requirements, j.created_at,
+                   u.id as company_id, u.full_name as company_name
+            FROM jobs j
+            JOIN users u ON j.company_id = u.id
+            WHERE j.id = %s
+        """, (job_id,))
+        
+        job = cursor.fetchone()
+        if not job:
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+
+        return jsonify({
+            "status": "success",
+            "job": {
+                "id": job[0],
+                "title": job[1],
+                "description": job[2],
+                "job_level": job[3],
+                "years_experience": job[4],
+                "responsibilities": json.loads(job[5]),
+                "requirements": json.loads(job[6]),
+                "created_at": job[7].isoformat(),
+                "company": {
+                    "id": job[8],
+                    "name": job[9]
+                }
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+#UPdate job
+@app.route('/jobs/<int:job_id>', methods=['PUT'])
+def update_job(job_id):
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"status": "error", "message": "No data provided"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # First check if job exists
+        cursor.execute("SELECT id FROM jobs WHERE id = %s", (job_id,))
+        if not cursor.fetchone():
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+
+        # Build dynamic update query
+        updates = []
+        params = []
+        fields = {
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'job_level': data.get('job_level'),
+            'years_experience': data.get('years_experience'),
+            'responsibilities': json.dumps(data.get('responsibilities')) if 'responsibilities' in data else None,
+            'requirements': json.dumps(data.get('requirements')) if 'requirements' in data else None
+        }
+
+        for field, value in fields.items():
+            if value is not None:
+                updates.append(f"{field} = %s")
+                params.append(value)
+
+        if not updates:
+            return jsonify({"status": "error", "message": "No valid fields to update"}), 400
+
+        params.append(job_id)
+        query = f"""
+            UPDATE jobs 
+            SET {', '.join(updates)}, updated_at = NOW()
+            WHERE id = %s
+        """
+        
+        cursor.execute(query, params)
+        conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Job updated successfully"
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+#Delete Job
+@app.route('/jobs/<int:job_id>', methods=['DELETE'])
+def delete_job(job_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM jobs WHERE id = %s RETURNING id", (job_id,))
+        deleted_id = cursor.fetchone()
+        
+        if not deleted_id:
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+            
+        conn.commit()
+        return jsonify({
+            "status": "success",
+            "message": "Job deleted successfully"
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/interviews', methods=['GET'])
+def get_interviews():
+    try:
+        user_id = request.args.get('user_id')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        query = "SELECT * FROM interview"
+        params = ()
+        
+        if user_id:
+            query += " WHERE user_id = %s"
+            params = (user_id,)
+
+        cursor.execute(query, params)
+        interviews = cursor.fetchall()
+
+        interview_list = []
+        for interview in interviews:
+            interview_list.append({
+                "id": interview[0],
+                "user_id": interview[1],
+                "date_of_interview": interview[2].isoformat(),
+                "interview_questions": interview[3],
+                "answers": interview[4],
+                "created_at": interview[5].isoformat()
+            })
+
+        return jsonify({"status": "success", "interviews": interview_list}), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# CREATE Interview
+@app.route('/interviews', methods=['POST'])
+def create_interview():
+    try:
+        data = request.json
+        required_fields = ['user_id', 'date_of_interview', 'interview_questions', 'answers']
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO interview (
+                user_id,
+                date_of_interview,
+                interview_questions,
+                answers
+            ) VALUES (%s, %s, %s, %s)
+            RETURNING id
+        """, (
+            data['user_id'],
+            data['date_of_interview'],
+            json.dumps(data['interview_questions']),
+            json.dumps(data['answers'])
+        ))
+
+        interview_id = cursor.fetchone()[0]
+        conn.commit()
+        
+        return jsonify({
+            "status": "success",
+            "interview_id": interview_id,
+            "message": "Interview record created successfully"
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @app.route('/test', methods=['GET'])
 def test():

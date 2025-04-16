@@ -1,6 +1,7 @@
 # Use the official Python image
 FROM python:3.9-slim
 
+ENV TRANSFORMERS_CACHE=/app/model_cache
 # Set the working directory
 WORKDIR /app
 
@@ -14,6 +15,7 @@ RUN pip install -r requirements.txt
 # Copy the application code
 COPY app.py .
 
+#RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
 # Expose the port
 EXPOSE 5003
 

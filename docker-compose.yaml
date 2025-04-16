@@ -16,9 +16,14 @@ services:
     build: ./backend
     container_name: jobmatch-backend
     ports:
-      - "5003:5003"  # Expose Flask app port
+      - "5003:5003"
+    environment:
+      - TRANSFORMERS_CACHE=/app/model_cache  # Set cache location
+    volumes:
+      - model_cache:/app/model_cache  # Persistent model storage
     depends_on:
-      - db            # Ensure db starts before Flask app
+      - db
 
 volumes:
   pgdata:
+  model_cache:  # Add model cache volume

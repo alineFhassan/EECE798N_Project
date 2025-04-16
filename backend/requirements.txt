@@ -1,4 +1,6 @@
 Flask
 psycopg2-binary
 flask-cors
-sentence-transformers 
+sentence-transformers
+torch
+hf_xet
