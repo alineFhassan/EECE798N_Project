@@ -133,4 +133,4 @@ def generate_job_description():
         }), 500
 
 if __name__ == '__main__':
-    app.run(port=6000, debug=True)
+    app.run(port=5002, debug=True)
