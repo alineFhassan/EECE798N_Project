@@ -263,7 +263,6 @@ def get_applications():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-
 #Create Job
 @app.route('/job', methods=['POST'])
 def create_job():
@@ -274,6 +273,10 @@ def create_job():
         if not all(field in data for field in required_fields):
             return jsonify({"status": "error", "message": "Missing required fields"}), 400
 
+        # Generate job embedding
+        embedding_text = f"{data['title']} {data['description']} {data['job_level']}"
+        embedding = get_embedding(embedding_text)
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -282,8 +285,8 @@ def create_job():
                 title, description, company_id, 
                 job_level, years_experience,
                 responsibilities, requirements, 
-                created_at, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                created_at, updated_at, embedding
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s)
             RETURNING id
         """, (
             data['title'],
@@ -292,7 +295,8 @@ def create_job():
             data['job_level'],
             data['years_experience'],
             json.dumps(data.get('responsibilities', [])),
-            json.dumps(data.get('requirements', []))
+            json.dumps(data.get('requirements', [])),
+            json.dumps(embedding)  # Serialize embedding
         ))
         
         job_id = cursor.fetchone()[0]
@@ -474,6 +478,64 @@ def delete_job(job_id):
 
     except Exception as e:
         conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/match_jobs/<int:application_id>', methods=['GET'])
+def match_jobs(application_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 1. Get application's experience and embedding
+        cursor.execute("""
+            SELECT exp_years, embedding
+            FROM application
+            WHERE id = %s
+        """, (application_id,))
+        app_data = cursor.fetchone()
+        
+        if not app_data:
+            return jsonify({"status": "error", "message": "Application not found"}), 404
+
+        exp_years, app_embedding = app_data
+
+        # 2. Find matching jobs using pgvector's native operations
+        cursor.execute("""
+            SELECT 
+                j.id,
+                j.title,
+                j.description,
+                j.company_id,
+                1 - (j.embedding <=> a.embedding) AS similarity_score
+            FROM jobs j, application a
+            WHERE 
+                j.years_experience <= %s
+                AND a.id = %s
+            ORDER BY similarity_score DESC
+            LIMIT 10
+        """, (exp_years, application_id))
+        
+        matches = []
+        for job in cursor.fetchall():
+            matches.append({
+                "job_id": job[0],
+                "title": job[1],
+                "description": job[2],
+                "company_id": job[3],
+                "similarity_score": float(job[4])
+            })
+
+        return jsonify({
+            "status": "success",
+            "application_id": application_id,
+            "matches": matches,
+            "experience_filter": exp_years
+        }), 200
+
+    except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
         cursor.close()

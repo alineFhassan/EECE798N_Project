@@ -1,7 +1,6 @@
 # Use the official Python image
 FROM python:3.9-slim
 
-ENV TRANSFORMERS_CACHE=/app/model_cache
 # Set the working directory
 WORKDIR /app
 
