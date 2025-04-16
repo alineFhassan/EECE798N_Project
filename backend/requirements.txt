@@ -1,6 +1,5 @@
 Flask
 psycopg2-binary
 flask-cors
-sentence-transformers
-torch
-hf_xet
+requests
+numpy

@@ -2,23 +2,43 @@ from flask import Flask, request, jsonify
 import psycopg2
 import os
 import json
-from sentence_transformers import SentenceTransformer
+import requests
 import numpy as np
 
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-
+HF_API_KEY = os.getenv('HUGGINGFACE_API_KEY')  # Get your free API key from https://huggingface.co/settings/tokens
+HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
 
 def get_embedding(text):
     if not text.strip():
-        return np.zeros(384).tolist()  # Return empty embedding if no text
+        return np.zeros(384).tolist()
     
-    # Generate embedding
-    embedding = model.encode(
-        text,
-        convert_to_numpy=True,
-        normalize_embeddings=True
-    )
-    return embedding.tolist()
+    headers = {
+        "Authorization": f"Bearer {HF_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "inputs": text,
+        "options": {"wait_for_model": True}
+    }
+    
+    try:
+        response = requests.post(
+            HF_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=30  # Increased timeout for free tier
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"HF API Error: {response.status_code} - {response.text}")
+            return np.zeros(384).tolist()
+            
+    except Exception as e:
+        print(f"Embedding API failed: {str(e)}")
+        return np.zeros(384).tolist()
 
 app = Flask(__name__)
 
@@ -158,30 +178,62 @@ def add_application():
         embedding_text = ""
         
         # 1. Skills
-        if 'skills' in cv_data:
-            embedding_text += "Skills: " + ", ".join(cv_data['skills']) + "\n"
+        embedding_text = ""
 
-        # 2. Projects
+        # 1. Skills (Handle both strings and dictionaries)
+        if 'skills' in cv_data:
+            skills_list = []
+            for skill in cv_data['skills']:
+                if isinstance(skill, dict):
+                    skills_list.append(skill.get('name', ''))  # Extract 'name' if dictionary
+                else:
+                    skills_list.append(str(skill))
+            embedding_text += "Skills: " + ", ".join(skills_list) + "\n"
+
+        # 2. Projects (Handle both strings and dictionaries)
         if 'projects' in cv_data:
-            embedding_text += "Projects: " + " | ".join(cv_data['projects']) + "\n"
-        
-        # 3. Experience
+            project_list = []
+            for project in cv_data['projects']:
+                if isinstance(project, dict):
+                    # Concatenate all values if it's a dictionary
+                    proj_str = " ".join([str(v) for v in project.values()])
+                    project_list.append(proj_str)
+                else:
+                    project_list.append(str(project))
+            embedding_text += "Projects: " + " | ".join(project_list) + "\n"
+
+        # 3. Experience (Ensure all values are strings)
         for exp in cv_data.get('experience', []):
-            embedding_text += f"Role: {exp.get('role', '')} at {exp.get('company', '')}\n"
-            for resp in exp.get('responsibilities', []):
-                embedding_text += f"- {resp}\n"
-        
-        # 4. Education
+            exp_str = f"Role: {exp.get('role', '')} at {exp.get('company', '')}. "
+            exp_str += " ".join([str(resp) for resp in exp.get('responsibilities', [])])
+            embedding_text += exp_str + "\n"
+
+        # 4. Education (Handle GPA formatting)
         for edu in cv_data.get('education', []):
-            embedding_text += f"Education: {edu.get('degree', '')} from {edu.get('school', '')}\n"
-        
-        # 5. Certifications
+            edu_str = f"Education: {edu.get('degree', '')} from {edu.get('school', '')}"
+            if 'gpa' in edu and edu['gpa']:
+                edu_str += f" (GPA: {edu['gpa']})"
+            embedding_text += edu_str + "\n"
+
+        # 5. Certifications (Handle empty issuers)
         for cert in cv_data.get('certifications', []):
-            embedding_text += f"Certification: {cert.get('name', '')} by {cert.get('issuer', '')}\n"
+            issuer = cert.get('issuer', 'Unknown')
+            cert_str = f"Certification: {cert.get('name', '')}"
+            if issuer:
+                cert_str += f" by {issuer}"
+            embedding_text += cert_str + "\n"
 
         # Generate embedding
         embedding = get_embedding(embedding_text)
 
+
+        gender = cv_data.get('gender', 'Not Specified')
+        if isinstance(gender, list):
+            gender = ", ".join(gender)  # Converts ["male"] → "male"
+
+        # Ensure phone_number is string
+        phone_number = str(cv_data.get('phone_number', '000-000-0000'))[:15]
+        
         # Extract other fields
         name = cv_data.get('name', 'Default Name')
         email = cv_data.get('email', 'default@example.com')
@@ -285,8 +337,8 @@ def create_job():
                 title, description, company_id, 
                 job_level, years_experience,
                 responsibilities, requirements, 
-                created_at, updated_at, embedding
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s)
+                created_at, embedding
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s)
             RETURNING id
         """, (
             data['title'],
