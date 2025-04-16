@@ -12,20 +12,6 @@ app = Flask(__name__)
 # Configure OpenAI
 OPENAI_API_KEY = ''
 client = OpenAI(api_key=OPENAI_API_KEY)
-DATABASE_API_URL = ""
-def save_to_database(job_data):
-    """Send job description to database API"""
-    try:
-        response = requests.post(
-            DATABASE_API_URL,
-            json=job_data,
-            headers={'Content-Type': 'application/json'},
-            timeout=5
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Database API error: {str(e)}")
     
 @app.route('/generate-job-description', methods=['POST'])
 def generate_job_description():
@@ -115,13 +101,9 @@ def generate_job_description():
                 "raw_response": json_str
             }), 500
         
-                # Step 2: Save to database
-        db_response = save_to_database(job_description)
-        
         return jsonify({
             "status": "success",
-            "job_description": job_description,
-            "database_response": db_response
+            "job_description": job_description
         })
 
 
