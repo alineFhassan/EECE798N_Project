@@ -314,6 +314,49 @@ def get_applications():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/applications/<int:application_id>', methods=['GET'])
+def get_application(application_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT * FROM application 
+            WHERE id = %s;
+        """, (application_id,))
+
+        application = cursor.fetchone()
+        
+        if not application:
+            return jsonify({"status": "error", "message": "Application not found"}), 404
+
+        application_data = {
+            "user_id": application[13],
+            "id": application[0],
+            "name": application[1],
+            "email": application[2],
+            "phone_number": application[3],
+            "achievements": application[4],
+            "skills": application[5],
+            "experience": application[6],
+            "exp_years": application[7],
+            "education": application[8],
+            "address": application[9],
+            "date_of_birth": application[10].isoformat() if application[10] else None,
+            "gender": application[11],
+            "embedding": application[12]
+        }
+
+        return jsonify({
+            "status": "success",
+            "application": application_data
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 #Create Job
 @app.route('/job', methods=['POST'])
@@ -390,8 +433,8 @@ def get_all_jobs():
                 "description": job[2],
                 "job_level": job[3],
                 "years_experience": job[4],
-                "responsibilities": json.loads(job[5]),
-                "requirements": json.loads(job[6]),
+                "responsibilities": job[5],
+                "requirements": job[6],
                 "created_at": job[7].isoformat(),
                 "company": {
                     "id": job[8],
@@ -435,8 +478,8 @@ def get_job(job_id):
                 "description": job[2],
                 "job_level": job[3],
                 "years_experience": job[4],
-                "responsibilities": json.loads(job[5]),
-                "requirements": json.loads(job[6]),
+                "responsibilities": job[5],
+                "requirements": job[6],
                 "created_at": job[7].isoformat(),
                 "company": {
                     "id": job[8],
