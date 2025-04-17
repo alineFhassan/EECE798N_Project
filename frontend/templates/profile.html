@@ -1,0 +1,134 @@
+{% extends "base_jobseeker.html" %}
+
+{% block content %}
+<!-- Main Content -->
+<div class="main-content">
+  <header class="dashboard-header">
+    <button class="sidebar-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+    <h1 class="dashboard-title">Profile</h1>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+    </div>
+
+    <!-- Overview Tab -->
+    <div class="tab-content active" id="overview">
+      <div class="profile-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Profile Details</h3>
+          </div>
+          <div class="card-content">
+            <div class="profile-header">
+           
+              <div class="profile-info">
+                <h3 class="profile-name">{{ user.full_name }}</h3>
+              
+              </div>
+            </div>
+
+            <div class="profile-details">
+           
+              {% if application %}
+              <div class="profile-detail">
+                <span class="detail-label">Experience:</span>
+                <span class="detail-value">{{ application.get('exp_years', 0) }} years</span>
+              </div>
+              <div class="profile-detail">
+                <span class="detail-label">Education:</span>
+                <span class="detail-value">
+                  {% if application.education %}
+                    {{ application.education[0].get('degree', 'Not specified') }}
+                  {% else %}
+                    Not specified
+                  {% endif %}
+                </span>
+              </div>
+              <div class="profile-detail">
+                <span class="detail-label">Phone:</span>
+                <span class="detail-value">{{ application.get('phone_number', 'Not specified') }}</span>
+              </div>
+              {% endif %}
+              <div class="profile-detail">
+                <span class="detail-label">Email:</span>
+                <span class="detail-value">{{ user.email }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Skills & Experience</h3>
+          </div>
+          <div class="card-content">
+            {% if application %}
+            <div class="profile-about">
+              <h4>Skills</h4>
+              <div class="skills-container">
+                {% for skill in application.get('skills', []) %}
+                  <span class="skill-tag">{{ skill }}</span>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="profile-experience">
+              <h4>Experience</h4>
+              {% for exp in application.get('experience', []) %}
+                <div class="experience-item">
+                  <h5>{{ exp.get('role', 'Position') }} at {{ exp.get('company', 'Company') }}</h5>
+                  <p>{{ exp.get('responsibilities', 'No description available') }}</p>
+                </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-data">
+              <p>No application data found. Please upload your CV.</p>
+              <a href="{{ url_for('upload_cv') }}" class="btn btn-primary">Upload CV</a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Tab -->
+    <div class="tab-content" id="edit">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Edit Basic Information</h3>
+        </div>
+        <div class="card-content">
+          <form id="profileForm" class="profile-form" method="POST" action="{{ url_for('update_profile') }}">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="full_name" class="form-label">Full Name</label>
+                <input type="text" id="full_name" name="full_name" class="form-input" value="{{ user.full_name }}">
+              </div>
+
+              <div class="form-group">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" class="form-input" value="{{ user.email }}" readonly>
+              </div>
+
+              <div class="form-group">
+                <label for="phone_number" class="form-label">Phone</label>
+                <input type="text" id="phone_number" name="phone_number" class="form-input" 
+                      value="{% if application %}{{ application.get('phone_number', '') }}{% endif %}">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

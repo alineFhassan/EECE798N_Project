@@ -9,11 +9,12 @@ app.secret_key = 'dev-key-123-abc!@#'
 DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5003')
 
 
-
+# Main Dashboard
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# Login & Signup
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -85,6 +86,7 @@ def signup():
     
     return render_template('signup.html')
 
+# Jobseeker Dashboard 
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
     # if 'user_id' not in session:
@@ -114,6 +116,7 @@ def upload_cv():
                     cv_data = response.json().get('cv_data', {})
                     
                     # Save to database with user_id
+                    # save csv info using user id
                     save_response = requests.post(
                         f"{DATABASE_URL}/add_application",
                         json={
@@ -136,99 +139,169 @@ def upload_cv():
     
     return render_template('upload_cv.html')
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ['pdf']
-
-
-@app.route('/jobseeker_dashboard')
+@app.route('/profile')
+def jobseeker_profile():
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
+    
+    # try:
+    #     # Get user info from database API
+    #     user_response = requests.get(f"{DATABASE_URL}/get_user_info/{session['user_id']}")
+    #     if user_response.status_code != 200:
+    #         flash('Error fetching user data', 'error')
+    #         return redirect(url_for('jobseeker_dashboard'))
+        
+    #     user_data = user_response.json().get('user', {})
+        
+    #     # Get application info if exists
+    #     application_response = requests.get(
+    #         f"{DATABASE_URL}/get_applications?user_id={session['user_id']}"
+    #     )
+    #     application_data = {}
+    #     if application_response.status_code == 200:
+    #         applications = application_response.json().get('applications', [])
+    #         if applications:
+    #             application_data = applications[0]  # Get most recent application
+        
+    #     return render_template('profile.html', 
+    #                         user=user_data, 
+    #                         application=application_data)
+    
+    # except Exception as e:
+    #     flash(f'Error loading profile: {str(e)}', 'error')
+    #     return redirect(url_for('jobseeker_dashboard'))
+    sample_user = {
+        'full_name': 'John Doe',
+        'email': 'john.doe@example.com'
+    }
+    
+    # Sample application data (matches your template structure)
+    sample_application = {
+        'skills': ['Python', 'Flask', 'HTML/CSS', 'JavaScript'],
+        'exp_years': 5,
+        'phone_number': '+1 (555) 123-4567',
+        'education': [
+            {
+                'degree': 'B.Sc Computer Science',
+                'institution': 'State University'
+            }
+        ],
+        'experience': [
+            {
+                'role': 'Senior Developer',
+                'company': 'Tech Solutions Inc.',
+                'responsibilities': 'Led a team of developers building web applications'
+            },
+            {
+                'role': 'Software Engineer',
+                'company': 'Digital Creations',
+                'responsibilities': 'Developed backend services and APIs'
+            }
+        ]
+    }
+    
+    return render_template(
+        'profile.html', 
+        user=sample_user, 
+        application=sample_application
+    )
+@app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
-    return render_template('jobseeker_dashboard.html')
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
+    
+    # try:
+    #     # Get all jobs from database
+    #     response = requests.get(f"{DATABASE_URL}/job")
+    #     if response.status_code != 200:
+    #         flash('Error fetching jobs', 'error')
+    #         return render_template('jobseeker_dashboard.html', jobs=[])
+        
+    #     jobs = response.json().get('jobs', [])
+        
+    #     # If user submits an application
+    #     if request.method == 'POST':
+    #         job_id = request.form.get('job_id')
+    #         if job_id:
+    #             # Here you would save the application to your database
+    #             # You might want to create a new table for applications
+    #             application_response = requests.post(
+    #                 f"{DATABASE_URL}/apply_job",
+    #                 json={
+    #                     'user_id': session['user_id'],
+    #                     'job_id': job_id,
+    #                     'status': 'applied'
+    #                 }
+    #             )
+                
+    #             if application_response.status_code == 201:
+    #                 flash('Application submitted successfully!', 'success')
+    #             else:
+    #                 flash('Error submitting application', 'error')
+                
+    #             return redirect(url_for('jobseeker_dashboard'))
+        
+    #     return render_template('jobseeker_dashboard.html', jobs=jobs)
+    
+    # except Exception as e:
+    #     flash(f'Error loading dashboard: {str(e)}', 'error')
+    #     return render_template('jobseeker_dashboard.html', jobs=[])
 
-@app.route('/company_dashboard')
-def company_dashboard():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
-    return render_template('company_dashboard.html')
-
-@app.route('/post_job', methods=['GET', 'POST'])
-def post_job():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        try:
-            # Get form data
-            form_data = request.form
-            company_id = session.get('user_id')  # Get company ID from session
-            
-            # Prepare data for job generator
-            job_data = {
-                'job_title': form_data.get('jobTitle'),
-                'job_level': form_data.get('jobLevel'),
-                'years_experience': form_data.get('yearsExperience'),
-                'company_id': company_id
+    jobs_data = {
+        "jobs": [
+            {
+                "id": 1,
+                "title": "Senior Python Developer",
+                "description": "Develop and maintain backend services using Python and Flask",
+                "company_id": 1,
+                "job_level": "Senior",
+                "years_experience": "5",
+                "responsibilities": [
+                    "Design and implement RESTful APIs",
+                    "Optimize application performance",
+                    "Mentor junior developers"
+                ],
+                "requirements": [
+                    "5+ years Python experience",
+                    "Experience with Flask/Django",
+                    "Knowledge of PostgreSQL"
+                ],
+                "created_at": "2023-05-15T10:30:00",
+                "company": {
+                    "id": 1,
+                    "full_name": "TechCorp Inc."
+                }
+            },
+            {
+                "id": 2,
+                "title": "Frontend Engineer",
+                "description": "Build responsive user interfaces with React",
+                "company_id": 2,
+                "job_level": "Mid-level",
+                "years_experience": "3",
+                "responsibilities": [
+                    "Develop new user-facing features",
+                    "Build reusable components",
+                    "Optimize for maximum performance"
+                ],
+                "requirements": [
+                    "3+ years JavaScript experience",
+                    "Proficient with React",
+                    "Experience with Redux"
+                ],
+                "created_at": "2023-05-10T09:15:00",
+                "company": {
+                    "id": 2,
+                    "full_name": "WebSolutions Ltd."
+                }
             }
-
-            # Validate required fields
-            required_fields = ['job_title', 'job_level', 'years_experience', 'company_id']
-            if not all(job_data[field] for field in required_fields):
-                flash('Please fill all required fields', 'error')
-                return redirect(url_for('post_job'))
-
-            # Call job generator service
-            generator_response = requests.post(
-                "http://job-generator:6000/generate-job-description",
-                json=job_data,
-                timeout=10
-            )
-
-            if generator_response.status_code != 200:
-                flash('Failed to generate job description', 'error')
-                return redirect(url_for('post_job'))
-
-            generated_data = generator_response.json().get('job_description', {})
-            
-            # Prepare data for database
-            db_payload = {
-                'title': generated_data.get('job_title', job_data['job_title']),
-                'description': job_data['additional_info'],
-                'company_id': job_data['company_id'],
-                'job_level': generated_data.get('job_level', job_data['job_level']),
-                'years_experience': generated_data.get('years_experience', job_data['years_experience']),
-                'responsibilities': generated_data.get('responsibilities', []),
-                'requirements': generated_data.get('requirements', []),
-                'required_certifications': generated_data.get('required_certifications', [])
-            }
-
-            # Save to database
-            db_response = requests.post(
-                "http://backend:5003/jobs",
-                json=db_payload,
-                timeout=5
-            )
-
-            if db_response.status_code == 201:
-                job_id = db_response.json().get('job_id')
-                flash('Job posted successfully!', 'success')
-                return redirect(url_for('view_job', job_id=job_id))
-            else:
-                error_msg = db_response.json().get('message', 'Failed to save job')
-                flash(f'Database error: {error_msg}', 'error')
-
-        except requests.exceptions.RequestException as e:
-            flash(f'Service error: {str(e)}', 'error')
-        except Exception as e:
-            flash(f'Unexpected error: {str(e)}', 'error')
-
-        return redirect(url_for('post_job'))
-
-    # GET request - show the form
-    return render_template('post_job.html')
-
+        ]
+    }
+    
+    # Pass just the jobs list to the template, not the whole dictionary
+    return render_template('jobseeker_dashboard.html', jobs=jobs_data["jobs"])
+    
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 

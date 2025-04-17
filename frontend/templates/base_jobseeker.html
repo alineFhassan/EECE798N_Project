@@ -11,49 +11,55 @@
 </head>
 <body>
 
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-          <div class="sidebar-header">
-            <h2 class="sidebar-title">User Dashboard</h2>
-          </div>
-          <div class="sidebar-content">
-            <ul class="sidebar-menu">
-              <li class="sidebar-menu-item {{ 'active' if request.endpoint == 'jobseeker_dashboard' else '' }}">
-                <a href="{{ url_for('jobseeker_dashboard') }}" class="sidebar-menu-link">
-                  <i class="fas fa-tachometer-alt"></i>
-                  <span>Dashboard</span>
-                </a>
-              </li>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">User Dashboard</h2>
+      </div>
+      <div class="sidebar-content">
+        <ul class="sidebar-menu">
+          <li class="sidebar-menu-item {{ 'active' if request.endpoint == 'jobseeker_dashboard' else '' }}">
+            <a href="{{ url_for('jobseeker_dashboard') }}" class="sidebar-menu-link">
+              <i class="fas fa-tachometer-alt"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item {{ 'active' if request.endpoint == 'jobseeker_profile' else '' }}">
+            <a href="{{ url_for('jobseeker_profile') }}" class="sidebar-menu-link">
+              <i class="fas fa-user"></i>
+              <span>Profile</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item {{ 'active' if request.endpoint == 'upload_cv' else '' }}">
+            <a href="{{ url_for('upload_cv') }}" class="sidebar-menu-link">
+              <i class="fas fa-file-csv"></i>
+              <span>CSV Upload</span>
+            </a>
+          </li>
        
-              <li class="sidebar-menu-item {{ 'active' if request.endpoint == 'cv_upload' else '' }}">
-                <a href="{{ url_for('upload_cv') }}" class="sidebar-menu-link">
-                  <i class="fas fa-file-csv"></i>
-                  <span>CSV Upload</span>
-                </a>
-              </li>
-       
-            </ul>
-          </div>
-          
-          <div class="sidebar-footer">
-            <ul class="sidebar-menu">
-              <li class="sidebar-menu-item">
-                <a href="#" class="sidebar-menu-link">
-                  <i class="fas fa-sign-out-alt"></i>
-                  <span>Logout</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-  
-      {% block content %}{% endblock %}
-  
-  </div>
-  
+        </ul>
+      </div>
+      
+      <div class="sidebar-footer">
+        <ul class="sidebar-menu">
+          <li class="sidebar-menu-item">
+            <a href="#" class="sidebar-menu-link">
+              <i class="fas fa-sign-out-alt"></i>
+              <span>Logout</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  {% block content %}{% endblock %}
+
+</div>
+
 
     <script src="{{ url_for('static', filename='assets/js/dashboard.js') }}"></script>
-    <script src="{{ url_for('static', filename='assets/js/upload_cv.js') }}"></script>
-   
+    <script src="{{ url_for('static', filename='assets/js/profile.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/csv-upload.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/password.js') }}"></script>
   </html>
