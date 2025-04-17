@@ -61,13 +61,26 @@ def evaluate_answers(
         "requirements_coverage": [],
         "responsibilities_coverage": [],
         "overall_scores": {
-            "requirements": 0.0,  # Average of ALL requirement matches above threshold
-            "responsibilities": 0.0  # Average of ALL responsibility matches above threshold
+            "requirements": {
+                "average_score_all_answers": 0.0,
+                "average_score_matched_only": 0.0,
+                "coverage_percentage": "0%"
+            },
+            "responsibilities": {
+                "average_score_all_answers": 0.0,
+                "average_score_matched_only": 0.0,
+                "coverage_percentage": "0%"
+            }
         }
     }
 
-    req_scores = []
-    resp_scores = []
+    req_scores_all = []
+    req_scores_matched = []
+    req_coverage_count = 0
+
+    resp_scores_all = []
+    resp_scores_matched = []
+    resp_coverage_count = 0
 
     for i, embedding in enumerate(answer_embeddings):
         # Requirement comparison
@@ -76,13 +89,35 @@ def evaluate_answers(
         best_req_idx = req_scores_batch.index(best_req_score) if best_req_score > 0 else -1
         best_req = requirements[best_req_idx] if best_req_idx >= 0 else None
 
+        req_scores_all.append(best_req_score)
+        if best_req_score >= COVERAGE_THRESHOLD:
+            req_coverage_count += 1
+            req_scores_matched.append(best_req_score)
+            results["requirements_coverage"].append({
+                "requirement": best_req,
+                "answer_index": i,
+                "score": best_req_score,
+                "supporting_answer": combined_texts[i]
+            })
+
         # Responsibility comparison
         resp_scores_batch = [cosine_similarity(embedding, resp) for resp in resp_embeddings]
         best_resp_score = max(resp_scores_batch) if resp_scores_batch else 0
         best_resp_idx = resp_scores_batch.index(best_resp_score) if best_resp_score > 0 else -1
         best_resp = responsibilities[best_resp_idx] if best_resp_idx >= 0 else None
 
-        # Record analysis
+        resp_scores_all.append(best_resp_score)
+        if best_resp_score >= COVERAGE_THRESHOLD:
+            resp_coverage_count += 1
+            resp_scores_matched.append(best_resp_score)
+            results["responsibilities_coverage"].append({
+                "responsibility": best_resp,
+                "answer_index": i,
+                "score": best_resp_score,
+                "supporting_answer": combined_texts[i]
+            })
+
+        # Add to answer analysis
         results["answer_analysis"].append({
             "answer_index": i,
             "best_requirement_match": best_req,
@@ -91,28 +126,17 @@ def evaluate_answers(
             "responsibility_score": best_resp_score
         })
 
-        # Track scores for overall averages
-        if best_req_score >= COVERAGE_THRESHOLD:
-            results["requirements_coverage"].append({
-                "requirement": best_req,
-                "answer_index": i,
-                "score": best_req_score,
-                "supporting_answer": combined_texts[i]
-            })
-            req_scores.append(best_req_score)
+    total_answers = len(answer_embeddings)
 
-        if best_resp_score >= COVERAGE_THRESHOLD:
-            results["responsibilities_coverage"].append({
-                "responsibility": best_resp,
-                "answer_index": i,
-                "score": best_resp_score,
-                "supporting_answer": combined_texts[i]
-            })
-            resp_scores.append(best_resp_score)
+    # Requirement scores
+    results["overall_scores"]["requirements"]["average_score_all_answers"] = round(sum(req_scores_all)/total_answers, 4) if total_answers else 0
+    results["overall_scores"]["requirements"]["average_score_matched_only"] = round(sum(req_scores_matched)/len(req_scores_matched), 4) if req_scores_matched else 0
+    results["overall_scores"]["requirements"]["coverage_percentage"] = f"{round((req_coverage_count / total_answers) * 100)}%" if total_answers else "0%"
 
-    # Calculate overall averages
-    results["overall_scores"]["requirements"] = sum(req_scores)/len(req_scores) if req_scores else 0
-    results["overall_scores"]["responsibilities"] = sum(resp_scores)/len(resp_scores) if resp_scores else 0
+    # Responsibility scores
+    results["overall_scores"]["responsibilities"]["average_score_all_answers"] = round(sum(resp_scores_all)/total_answers, 4) if total_answers else 0
+    results["overall_scores"]["responsibilities"]["average_score_matched_only"] = round(sum(resp_scores_matched)/len(resp_scores_matched), 4) if resp_scores_matched else 0
+    results["overall_scores"]["responsibilities"]["coverage_percentage"] = f"{round((resp_coverage_count / total_answers) * 100)}%" if total_answers else "0%"
 
     return results
 
