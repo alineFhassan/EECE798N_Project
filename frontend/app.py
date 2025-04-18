@@ -27,7 +27,7 @@ def login():
             return redirect(url_for('login'))
         
         try:
-                # verify credentials for login user
+            # verify credentials for login user
             auth_response = requests.post(f"{DATABASE_URL}/login", json={
                     'email': email,
                     'password': password,
@@ -70,9 +70,15 @@ def signup():
         date = request.form.get('dob')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-
+        
+        # confirm that password and confirm one are matched 
         if password != confirm_password:
             flash('Passwords do not match', 'error')
+            return redirect(url_for('signup'))
+        
+        # check that entry are not missing 
+        if not all([first_name, last_name, email, phone, date, password, confirm_password]):
+            flash('All fields are required', 'error')
             return redirect(url_for('signup'))
         
         try:
