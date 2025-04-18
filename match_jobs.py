@@ -141,8 +141,7 @@ def evaluate_multiple_jobs():
 
         return jsonify({
             "status": "success",
-            "best_match": best_job,
-            "evaluations": job_results
+            "best_match": best_job
         })
 
     except requests.exceptions.HTTPError as e:
