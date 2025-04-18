@@ -15,7 +15,7 @@ CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5004
 def index():
     return render_template('index.html')
 
-# Login & Signup@app.route('/login', methods=['GET', 'POST'])
+### Login ###
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
@@ -58,6 +58,8 @@ def login():
         
         return redirect(url_for('login')) 
     return render_template('login.html')
+
+### Signup ###
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -96,7 +98,7 @@ def signup():
     
     return render_template('signup.html')
 
-# Jobseeker Dashboard 
+### Upload CV ###
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
     # if 'user_id' not in session:
@@ -216,102 +218,80 @@ def jobseeker_profile():
         user=sample_user, 
         application=sample_application
     )
+
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
-    # try:
-    #     # Get all jobs from database
-    #     response = requests.get(f"{DATABASE_URL}/job")
-    #     if response.status_code != 200:
-    #         flash('Error fetching jobs', 'error')
-    #         return render_template('jobseeker_dashboard.html', jobs=[])
+    try:
+        # Get all jobs from database
+        response = requests.get(f"{DATABASE_URL}/get_job")
+        if response.status_code != 200:
+            flash('Error fetching jobs', 'error')
+            return render_template('jobseeker_dashboard.html', jobs=[])
         
-    #     jobs = response.json().get('jobs', [])
-        
-    #     # If user submits an application
-    #     if request.method == 'POST':
-    #         job_id = request.form.get('job_id')
-    #         if job_id:
-    #             # Here you would save the application to your database
-    #             # You might want to create a new table for applications
-    #             application_response = requests.post(
-    #                 f"{DATABASE_URL}/apply_job",
-    #                 json={
-    #                     'user_id': session['user_id'],
-    #                     'job_id': job_id,
-    #                     'status': 'applied'
-    #                 }
-    #             )
-                
-    #             if application_response.status_code == 201:
-    #                 flash('Application submitted successfully!', 'success')
-    #             else:
-    #                 flash('Error submitting application', 'error')
-                
-    #             return redirect(url_for('jobseeker_dashboard'))
-        
-    #     return render_template('jobseeker_dashboard.html', jobs=jobs)
-    
-    # except Exception as e:
-    #     flash(f'Error loading dashboard: {str(e)}', 'error')
-    #     return render_template('jobseeker_dashboard.html', jobs=[])
+        jobs = response.json().get('jobs', [])
 
-    jobs_data = {
-        "jobs": [
-            {
-                "id": 1,
-                "title": "Senior Python Developer",
-                "description": "Develop and maintain backend services using Python and Flask",
-                "company_id": 1,
-                "job_level": "Senior",
-                "years_experience": "5",
-                "responsibilities": [
-                    "Design and implement RESTful APIs",
-                    "Optimize application performance",
-                    "Mentor junior developers"
-                ],
-                "requirements": [
-                    "5+ years Python experience",
-                    "Experience with Flask/Django",
-                    "Knowledge of PostgreSQL"
-                ],
-                "created_at": "2023-05-15T10:30:00",
-                "company": {
-                    "id": 1,
-                    "full_name": "TechCorp Inc."
-                }
-            },
-            {
-                "id": 2,
-                "title": "Frontend Engineer",
-                "description": "Build responsive user interfaces with React",
-                "company_id": 2,
-                "job_level": "Mid-level",
-                "years_experience": "3",
-                "responsibilities": [
-                    "Develop new user-facing features",
-                    "Build reusable components",
-                    "Optimize for maximum performance"
-                ],
-                "requirements": [
-                    "3+ years JavaScript experience",
-                    "Proficient with React",
-                    "Experience with Redux"
-                ],
-                "created_at": "2023-05-10T09:15:00",
-                "company": {
-                    "id": 2,
-                    "full_name": "WebSolutions Ltd."
-                }
-            }
-        ]
-    }
+        # get name of the department based on department id
+        for job in jobs:
+            dept_id = job['dept_id']
+            dept_response = requests.get(f"{DATABASE_URL}/department/{dept_id}")
+            dept_response.raise_for_status()
+            department = dept_response.json()
+            job['department_name'] = department['department_name']
+
+        # If user apply for a Job 
+        if request.method == 'POST':
+            job_id = request.form.get('job_id')
+
+            if job_id:
+                # Get job details
+                job_response = requests.get(f"{DATABASE_URL}/get_job/{job_id}")
+                if job_response.status_code == 200:
+                    job_data = job_response.json().get('job', {})
+                    
+                # Get CV data
+                cv_response = requests.get(f"{DATABASE_URL}/get_cv/{session['user_id']}")
+                if cv_response.status_code == 200:
+                    cv_data = cv_response.json().get('cv_data', {})
+
+                # Match CV with job
+                match_response = requests.post(
+                    f"{CV_JOB_MATCHER_URL}/cv-job-match",
+                    json={
+                        'cv': cv_data,
+                        'job': job_data
+                    }
+                )
+
+                if match_response.status_code == 200:
+                    match_result = match_response.json().get('result', {})
+                
+                # Save application
+                application_response = requests.post(
+                    f"{DATABASE_URL}/apply_job",
+                    json={
+                        'user_id': session['user_id'],
+                        'job_id': job_id,
+                        'status': 'scheduling_interview',
+                        "result": match_result
+                    }
+                )
+                
+                if application_response.status_code == 201:
+                    flash('Application submitted successfully!', 'success')
+                else:
+                    flash('Error submitting application', 'error')
+                
+                return redirect(url_for('jobseeker_dashboard'))
+        
+        return render_template('jobseeker_dashboard.html', jobs=jobs)
     
-    # Pass just the jobs list to the template, not the whole dictionary
-    return render_template('jobseeker_dashboard.html', jobs=jobs_data["jobs"])
+    except Exception as e:
+        flash(f'Error loading dashboard: {str(e)}', 'error')
+        return render_template('jobseeker_dashboard.html', jobs=[])
 
 # company
 @app.route('/company_dashboard')
