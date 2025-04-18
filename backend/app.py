@@ -5,40 +5,6 @@ import json
 import requests
 import numpy as np
 
-HF_API_KEY = os.getenv('HUGGINGFACE_API_KEY')  # Get your free API key from https://huggingface.co/settings/tokens
-HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
-
-def get_embedding(text):
-    if not text.strip():
-        return np.zeros(384).tolist()
-    
-    headers = {
-        "Authorization": f"Bearer {HF_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "inputs": text,
-        "options": {"wait_for_model": True}
-    }
-    
-    try:
-        response = requests.post(
-            HF_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=30  # Increased timeout for free tier
-        )
-        
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"HF API Error: {response.status_code} - {response.text}")
-            return np.zeros(384).tolist()
-            
-    except Exception as e:
-        print(f"Embedding API failed: {str(e)}")
-        return np.zeros(384).tolist()
 
 app = Flask(__name__)
 
@@ -64,14 +30,16 @@ def get_db_connection():
 def signup():
     try:
         data = request.json
-        full_name = data.get('full_name')
-        username = data.get('username')
-        password = data.get('password')  # Remember to hash this before storing
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
         email = data.get('email')
-        user_type = data.get('user_type')
+        phone_number = data.get('phone_number')
+        date_of_birth = data.get('date')  # Frontend sends 'date' but schema expects 'date_of_birth'
+        password = data.get('password')
+        user_type = data.get('user_type', 'applicant')  # Default to 'applicant' if not provided
 
-        # Optionally, you can add validation here
-        if not all([full_name, username, password, email, user_type]):
+        # Validate required fields
+        if not all([first_name, last_name, email, phone_number, date_of_birth, password]):
             return jsonify({"status": "error", "message": "All fields are required."}), 400
 
         # Hash the password (use a secure hashing method)
@@ -81,10 +49,16 @@ def signup():
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Check if email already exists
+        cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({"status": "error", "message": "Email already registered."}), 409
+
+        # Insert the new user
         cursor.execute("""
-            INSERT INTO users (full_name, username, password, email, user_type)
-            VALUES (%s, %s, %s, %s, %s);
-        """, (full_name, username, password, email, user_type))  # Use hashed_password here
+            INSERT INTO users (first_name, last_name, email, password, date_of_birth, phone_number, user_type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s);
+        """, (first_name, last_name, email, password, date_of_birth, phone_number, user_type))  # Use hashed_password here
 
         conn.commit()
         cursor.close()
@@ -102,28 +76,54 @@ def login():
         data = request.json
         email = data.get('email')
         password = data.get('password')  # In production, compare hashed passwords
+        register_option = data.get('register_option')  # This is the user_type from the frontend
+
+        if not email or not password or not register_option:
+            return jsonify({"status": "error", "message": "All fields are required."}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT id, email, password, user_type FROM users 
-            WHERE email = %s AND password = %s;
-        """, (email, password))
+        # Check different tables based on register_option
+        if register_option == 'company':
+            # Check in departments table
+            cursor.execute("""
+                SELECT id, email, name FROM departments 
+                WHERE email = %s AND password = %s;
+            """, (email, password))
+            
+            user = cursor.fetchone()
+            
+            if user:
+                cursor.close()
+                conn.close()
+                return jsonify({
+                    "status": "success",
+                    "user_id": user[0],
+                    "register_option": "company"
+                }), 200
+        else:
+            # Check in users table
+            cursor.execute("""
+                SELECT id, email, user_type FROM users 
+                WHERE email = %s AND password = %s;
+            """, (email, password))
+            
+            user = cursor.fetchone()
+            
+            if user:
+                cursor.close()
+                conn.close()
+                return jsonify({
+                    "status": "success",
+                    "user_id": user[0],
+                    "register_option": user[2]  # Return user_type as register_option
+                }), 200
 
-        user = cursor.fetchone()
+        # If we get here, no user was found
         cursor.close()
         conn.close()
-
-        if user:
-            return jsonify({
-                "status": "success",
-                "user_id": user[0],
-                "email": user[1],
-                "user_type": user[3]
-            }), 200
-        else:
-            return jsonify({"status": "error", "message": "Invalid credentials"}), 401
+        return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -173,107 +173,64 @@ def add_application():
     try:
         data = request.json
         cv_data = data.get('cv_data', {})
+        user_id = data.get('user_id')
 
-        # Generate combined text for embedding
-        embedding_text = ""
-        
-        # 1. Skills
-        embedding_text = ""
+        if not user_id:
+            return jsonify({"status": "error", "message": "User ID is required."}), 400
 
-        # 1. Skills (Handle both strings and dictionaries)
-        if 'skills' in cv_data:
-            skills_list = []
-            for skill in cv_data['skills']:
-                if isinstance(skill, dict):
-                    skills_list.append(skill.get('name', ''))  # Extract 'name' if dictionary
-                else:
-                    skills_list.append(str(skill))
-            embedding_text += "Skills: " + ", ".join(skills_list) + "\n"
-
-        # 2. Projects (Handle both strings and dictionaries)
-        if 'projects' in cv_data:
-            project_list = []
-            for project in cv_data['projects']:
-                if isinstance(project, dict):
-                    # Concatenate all values if it's a dictionary
-                    proj_str = " ".join([str(v) for v in project.values()])
-                    project_list.append(proj_str)
-                else:
-                    project_list.append(str(project))
-            embedding_text += "Projects: " + " | ".join(project_list) + "\n"
-
-        # 3. Experience (Ensure all values are strings)
-        for exp in cv_data.get('experience', []):
-            exp_str = f"Role: {exp.get('role', '')} at {exp.get('company', '')}. "
-            exp_str += " ".join([str(resp) for resp in exp.get('responsibilities', [])])
-            embedding_text += exp_str + "\n"
-
-        # 4. Education (Handle GPA formatting)
-        for edu in cv_data.get('education', []):
-            edu_str = f"Education: {edu.get('degree', '')} from {edu.get('school', '')}"
-            if 'gpa' in edu and edu['gpa']:
-                edu_str += f" (GPA: {edu['gpa']})"
-            embedding_text += edu_str + "\n"
-
-        # 5. Certifications (Handle empty issuers)
-        for cert in cv_data.get('certifications', []):
-            issuer = cert.get('issuer', 'Unknown')
-            cert_str = f"Certification: {cert.get('name', '')}"
-            if issuer:
-                cert_str += f" by {issuer}"
-            embedding_text += cert_str + "\n"
-
-        # Generate embedding
-        embedding = get_embedding(embedding_text)
-
-
-        gender = cv_data.get('gender', 'Not Specified')
-        if isinstance(gender, list):
-            gender = ", ".join(gender)  # Converts ["male"] → "male"
-
-        # Ensure phone_number is string
-        phone_number = str(cv_data.get('phone_number', '000-000-0000'))[:15]
-        
-        # Extract other fields
-        name = cv_data.get('name', 'Default Name')
-        email = cv_data.get('email', 'default@example.com')
-        phone_number = cv_data.get('phone_number', '000-000-0000')
-        achievements = json.dumps(cv_data.get('certifications', []))
+        # Extract fields from cv_data
+        education = json.dumps(cv_data.get('education', []))
         skills = json.dumps(cv_data.get('skills', []))
         experience = json.dumps(cv_data.get('experience', []))
-        exp_years = sum(
+        projects = json.dumps(cv_data.get('projects', []))
+        certifications = json.dumps(cv_data.get('certifications', []))
+        
+        # Calculate total experience years
+        experience_years = sum(
             exp.get('years', 0) 
             for exp in cv_data.get('experience', []) 
             if isinstance(exp.get('years', 0), (int, float))
         )
-        education = json.dumps(cv_data.get('education', []))
-        address = json.dumps(cv_data.get('address', {}))
-        date_of_birth = cv_data.get('date_of_birth', '1970-01-01')
-        gender = cv_data.get('gender', 'Undefined')
-        user_id = data.get('user_id')
 
         # Database insertion
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
-            INSERT INTO application (
-                name, email, phone_number, achievements,
-                skills, experience, exp_years, education,
-                address, date_of_birth, gender, user_id, embedding
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-        """, (
-            name, email, phone_number, achievements,
-            skills, experience, exp_years, education,
-            address, date_of_birth, gender, user_id,
-            json.dumps(embedding)  # Serialize embedding array
-        ))
+        # Check if user already has a CV
+        cursor.execute("SELECT id FROM applicant_cv WHERE user_id = %s", (user_id,))
+        existing_cv = cursor.fetchone()
+
+        if existing_cv:
+            # Update existing CV
+            cursor.execute("""
+                UPDATE applicant_cv 
+                SET education = %s, skills = %s, experience = %s, 
+                    experience_years = %s, projects = %s, certifications = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s;
+            """, (
+                education, skills, experience, experience_years, 
+                projects, certifications, user_id
+            ))
+            message = "CV updated successfully."
+        else:
+            # Insert new CV
+            cursor.execute("""
+                INSERT INTO applicant_cv (
+                    user_id, education, skills, experience, 
+                    experience_years, projects, certifications
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s);
+            """, (
+                user_id, education, skills, experience, 
+                experience_years, projects, certifications
+            ))
+            message = "CV added successfully."
 
         conn.commit()
         cursor.close()
         conn.close()
 
-        return jsonify({"status": "success", "message": "Application added successfully."}), 201
+        return jsonify({"status": "success", "message": message}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     
