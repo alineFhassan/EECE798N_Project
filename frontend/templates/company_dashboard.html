@@ -1,122 +1,89 @@
 {% extends "base_company.html" %}
 
 {% block content %}
+<!-- Main Content -->
+<div class="main-content">
+  <header class="dashboard-header">
+    <button class="sidebar-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+    <h1 class="dashboard-title">Company Dashboard</h1>
+  </header>
 
-    <!-- Main Content -->
-    <div class="main-content">
-      <header class="dashboard-header">
-        <button class="sidebar-toggle" id="sidebarToggle">
-          <i class="fas fa-bars"></i>
-        </button>
-        <h1 class="dashboard-title">Company Dashboard</h1>
-      </header>
-
-      <main class="dashboard-main">
-        <div class="dashboard-stats">
-          <div class="card stat-card">
-            <div class="card-header">
-              <h3 class="card-title">Active Jobs</h3>
-            </div>
-            <div class="card-content">
-              <div class="stat-value">12</div>
-              <p class="stat-change">+3 from last month</p>
-            </div>
-          </div>
-
-          <div class="card stat-card">
-            <div class="card-header">
-              <h3 class="card-title">Total Applicants</h3>
-            </div>
-            <div class="card-content">
-              <div class="stat-value">87</div>
-              <p class="stat-change">+15 since last week</p>
-            </div>
-          </div>
-
-          <div class="card stat-card">
-            <div class="card-header">
-              <h3 class="card-title">Positions Filled</h3>
-            </div>
-            <div class="card-content">
-              <div class="stat-value">5</div>
-              <p class="stat-change">+2 from last month</p>
-            </div>
-          </div>
+  <main class="dashboard-main">
+    <div class="dashboard-stats">
+      <div class="card stat-card">
+        <div class="card-header">
+          <h3 class="card-title">Active Jobs</h3>
         </div>
-
-        <!-- Recent Job Postings -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Recent Job Postings</h3>
-          </div>
-          <div class="card-content">
-            <div class="job-listings">
-              <div class="job-card">
-                <div class="job-header">
-                  <div class="job-title-container">
-                    <h3 class="job-title">Senior Frontend Developer</h3>
-                    <p class="job-company">Posted 2 days ago</p>
-                  </div>
-                  <span class="job-category Development">Development</span>
-                </div>
-                <div class="job-details">
-                  <span class="job-detail"><i class="fas fa-layer-group"></i> Senior Level</span>
-                  <span class="job-detail"><i class="fas fa-clock"></i> 3-5 years experience</span>
-                  <span class="job-detail"><i class="fas fa-map-marker-alt"></i> Remote</span>
-                  <span class="job-detail"><i class="fas fa-user-friends"></i> 15 applicants</span>
-                </div>
-                <div class="job-actions">
-                  <button class="btn btn-outline">View Applicants</button>
-                  <button class="btn btn-outline">Edit</button>
-                </div>
-              </div>
-
-              <div class="job-card">
-                <div class="job-header">
-                  <div class="job-title-container">
-                    <h3 class="job-title">UX/UI Designer</h3>
-                    <p class="job-company">Posted 5 days ago</p>
-                  </div>
-                  <span class="job-category Design">Design</span>
-                </div>
-                <div class="job-details">
-                  <span class="job-detail"><i class="fas fa-layer-group"></i> Mid Level</span>
-                  <span class="job-detail"><i class="fas fa-clock"></i> 2-4 years experience</span>
-                  <span class="job-detail"><i class="fas fa-map-marker-alt"></i> San Francisco, CA</span>
-                  <span class="job-detail"><i class="fas fa-user-friends"></i> 8 applicants</span>
-                </div>
-                <div class="job-actions">
-                  <button class="btn btn-outline">View Applicants</button>
-                  <button class="btn btn-outline">Edit</button>
-                </div>
-              </div>
-
-              <div class="job-card">
-                <div class="job-header">
-                  <div class="job-title-container">
-                    <h3 class="job-title">Marketing Manager</h3>
-                    <p class="job-company">Posted 1 week ago</p>
-                  </div>
-                  <span class="job-category Marketing">Marketing</span>
-                </div>
-                <div class="job-details">
-                  <span class="job-detail"><i class="fas fa-layer-group"></i> Senior Level</span>
-                  <span class="job-detail"><i class="fas fa-clock"></i> 5+ years experience</span>
-                  <span class="job-detail"><i class="fas fa-map-marker-alt"></i> New York, NY</span>
-                  <span class="job-detail"><i class="fas fa-user-friends"></i> 12 applicants</span>
-                </div>
-                <div class="job-actions">
-                  <button class="btn btn-outline">View Applicants</button>
-                  <button class="btn btn-outline">Edit</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="view-all-container">
-              <a href="manage-jobs.html" class="btn btn-primary">View All Jobs</a>
-            </div>
-          </div>
+        <div class="card-content">
+          <div class="stat-value">{{ active_jobs }}</div>
+          <p class="stat-change">Your currently posted jobs</p>
         </div>
-      </main>
+      </div>
+
+      <div class="card stat-card">
+        <div class="card-header">
+          <h3 class="card-title">Total Applicants</h3>
+        </div>
+        <div class="card-content">
+          <div class="stat-value">{{ total_applicants }}</div>
+          <p class="stat-change">Across all your jobs</p>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="card-header">
+          <h3 class="card-title">Positions Filled</h3>
+        </div>
+        <div class="card-content">
+          <div class="stat-value">0</div>
+          <p class="stat-change">Track your hiring progress</p>
+        </div>
+      </div>
     </div>
-    {% endblock %}
+
+    <!-- Recent Job Postings -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Your Recent Job Postings</h3>
+      </div>
+      <div class="card-content">
+        <div class="job-listings">
+          {% for job in jobs %}
+          <div class="job-card">
+            <div class="job-header">
+              <div class="job-title-container">
+                <h3 class="job-title">{{ job.title }}</h3>
+                <p class="job-company">Posted on {{ job.created_at|format_date }}</p>
+              </div>
+              <span class="job-category {{ job.job_level|replace(' ', '') }}">{{ job.job_level }}</span>
+            </div>
+            <div class="job-details">
+              <span class="job-detail"><i class="fas fa-layer-group"></i> {{ job.job_level }}</span>
+              <span class="job-detail"><i class="fas fa-clock"></i> {{ job.years_experience }} years experience</span>
+              <span class="job-detail"><i class="fas fa-user-friends"></i> {{ job.applicant_count }} applicants</span>
+            </div>
+            <div class="job-actions">
+              <a href="{{ url_for('job_applicants', job_id=job.id) }}" class="btn btn-outline">View Applicants</a>
+              <a href="{{ url_for('edit_job', job_id=job.id) }}" class="btn btn-outline">Edit</a>
+            </div>
+          </div>
+          {% else %}
+          <div class="no-jobs">
+            <p>You haven't posted any jobs yet.</p>
+            <a href="{{ url_for('post_job') }}" class="btn btn-primary">Post Your First Job</a>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if jobs|length > 0 %}
+        <div class="view-all-container">
+          <a href="{{ url_for('post_job') }}" class="btn btn-primary">View All Jobs</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

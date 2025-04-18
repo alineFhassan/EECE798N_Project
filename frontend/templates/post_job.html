@@ -29,12 +29,19 @@
           </div>
 
           <div class="form-group">
+            <label for="jobDescription" class="form-label">Job Description *</label>
+            <textarea id="jobDescription" name="jobDescription" class="form-input" rows="5" required></textarea>
+          </div>
+
+          <div class="form-group">
             <label for="jobLevel" class="form-label">Job Level *</label>
             <select id="jobLevel" name="jobLevel" class="form-input" required>
               <option value="Entry Level">Entry Level</option>
               <option value="Junior">Junior</option>
               <option value="Mid Level">Mid Level</option>
               <option value="Senior">Senior</option>
+              <option value="Lead">Lead</option>
+              <option value="Manager">Manager</option>
             </select>
           </div>
 
@@ -45,16 +52,99 @@
               <option value="1-2 years">1-2 years</option>
               <option value="2-3 years">2-3 years</option>
               <option value="3-5 years">3-5 years</option>
+              <option value="5+ years">5+ years</option>
             </select>
           </div>
 
+          <div class="form-group">
+            <label class="form-label">Responsibilities *</label>
+            <div id="responsibilities-container">
+              <div class="responsibility-input">
+                <input type="text" name="responsibilities" class="form-input" required>
+                <button type="button" class="btn btn-sm btn-outline remove-responsibility">Remove</button>
+              </div>
+            </div>
+            <button type="button" id="add-responsibility" class="btn btn-sm btn-outline">
+              <i class="fas fa-plus"></i> Add Responsibility
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Requirements *</label>
+            <div id="requirements-container">
+              <div class="requirement-input">
+                <input type="text" name="requirements" class="form-input" required>
+                <button type="button" class="btn btn-sm btn-outline remove-requirement">Remove</button>
+              </div>
+            </div>
+            <button type="button" id="add-requirement" class="btn btn-sm btn-outline">
+              <i class="fas fa-plus"></i> Add Requirement
+            </button>
+          </div>
 
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Generate & Post Job</button>
+            <button type="submit" class="btn btn-primary">Post Job</button>
+            <a href="{{ url_for('company_dashboard') }}" class="btn btn-outline">Cancel</a>
           </div>
         </form>
       </div>
     </div>
   </main>
 </div>
+
+<script>
+// Add dynamic fields for responsibilities and requirements
+document.addEventListener('DOMContentLoaded', function() {
+  // Responsibilities
+  document.getElementById('add-responsibility').addEventListener('click', function() {
+    const container = document.getElementById('responsibilities-container');
+    const div = document.createElement('div');
+    div.className = 'responsibility-input';
+    div.innerHTML = `
+      <input type="text" name="responsibilities" class="form-input" required>
+      <button type="button" class="btn btn-sm btn-outline remove-responsibility">Remove</button>
+    `;
+    container.appendChild(div);
+  });
+
+  // Requirements
+  document.getElementById('add-requirement').addEventListener('click', function() {
+    const container = document.getElementById('requirements-container');
+    const div = document.createElement('div');
+    div.className = 'requirement-input';
+    div.innerHTML = `
+      <input type="text" name="requirements" class="form-input" required>
+      <button type="button" class="btn btn-sm btn-outline remove-requirement">Remove</button>
+    `;
+    container.appendChild(div);
+  });
+
+  // Event delegation for remove buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-responsibility')) {
+      e.target.parentElement.remove();
+    }
+    if (e.target.classList.contains('remove-requirement')) {
+      e.target.parentElement.remove();
+    }
+  });
+});
+</script>
+
+<style>
+.responsibility-input, .requirement-input {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.responsibility-input input, .requirement-input input {
+  flex-grow: 1;
+}
+
+.remove-responsibility, .remove-requirement {
+  white-space: nowrap;
+}
+</style>
 {% endblock %}
