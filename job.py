@@ -23,7 +23,7 @@ def generate_job_description():
 
         logger.debug(f"Received request data: {data}")
 
-        required_fields = ['job_title', 'job_level', 'years_experience']
+        required_fields = ['job_title', 'job_level', 'years_experience', 'additional_info' ]
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), 400
 
@@ -33,7 +33,7 @@ def generate_job_description():
         - Job Title: {data['job_title']}
         - Job Level: {data['job_level']}
         - Years of Experience: {data['years_experience']}
-        - Additional Details: {data.get('additional_info', '')}
+        - Additional Details: {data['additional_info']}
 
         The JSON structure must include:
         {{
