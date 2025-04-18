@@ -15,42 +15,49 @@ CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5004
 def index():
     return render_template('index.html')
 
-# Login & Signup
-@app.route('/login', methods=['GET', 'POST'])
+# Login & Signup@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        register_option = request.form.get('user_type')
+        
+        if not email or not password or not register_option:
+            flash('Please fill in all fields', 'error')
+            return redirect(url_for('login'))
         
         try:
-            # Call database service to verify credentials
-            response = requests.post(f"{DATABASE_URL}/login", json={
-                'email': email,
-                'password': password
-            })
-            
-            if response.status_code == 200:
-                data = response.json()
-                session['user_id'] = data.get('user_id')
-                session['user_type'] = data.get('user_type')
-                session['email'] = email
+                # verify credentials for login user
+            auth_response = requests.post(f"{DATABASE_URL}/login", json={
+                    'email': email,
+                    'password': password,
+                    'register_option': register_option
+                })
                 
-                # Redirect based on user type
-                if data.get('user_type') == 'hr':
-                    return redirect(url_for('hr_dashboard'))
-                elif data.get('user_type') == 'company':
-                    return redirect(url_for('company_dashboard'))
-                else:
-                    return redirect(url_for('jobseeker_dashboard'))
+            if auth_response.status_code == 200:
+                    data = auth_response.json()
+                    session['user_id'] = data.get('user_id')
+                    session['register_option'] = data.get('register_option')
+                    session['email'] = email
+                    
+                    # Redirect based on user type
+                    if data.get('register_option') == 'company' and data.get('user_id') == 1 :
+                        return redirect(url_for('hr_dashboard'))
+                    elif data.get('register_option') == 'company':
+                        return redirect(url_for('company_dashboard'))
+                    else:
+                        return redirect(url_for('jobseeker_dashboard'))
             else:
-                flash('Invalid email or password', 'error')
+                    flash('Invalid email or password', 'error')
+                    
+        except requests.exceptions.RequestException as e:
+            flash('Connection error: Please try again later', 'error')
         except Exception as e:
-            flash('Connection error: ' + str(e), 'error')
+            flash('An unexpected error occurred', 'error')
+            print(f"Login error: {str(e)}")
         
-        return redirect(url_for('login'))
-    
+        return redirect(url_for('login')) 
     return render_template('login.html')
-
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
