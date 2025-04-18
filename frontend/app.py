@@ -98,7 +98,7 @@ def signup():
     
     return render_template('signup.html')
 
-### Upload CV ###
+# Upload CV
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
     # if 'user_id' not in session:
@@ -219,6 +219,7 @@ def jobseeker_profile():
         application=sample_application
     )
 
+### Jobseeker dashboard ###
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
     if 'user_id' not in session:
