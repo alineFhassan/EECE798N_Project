@@ -6,51 +6,8 @@ app = Flask(__name__)
 
 # Configuration
 MISTRAL_API_KEY = ""
-DATABASE_API_URL = "http://localhost:5001/save-cv" 
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 MODEL_NAME = "ft:open-mistral-7b:c099368a:20250414:4d9d311e"
-
-def fetch_cv_data(candidate_id):
-    """Get CV data from database"""
-    try:
-        response = requests.get(
-            f"{DATABASE_API_URL}/cvs/{candidate_id}",
-            timeout=5
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Failed to fetch CV: {str(e)}")
-
-def fetch_job_data(job_id):
-    """Get job data from database"""
-    try:
-        response = requests.get(
-            f"{DATABASE_API_URL}/jobs/{job_id}",
-            timeout=5
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Failed to fetch job: {str(e)}")
-
-def save_questions(questions, candidate_id, job_id):
-    """Save generated questions to database"""
-    try:
-        payload = {
-            "candidate_id": candidate_id,
-            "job_id": job_id,
-            "questions": questions
-        }
-        response = requests.post(
-            f"{DATABASE_API_URL}/interview-questions",
-            json=payload,
-            timeout=5
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Failed to save questions: {str(e)}")
 
 def generate_interview_questions(cv_data, job_data):
     """Generate questions using Mistral"""
@@ -62,7 +19,7 @@ def generate_interview_questions(cv_data, job_data):
         "education": {cv_data.get('education', [])},
         "experience": {cv_data.get('experience', [])},
         "skills": {cv_data.get('skills', [])},
-        "achievements": {cv_data.get('achievements', [])}
+        "projects": {cv_data.get('projects', [])}
     }}
     
     and Job Posting:
@@ -92,24 +49,16 @@ def handle_question_generation():
     try:
         # Validate input
         data = request.json
-        required_fields = ['candidate_id', 'job_id']
+        required_fields = ['cv', 'job']
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing candidate_id or job_id"}), 400
-
-        # Step 1: Fetch data from database
-        cv_data = fetch_cv_data(data['candidate_id'])
-        job_data = fetch_job_data(data['job_id'])
         
-        # Step 2: Generate questions
-        questions = generate_interview_questions(cv_data, job_data)
-        
-        # Step 3: Save to database
-        save_response = save_questions(questions, data['candidate_id'], data['job_id'])
+        # Generate questions
+        questions = generate_interview_questions(data['cv'], data['job'])
         
         return jsonify({
             "status": "success",
-            "questions": questions,
-            "database_response": save_response
+            "questions": questions
         })
 
     except Exception as e:
