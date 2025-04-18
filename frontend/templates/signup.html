@@ -24,10 +24,17 @@
         
         <div class="user-details">
           <div class="input-box">
-            <span class="details">Full Name</span>
-            <input type="text" name="full_name" placeholder="Enter your name" required>
+            <span class="details">First Name</span>
+            <input type="text" name="first_name" placeholder="Enter your first name" required>
           </div>
-          
+          <div class="input-box">
+            <span class="details">Last Name</span>
+            <input type="text" name="last_name" placeholder="Enter your name" required>
+          </div>
+          <div class="input-box">
+            <span class="details">Date of Birth (DD/MM/YYYY)</span>
+            <input type="date" name="dob" placeholder="DD/MM/YYYY" required>
+        </div>
           <div class="input-box">
             <span class="details">Email</span>
             <input type="email" name="email" placeholder="Enter your email" required>
@@ -46,16 +53,6 @@
           <div class="input-box">
             <span class="details">Confirm Password</span>
             <input type="password" name="confirm_password" placeholder="Confirm your password" required>
-          </div>
-          
-          <div class="input-box">
-            <span class="details">User Type</span>
-            <select name="user_type" required>
-              <option value="">Select user type</option>
-              <option value="jobseeker">Job Seeker</option>
-              <option value="company">Company</option>
-              <option value="hr">HR</option>
-            </select>
           </div>
         </div>
         

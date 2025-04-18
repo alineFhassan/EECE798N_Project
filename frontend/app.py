@@ -7,6 +7,7 @@ app = Flask(__name__)
 app.secret_key = 'dev-key-123-abc!@#'
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5003')
+CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5004')
 
 
 # Main Dashboard
@@ -53,13 +54,14 @@ def login():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        full_name = request.form.get('full_name')
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
         email = request.form.get('email')
         phone = request.form.get('phone_number')
+        date = request.form.get('dob')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-        user_type = request.form.get('user_type')  # Add this field to your form
-        
+
         if password != confirm_password:
             flash('Passwords do not match', 'error')
             return redirect(url_for('signup'))
@@ -67,11 +69,12 @@ def signup():
         try:
             # Call database service to create user
             response = requests.post(f"{DATABASE_URL}/signup", json={
-                'full_name': full_name,
+                'first_name': first_name,
+                'last_name': last_name,
                 'email': email,
+                'date':date,
                 'phone_number': phone,
-                'password': password,
-                'user_type': user_type
+                'password': password
             })
             
             if response.status_code == 201:
@@ -388,6 +391,7 @@ def post_job():
     # if request.method == 'POST':
     #     try:
     #         # Get form data
+              # job_title / job_ level / yeras_experience / addational_json
     #         job_data = {
     #             'title': request.form.get('jobTitle'),
     #             'description': request.form.get('jobDescription'),
@@ -397,6 +401,7 @@ def post_job():
     #             'responsibilities': request.form.getlist('responsibilities'),
     #             'requirements': request.form.getlist('requirements')
     #         }
+            
 
     #         # Send to database service
     #         response = requests.post(
@@ -731,6 +736,104 @@ def view_application(app_id):
     return render_template('view_application.html', 
                          job=job, 
                          applicant=applicant)
- 
+
+# CV-Job Matching 
+# GET /jobs/{job_id} - Get job details
+# GET /get_unmatched_applications?job_id=X - Returns only applicants without existing matches
+# POST /save_match_result - Saves matching results
+@app.route('/calculate_matches/<int:job_id>', methods=['POST'])
+def calculate_matches(job_id):
+    # Authentication check (uncomment in production)
+    # if 'user_id' not in session or session.get('user_type') != 'hr':
+    #     flash('Please login as HR first', 'error')
+    #     return redirect(url_for('login'))
+
+    try:
+        # 1. Get job details
+        job_response = requests.get(f"{DATABASE_URL}/jobs/{job_id}")
+        if job_response.status_code != 200:
+            flash('Job not found', 'error')
+            return redirect(url_for('hr_dashboard'))
+        job = job_response.json().get('job')
+
+        # 2. Get all applicants for this job who haven't been matched yet
+        applications_response = requests.get(
+            f"{DATABASE_URL}/get_unmatched_applications?job_id={job_id}"
+        )
+        
+        if applications_response.status_code != 200:
+            flash('Error fetching applications', 'error')
+            return redirect(url_for('hr_dashboard'))
+            
+        applicants = applications_response.json().get('applications', [])
+        
+        if not applicants:
+            flash('No new applicants to process', 'info')
+            return redirect(url_for('view_job_matches', job_id=job_id))
+
+        # 3. Process matching for each unmatched applicant
+        processed = 0
+        for applicant in applicants:
+            try:
+                # Skip if already has match data (safety check)
+                if applicant.get('match_data'):
+                    continue
+
+                # Prepare matching data
+                match_payload = {
+                    'cv': {
+                        'skills': applicant.get('skills', []),
+                        'education': applicant.get('education', ''),
+                        'responsibilities': applicant.get('responsibilities', []),
+                        'years_experience': applicant.get('exp_years', 0),
+                        # Add other CV fields you extract
+                    },
+                    'job': {
+                        'title': job['title'],
+                        'requirements': job['requirements'],
+                        'responsibilities': job['responsibilities'],
+                        'required_experience_years': int(job['years_experience'].split('+')[0]) 
+                        # Extracts number from "5+ years" format
+                    }
+                }
+
+                # Call matching service
+                match_response = requests.post(
+                    f"{CV_JOB_MATCHER_URL}/cv-job-match",
+                    json=match_payload,
+                    timeout=10  # 10 seconds timeout
+                )
+                match_response.raise_for_status()
+
+                # Save results to database
+                save_response = requests.post(
+                    f"{DATABASE_URL}/save_match_result",
+                    json={
+                        'application_id': applicant['id'],
+                        'job_id': job_id,
+                        'match_data': match_response.json().get('result')
+                    }
+                )
+                save_response.raise_for_status()
+
+                processed += 1
+
+            except requests.exceptions.RequestException as e:
+                # Log error but continue with next applicant
+                app.logger.error(f"Error processing applicant {applicant['id']}: {str(e)}")
+                continue
+
+        # 4. Show results
+        if processed > 0:
+            flash(f'Successfully processed matches for {processed} applicants', 'success')
+        else:
+            flash('No new applicants were processed', 'info')
+
+        return redirect(url_for('view_job_matches', job_id=job_id))
+
+    except Exception as e:
+        flash(f'Error in matching process: {str(e)}', 'error')
+        return redirect(url_for('hr_dashboard'))
+    
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 
