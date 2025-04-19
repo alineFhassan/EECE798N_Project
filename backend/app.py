@@ -168,7 +168,7 @@ def get_users():
  
     
 
-@app.route('/add_application', methods=['POST'])
+@app.route('/add_applicant', methods=['POST'])
 def add_application():
     try:
         data = request.json
