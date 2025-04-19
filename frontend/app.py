@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import requests
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 # To be Changes 
@@ -304,32 +305,47 @@ def jobseeker_dashboard():
 ### company dashboard ###
 @app.route('/company_dashboard')
 def company_dashboard():
-    # if 'user_id' not in session or session.get('user_type') != 'company':
-    #     flash('Please login as a company first', 'error')
+    # if 'user_id' not in session:
+    #     flash('Please login', 'error')
     #     return redirect(url_for('login'))
     
-    # try:
-    #     # Get jobs posted by this company
-    #     company_id = session['user_id']
-    #     response = requests.get(f"{DATABASE_URL}/job?company_id={company_id}")
+    try:
+        # Get jobs posted by department
+        dept_id = session['user_id']
+        job_offere_response = requests.get(f"{DATABASE_URL}/get_job/{dept_id}")
         
-    #     if response.status_code != 200:
-    #         flash('Error fetching your company jobs', 'error')
-    #         return render_template('company_dashboard.html', jobs=[])
+        if job_offere_response.status_code != 200:
+            flash('Error fetching your department jobs', 'error')
+            return render_template('company_dashboard.html', jobs=[])
         
-    #     jobs = response.json().get('jobs', [])
-        
-    #     # Count stats for the dashboard
-    #     active_jobs = len(jobs)
-    #     total_applicants = sum(job.get('applicant_count', 0) for job in jobs)
-        
-    #     return render_template('company_dashboard.html', 
-    #                         jobs=jobs[:3],  # Show only 3 most recent
-    #                         active_jobs=active_jobs,
-    #                         total_applicants=total_applicants)
-    
-    # except Exception as e:
-    #     flash(f'Error loading dashboard: {str(e)}', 'error')
+        jobs = job_offere_response.json().get('jobs', [])
+
+        job_ids = [job['ID'] for job in jobs]
+
+        # 2. Get all applicants who applied to these jobs
+        applicants = []
+        if job_ids:
+            applicants_response = requests.post(f"{DATABASE_URL}/get_all_applicants/{job_ids}")
+            
+            if applicants_response.status_code == 200:
+                applicants = applicants_response.json().get('applicants', [])
+
+        # 3. Prepare statistics
+        stats = {
+            'total_jobs': len(jobs),
+            'open_jobs': sum(1 for job in jobs if job['status'] == 'open'),
+            'closed_jobs': sum(1 for job in jobs if job['status'] == 'closed'),
+            'total_applicants': len(applicants),         
+        }
+
+        return render_template(
+            'department_dashboard.html',
+            jobs=jobs,
+            stats=stats
+        )
+
+    except Exception as e:
+       flash(f'Error loading dashboard: {str(e)}', 'error')
     jobs=  [
         {
         "id": 42,
@@ -362,13 +378,69 @@ def company_dashboard():
             "name": "Tech Innovations Inc."
         },
         "applicant_count": 12
+        },
+         {
+        "id": 43,
+        "title": "Frontend Engineer",
+        "description": "Looking for React specialist...",
+        "company_id": 15,
+        "job_level": "Mid Level",
+        "years_experience": "3-5 years",
+        "responsibilities": ["Build UIs", "Optimize performance"],
+        "requirements": ["3+ React", "TypeScript"],
+        "created_at": "2023-11-10T09:15:33.456789",
+        "company": {
+            "id": 15,
+            "name": "Tech Innovations Inc."
+        },
+        "applicant_count": 12
+        },
+         {
+        "id": 43,
+        "title": "Frontend Engineer",
+        "description": "Looking for React specialist...",
+        "company_id": 15,
+        "job_level": "Mid Level",
+        "years_experience": "3-5 years",
+        "responsibilities": ["Build UIs", "Optimize performance"],
+        "requirements": ["3+ React", "TypeScript"],
+        "created_at": "2023-11-10T09:15:33.456789",
+        "company": {
+            "id": 15,
+            "name": "Tech Innovations Inc."
+        },
+        "applicant_count": 12
         }
     ]
+    stats = {
+            'total_jobs': 2,
+            'open_jobs': 2,
+            'closed_jobs': 2,
+            'total_applicants': 2,     
+        }
     
         # return render_template('company_dashboard.html', jobs=[])
-    return render_template('company_dashboard.html', jobs=jobs)
-from datetime import datetime
+    return render_template('company_dashboard.html',jobs=jobs, stats=stats)
 
+### view all offered Job ###
+@app.route('/view_all_jobs')
+def view_all_jobs():
+    try:
+        dept_id = session['user_id']
+        job_offere_response = requests.get(f"{DATABASE_URL}/get_job/{dept_id}")
+        
+        if job_offere_response.status_code != 200:
+            flash('Error fetching jobs', 'error')
+            return redirect(url_for('company_dashboard'))
+        
+        jobs = job_offere_response.json().get('jobs', [])
+        
+        return render_template('all_jobs.html', jobs=jobs)
+        
+    except Exception as e:
+        flash(f'Error loading jobs: {str(e)}', 'error')
+        return redirect(url_for('company_dashboard'))
+    
 @app.template_filter('format_date')
 def format_date_filter(date_str):
     try:
@@ -377,7 +449,7 @@ def format_date_filter(date_str):
     except:
         return date_str
     
-@app.route('/post_job', methods=['POST'])
+@app.route('/post_job', methods=['POST','GET'])
 def post_job():
     # if 'user_id' not in session:
     #     flash('Please login first', 'error')
@@ -440,86 +512,6 @@ def post_job():
         
     return render_template('post_job.html')
 
-@app.route('/edit_job/<int:job_id>', methods=['GET', 'POST'])
-def edit_job(job_id):
-    # if 'user_id' not in session or session.get('user_type') != 'company':
-    #     flash('Please login as a company first', 'error')
-    #     return redirect(url_for('login'))
-    
-    # try:
-    #     if request.method == 'GET':
-    #         # Fetch existing job data
-    #         response = requests.get(f"{DATABASE_URL}/jobs/{job_id}")
-            
-    #         if response.status_code != 200:
-    #             flash('Job not found', 'error')
-    #             return redirect(url_for('company_dashboard'))
-            
-    #         job = response.json().get('job')
-            
-    #         # Verify this company owns the job
-    #         if job['company_id'] != session['user_id']:
-    #             flash('You can only edit your own jobs', 'error')
-    #             return redirect(url_for('company_dashboard'))
-            
-    #         return render_template('edit_job.html', job=job)
-        
-    #     elif request.method == 'POST':
-    #         # Process form submission
-    #         job_data = {
-    #             'title': request.form.get('jobTitle'),
-    #             'description': request.form.get('jobDescription'),
-    #             'job_level': request.form.get('jobLevel'),
-    #             'years_experience': request.form.get('yearsExperience'),
-    #             'responsibilities': request.form.getlist('responsibilities'),
-    #             'requirements': request.form.getlist('requirements')
-    #         }
-            
-    #         # Send update to database
-    #         response = requests.put(
-    #             f"{DATABASE_URL}/jobs/{job_id}",
-    #             json=job_data
-    #         )
-            
-    #         if response.status_code == 200:
-    #             flash('Job updated successfully!', 'success')
-    #             return redirect(url_for('company_dashboard'))
-    #         else:
-    #             flash('Error updating job: ' + response.json().get('message', ''), 'error')
-    #             return redirect(url_for('edit_job', job_id=job_id))
-    
-    # except Exception as e:
-    #     flash(f'Error: {str(e)}', 'error')
-    #     return redirect(url_for('company_dashboard'))
-
-    # to test
-      # Test job data - properly structured
-    test_job = {
-        "id": job_id,  # Use the provided job_id
-        "title": "Senior Python Developer",
-        "description": "We're looking for an experienced Python developer...",
-        "company_id": 15,
-        "job_level": "Senior",
-        "years_experience": "5+ years",
-        "responsibilities": [
-            "Design and implement backend services",
-            "Mentor junior developers",
-            "Write clean, maintainable code"
-        ],
-        "requirements": [
-            "5+ years of Python experience",
-            "Strong knowledge of Flask/Django",
-            "Experience with PostgreSQL"
-        ],
-        "created_at": "2023-11-15T14:30:22.123456",
-        "company": {
-            "id": 15,
-            "name": "Tech Innovations Inc."
-        },
-        "applicant_count": 8
-    }
-    
-    return render_template('edit_job.html', job=test_job)
 
 
 @app.route('/job_applicants/<int:job_id>')
