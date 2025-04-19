@@ -28,10 +28,6 @@
             <input type="text" id="jobTitle" name="jobTitle" class="form-input" required>
           </div>
 
-          <div class="form-group">
-            <label for="jobDescription" class="form-label">Job Description *</label>
-            <textarea id="jobDescription" name="jobDescription" class="form-input" rows="5" required></textarea>
-          </div>
 
           <div class="form-group">
             <label for="jobLevel" class="form-label">Job Level *</label>
@@ -48,39 +44,18 @@
           <div class="form-group">
             <label for="yearsExperience" class="form-label">Years of Experience *</label>
             <select id="yearsExperience" name="yearsExperience" class="form-input" required>
-              <option value="0-1 years">0-1 years</option>
-              <option value="1-2 years">1-2 years</option>
-              <option value="2-3 years">2-3 years</option>
-              <option value="3-5 years">3-5 years</option>
-              <option value="5+ years">5+ years</option>
+              <option value="0-1 years">0-2 years</option>
+              <option value="1-2 years">2-5 years</option>
+              <option value="2-3 years">5-10 years</option>
+              <option value="3-5 years">10+ years</option>
+            
             </select>
           </div>
-
           <div class="form-group">
-            <label class="form-label">Responsibilities *</label>
-            <div id="responsibilities-container">
-              <div class="responsibility-input">
-                <input type="text" name="responsibilities" class="form-input" required>
-                <button type="button" class="btn btn-sm btn-outline remove-responsibility">Remove</button>
-              </div>
-            </div>
-            <button type="button" id="add-responsibility" class="btn btn-sm btn-outline">
-              <i class="fas fa-plus"></i> Add Responsibility
-            </button>
+            <label for="jobDescription" class="form-label">Additional Information*</label>
+            <textarea id="jobDescription" name="jobDescription" class="form-input" rows="5" required></textarea>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Requirements *</label>
-            <div id="requirements-container">
-              <div class="requirement-input">
-                <input type="text" name="requirements" class="form-input" required>
-                <button type="button" class="btn btn-sm btn-outline remove-requirement">Remove</button>
-              </div>
-            </div>
-            <button type="button" id="add-requirement" class="btn btn-sm btn-outline">
-              <i class="fas fa-plus"></i> Add Requirement
-            </button>
-          </div>
 
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Post Job</button>

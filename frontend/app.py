@@ -6,8 +6,9 @@ app = Flask(__name__)
 # To be Changes 
 app.secret_key = 'dev-key-123-abc!@#'
 
-DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5003')
-CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5004')
+DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5002')
+CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5003')
+JOB_GENERATOR_URL = os.getenv('JOB_GENERATOR_URL', 'http://job-generator:5004')
 
 
 # Main Dashboard
@@ -106,8 +107,9 @@ def signup():
     
     return render_template('signup.html')
 
-### Upload CV ###
+### jobseeker required view function ###
 
+### Upload CV ###
 # Configuration of allowed file
 ALLOWED_EXTENSIONS = {'pdf'} # alowed extension
 MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2MB limit
@@ -207,9 +209,9 @@ def jobseeker_profile():
 ### Jobseeker dashboard ###
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
     
     try:
         # Get all jobs from database
@@ -298,7 +300,9 @@ def jobseeker_dashboard():
         flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('jobseeker_dashboard.html', jobs=[])
 
-# company
+### company required view functions ###
+
+### company dashboard ###
 @app.route('/company_dashboard')
 def company_dashboard():
     # if 'user_id' not in session or session.get('user_type') != 'company':
@@ -374,42 +378,66 @@ def format_date_filter(date_str):
     except:
         return date_str
     
-@app.route('/post_job', methods=['GET', 'POST'])
+@app.route('/post_job', methods=['POST'])
 def post_job():
-    # if 'user_id' not in session or session.get('user_type') != 'company':
-    #     flash('Please login as a company first', 'error')
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
     #     return redirect(url_for('login'))
     
-    # if request.method == 'POST':
-    #     try:
-    #         # Get form data
-              # job_title / job_ level / yeras_experience / addational_json
-    #         job_data = {
-    #             'title': request.form.get('jobTitle'),
-    #             'description': request.form.get('jobDescription'),
-    #             'company_id': session['user_id'],
-    #             'job_level': request.form.get('jobLevel'),
-    #             'years_experience': request.form.get('yearsExperience'),
-    #             'responsibilities': request.form.getlist('responsibilities'),
-    #             'requirements': request.form.getlist('requirements')
-    #         }
-            
+    if request.method == 'POST':
+        try:
+            # Validate required fields first
+            required_fields = ['jobTitle', 'jobLevel', 'yearsExperience']
+            if not all(request.form.get(field) for field in required_fields):
+                flash('Please fill all required fields', 'error')
+                return redirect(url_for('post_job'))
+                
+            job_data = {
+                'job_title': request.form.get('jobTitle'),   
+                'department_id': session['user_id'],
+                'job_level': request.form.get('jobLevel'),
+                'years_experience': request.form.get('yearsExperience'),
+                'additional_info': request.form.get('jobDescription'),     
+              
+            }
+              
+        except KeyError as e:
+            flash(f'Missing key in session or form data: {str(e)}', 'error')
+            return redirect(url_for('post_job'))
+        except Exception as e:
+            flash(f'An unexpected error occurred: {str(e)}', 'error')
+            app.logger.error(f"Error creating job posting: {str(e)}")
+            return redirect(url_for('post_job'))
 
-    #         # Send to database service
-    #         response = requests.post(
-    #             f"{DATABASE_URL}/job",
-    #             json=job_data
-    #         )
+        match_response = requests.post(
+                    f"{CV_JOB_MATCHER_URL}/cv-job-match",
+                    json={
+                    'job_title' : job_data['job_title'],
+                    'department_id' : job_data['department_id'],
+                    'job_level' : job_data['job_level'],
+                    'years_experience' : job_data['years_experience'],
+                    'additional_info' : job_data['additional_info']   
+                    }
+                ) 
+        if match_response.status_code != 200:
+                    flash('Error Extract job description', 'error')
+                    return redirect(url_for('post_job'))
+ 
+        job_description = match_response.json().get('job_description', {})
 
-    #         if response.status_code == 201:
-    #             flash('Job posted successfully!', 'success')
-    #             return redirect(url_for('company_dashboard'))
-    #         else:
-    #             flash('Error posting job: ' + response.json().get('message', ''), 'error')
+        add_offer_job_response = requests.post(f"{DATABASE_URL}/add_offer_job", json={
+                    'job_title' : job_data['job_title'],
+                    'department_id' : job_data['department_id'],
+                    'job_level' : job_data['job_level'],
+                    'years_experience' : job_data['years_experience'],
+                    'additional_info' : job_data['additional_info'],
+                    'date_offering': datetime.now(),
+                    "job_description": job_description
+                })
+        if add_offer_job_response.status_code != 200:
+                    flash('Error In Saving job Offere', 'error')
+                    return redirect(url_for('post_job'))
         
-    #     except Exception as e:
-    #         flash('Error: ' + str(e), 'error')
-    
     return render_template('post_job.html')
 
 @app.route('/edit_job/<int:job_id>', methods=['GET', 'POST'])
