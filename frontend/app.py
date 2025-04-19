@@ -151,7 +151,7 @@ def upload_cv():
                   
                     # save csv info using user id
                     save_response = requests.post(
-                        f"{DATABASE_URL}/add_applicantion",
+                        f"{DATABASE_URL}/add_applicant",
                         json={
                             'cv_data': cv_data,
                             'user_id': session['user_id']
@@ -190,7 +190,7 @@ def jobseeker_profile():
         
         # Get application info if exists
         application_response = requests.get(
-            f"{DATABASE_URL}/applications/{session['user_id']}"
+            f"{DATABASE_URL}/get_applicat/{session['user_id']}"
         )
         if application_response.status_code != 200:
             flash('Error fetching application data', 'error')
@@ -216,7 +216,7 @@ def jobseeker_dashboard():
     
     try:
         # Get all jobs from database
-        response = requests.get(f"{DATABASE_URL}/get_job")
+        response = requests.get(f"{DATABASE_URL}/get_offered_job")
         if response.status_code != 200:
             flash('Error fetching jobs', 'error')
             return render_template('jobseeker_dashboard.html', jobs=[])
@@ -229,13 +229,13 @@ def jobseeker_dashboard():
         # get name of the department based on department id
         for job in open_jobs:
             dept_id = job['dept_id']
-            dept_response = requests.get(f"{DATABASE_URL}/department/{dept_id}")
+            dept_response = requests.get(f"{DATABASE_URL}/get_department/{dept_id}")
             dept_response.raise_for_status()
             department = dept_response.json().get('department', [])
             job['department_name'] = department['department_name']
         
         # Check if user has uploaded CV
-        cv_response = requests.get(f"{DATABASE_URL}/applications/{session['user_id']}")
+        cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{session['user_id']}")
         has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
         # If user apply for a Job 
@@ -250,7 +250,7 @@ def jobseeker_dashboard():
 
             if job_id:
                 # Get a Job 
-                job_response = requests.get(f"{DATABASE_URL}/get_job/{job_id}")
+                job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
                 if job_response.status_code != 200:
                     flash('Error fetching job details', 'error')
                     return redirect(url_for('jobseeker_dashboard'))
@@ -278,7 +278,7 @@ def jobseeker_dashboard():
                 
                 # Save application
                 application_response = requests.post(
-                    f"{DATABASE_URL}/apply_job",
+                    f"{DATABASE_URL}/add_applied_job",
                     json={
                         'applicant_id': session['user_id'],
                         'job_id': job_id,
