@@ -591,7 +591,90 @@ def get_all_applicants(job_ids):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/add_interview', methods=['POST'])
+def add_interview():
+    try:
+        data = request.json
+        required_fields = ['interview', 'questions']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+            
+        interview_data = data['interview']
+        questions_data = data['questions']
+        
+        # Validate interview data
+        interview_required_fields = ['applicant_id', 'job_id', 'meeting_title', 'meeting_date', 'start_time', 'end_time']
+        if not all(field in interview_data for field in interview_required_fields):
+            return jsonify({"status": "error", "message": "Missing required interview fields"}), 400
 
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if applicant exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (interview_data['applicant_id'],))
+        if not cursor.fetchone():
+            return jsonify({"status": "error", "message": "Applicant not found"}), 404
+
+        # Check if job exists and is open
+        cursor.execute("SELECT status FROM jobs WHERE id = %s", (interview_data['job_id'],))
+        job = cursor.fetchone()
+        if not job:
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+            
+        if job[0].lower() != 'open':
+            return jsonify({"status": "error", "message": "This job is no longer available"}), 400
+
+        # Check if interview already scheduled for this time slot
+        cursor.execute("""
+            SELECT id FROM interviews 
+            WHERE applicant_id = %s AND job_id = %s AND date = %s AND start_time = %s;
+        """, (
+            interview_data['applicant_id'], 
+            interview_data['job_id'], 
+            interview_data['meeting_date'], 
+            interview_data['start_time']
+        ))
+        
+        if cursor.fetchone():
+            return jsonify({"status": "error", "message": "An interview is already scheduled for this time slot"}), 400
+
+        # Insert the interview
+        cursor.execute("""
+            INSERT INTO interviews (
+                applicant_id, job_id, meeting_title, date, 
+                start_time, end_time, questions
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;
+        """, (
+            interview_data['applicant_id'],
+            interview_data['job_id'],
+            interview_data['meeting_title'],
+            interview_data['meeting_date'],
+            interview_data['start_time'],
+            interview_data['end_time'],
+            json.dumps(questions_data)
+        ))
+
+        interview_id = cursor.fetchone()[0]
+        conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Interview scheduled successfully",
+            "interview_id": interview_id
+        }), 201
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 #Create Job
 @app.route('/job', methods=['POST'])
 def create_job():
@@ -950,6 +1033,7 @@ def create_interview():
     finally:
         cursor.close()
         conn.close()
+
 
 
 @app.route('/test', methods=['GET'])
