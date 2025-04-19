@@ -907,7 +907,7 @@ def meeting_answers(meeting_id):
     if not meeting:
         return redirect(url_for('index'))
     return render_template('meeting_answers.html', meeting=meeting)   
-
+### Offered Job List ###
 @app.route('/offered_job')
 def offered_job():
     # if 'user_id' not in session:
@@ -926,16 +926,30 @@ def offered_job():
     #     jobs = job_offere_response.json().get('jobs', [])
 
     #     job_ids = [job['ID'] for job in jobs]
+
+    #   # get name of the department based on department id
+    #     for job in jobs:
+    #         dept_id = job['dept_id']
+    #         dept_response = requests.get(f"{DATABASE_URL}/get_department/{dept_id}")
+    #         dept_response.raise_for_status()
+    #         department = dept_response.json().get('department', [])
+    #         job['department_name'] = department['department_name']
+    #     return render_template('jobseeker_dashboard.html', jobs=jobs)
+    
+    # except Exception as e:
+    #     flash(f'Error loading dashboard: {str(e)}', 'error')
+    #     return render_template('jobseeker_dashboard.html', jobs=[])
+    
     jobs = [
     {
         "id": 1,
-        "title": "Senior Software Engineer",
+        "job_title": "Senior Software Engineer",
         "job_id": "#JOB-001",
-        "department": "Engineering",
-        "level": "Senior Level",
-        "experience": "5+ years experience",
+        "department_name": "Engineering",
+        "job_level": "Senior Level",
+        "years_experience": "5+ years experience",
         "status": "Open",
-        "posted": "May 15, 2024",
+        "date_offering": "May 15, 2024",
         "requirements": [
             "Bachelor's degree in Computer Science or related field",
             "5+ years of experience in software development",
@@ -950,7 +964,7 @@ def offered_job():
             "Perform code reviews and mentor junior developers",
             "Troubleshoot and debug issues in production environments"
         ],
-        "certifications": [
+        "required_certifications": [
             "AWS Certified Developer (preferred)",
             "Google Cloud Professional Developer (preferred)"
         ],
@@ -958,13 +972,13 @@ def offered_job():
     },
     {
         "id": 2,
-        "title": "Marketing Specialist",
+        "job_title": "Marketing Specialist",
         "job_id": "#JOB-002",
-        "department": "Marketing",
-        "level": "Mid Level",
-        "experience": "3-5 years experience",
+        "department_name": "Marketing",
+        "job_level": "Mid Level",
+        "years_experience": "3-5 years experience",
         "status": "Open",
-        "posted": "May 10, 2024",
+        "date_offering": "May 10, 2024",
         "requirements": [
             "Bachelor's degree in Marketing, Communications, or related field",
             "3-5 years of experience in digital marketing",
@@ -979,7 +993,7 @@ def offered_job():
             "Analyze marketing metrics and prepare reports",
             "Collaborate with design and sales teams"
         ],
-        "certifications": [
+        "required_certifications": [
             "Google Analytics Certification",
             "HubSpot Content Marketing Certification (preferred)"
         ],
@@ -987,13 +1001,13 @@ def offered_job():
     },
     {
         "id": 3,
-        "title": "Sales Representative",
+        "job_title": "Sales Representative",
         "job_id": "#JOB-003",
-        "department": "Sales",
-        "level": "Entry Level",
-        "experience": "0-1 years experience",
+        "department_name": "Sales",
+        "job_level": "Entry Level",
+        "years_experience": "0-1 years experience",
         "status": "Open",
-        "posted": "May 18, 2024",
+        "date_offering": "May 18, 2024",
         "requirements": [
             "Bachelor's degree in Business, Marketing, or related field",
             "0-1 years of experience in sales (internships count)",
@@ -1008,20 +1022,20 @@ def offered_job():
             "Maintain accurate records in CRM system",
             "Collaborate with marketing and product teams"
         ],
-        "certifications": [
+        "required_certifications": [
             "No specific certifications required"
         ],
         "applicants": 15
     },
     {
         "id": 4,
-        "title": "HR Specialist",
+        "job_title": "HR Specialist",
         "job_id": "#JOB-004",
-        "department": "Human Resources",
-        "level": "Mid Level",
-        "experience": "3-5 years experience",
+        "department_name": "Human Resources",
+        "job_level": "Mid Level",
+        "years_experience": "3-5 years experience",
         "status": "Closed",
-        "posted": "April 25, 2024",
+        "date_offering": "April 25, 2024",
         "requirements": [
             "Bachelor's degree in Human Resources, Business, or related field",
             "3-5 years of experience in HR",
@@ -1036,7 +1050,7 @@ def offered_job():
             "Maintain employee records and ensure legal compliance",
             "Provide HR support to employees and managers"
         ],
-        "certifications": [
+        "required_certifications": [
             "PHR or SHRM-CP certification (preferred)"
         ],
         "applicants": 6
