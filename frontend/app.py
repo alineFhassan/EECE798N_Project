@@ -265,7 +265,7 @@ def jobseeker_dashboard():
             job['department_name'] = department['department_name']
         
         # Check if user has uploaded CV
-        cv_response = requests.get(f"{DATABASE_URL}/get_cv/{session['user_id']}")
+        cv_response = requests.get(f"{DATABASE_URL}/applications/{session['user_id']}")
         has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
         # If user apply for a Job 
