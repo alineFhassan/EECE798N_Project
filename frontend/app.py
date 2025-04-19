@@ -269,15 +269,21 @@ def jobseeker_dashboard():
 
 
             if job_id:
-                # Get job details
+                # Get a Job 
                 job_response = requests.get(f"{DATABASE_URL}/get_job/{job_id}")
-                if job_response.status_code == 200:
-                    job_data = job_response.json().get('job', {})
-                    
+                if job_response.status_code != 200:
+                    flash('Error fetching job details', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
+                
+                job_data = job_response.json().get('job', {})
+                
+                # check if the status of job is open
+                if job_data.get('status', '').lower() != 'open':
+                    flash('This job is no longer available', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
+
                 # Get CV data
-                cv_response = requests.get(f"{DATABASE_URL}/get_cv/{session['user_id']}")
-                if cv_response.status_code == 200:
-                    cv_data = cv_response.json().get('cv_data', {})
+                cv_data = cv_response.json().get('cv_data', {})
 
                 # Match CV with job
                 match_response = requests.post(
