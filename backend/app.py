@@ -233,87 +233,364 @@ def add_application():
         return jsonify({"status": "success", "message": message}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-    
-@app.route('/get_applications', methods=['GET'])
-def get_applications():
+
+@app.route('/get_applicant/<int:user_id>', methods=['GET'])
+def get_applicant_cv(user_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM application;")
-        applications = cursor.fetchall()
+        # Get CV data for the specific user
+        cursor.execute("""
+            SELECT id, education, skills, experience, 
+                   experience_years, projects, certifications,
+                   created_at, updated_at
+            FROM applicant_cv
+            WHERE user_id = %s;
+        """, (user_id,))
+        
+        cv = cursor.fetchone()
+        
+        if not cv:
+            return jsonify({"status": "error", "message": "CV not found"}), 404
+            
+        # Format the result as a dictionary that matches the frontend's expected format
+        cv_data = {
+            "education": json.loads(cv[1]) if cv[1] else [],
+            "skills": json.loads(cv[2]) if cv[2] else [],
+            "experience": json.loads(cv[3]) if cv[3] else [],
+            "experience_years": json.loads(cv[4] if cv[4] else None),
+            "projects": json.loads(cv[5]) if cv[5] else [],
+            "certifications": json.loads(cv[6]) if cv[6] else []
+        }
 
-        # Convert to a list of dictionaries
-        application_list = []
-        for application in applications:
-            application_list.append({
-                "user_id": application[13],  
-                "id": application[0],                # Adjust based on your table structure
-                "name": application[1],
-                "email": application[2],
-                "phone_number": application[3],
-                "achievements": application[4],
-                "skills": application[5],
-                "experience": application[6],
-                "exp_years": application[7],
-                "education": application[8],
-                "address": application[9],
-                "date_of_birth": application[10],
-                "gender": application[11],
-                "embedding": application[12],
-                         # Assuming you added user_id
+        cursor.close()
+        conn.close()
+
+        return jsonify({"status": "success", "cv_data": cv_data}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/get_user/<int:user_id>', methods=['GET'])
+def get_user(user_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get user data
+        cursor.execute("""
+            SELECT id, first_name, last_name, email, 
+                   phone_number, date_of_birth
+            FROM users
+            WHERE id = %s;
+        """, (user_id,))
+        
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({"status": "error", "message": "User not found"}), 404
+            
+        # Format the result as a dictionary
+        user_data = {
+            "id": user[0],
+            "first_name": user[1],
+            "last_name": user[2],
+            "email": user[3],
+            "phone_number": user[4],
+            "date_of_birth": user[5].isoformat() if user[5] else None
+        }
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({"status": "success", "user": user_data}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route('/get_offered_job', methods=['GET'])
+def get_offered_jobs():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get all jobs with department information
+        cursor.execute("""
+            SELECT j.id, j.title, j.job_level, j.years_experience, 
+                   j.requirements, j.responsibilities, j.required_certifications,
+                   j.status, j.date_offered, j.created_at, j.department_id,
+                   d.name as department_name
+            FROM jobs j
+            JOIN departments d ON j.department_id = d.id
+            ORDER BY j.created_at DESC;
+        """)
+        
+        jobs = []
+        for job in cursor.fetchall():
+            jobs.append({
+                "id": job[0],
+                "title": job[1],
+                "job_level": job[2],
+                "years_experience": job[3],
+                "requirements": json.loads(job[4]) if job[4] else [],
+                "responsibilities": json.loads(job[5]) if job[5] else [],
+                "required_certifications": json.loads(job[6]) if job[6] else [],
+                "status": job[7],
+                "date_offered": job[8].isoformat() if job[8] else None,
+                "created_at": job[9].isoformat() if job[9] else None,
+                "dept_id": job[10],
+                "department_name": job[11]
             })
 
         cursor.close()
         conn.close()
 
-        return jsonify({"status": "success", "applications": application_list}), 200
+        return jsonify({"status": "success", "jobs": jobs}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/applications/<int:application_id>', methods=['GET'])
-def get_application(application_id):
+@app.route('/get_offered_job/<int:job_id>', methods=['GET'])
+def get_offered_job(job_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Get a specific job with department information
         cursor.execute("""
-            SELECT * FROM application 
-            WHERE id = %s;
-        """, (application_id,))
-
-        application = cursor.fetchone()
+            SELECT j.id, j.title, j.job_level, j.years_experience, 
+                   j.requirements, j.responsibilities, j.required_certifications,
+                   j.status, j.date_offered, j.created_at, j.department_id,
+                   d.name as department_name
+            FROM jobs j
+            JOIN departments d ON j.department_id = d.id
+            WHERE j.id = %s;
+        """, (job_id,))
         
-        if not application:
-            return jsonify({"status": "error", "message": "Application not found"}), 404
-
-        application_data = {
-            "user_id": application[13],
-            "id": application[0],
-            "name": application[1],
-            "email": application[2],
-            "phone_number": application[3],
-            "achievements": application[4],
-            "skills": application[5],
-            "experience": application[6],
-            "exp_years": application[7],
-            "education": application[8],
-            "address": application[9],
-            "date_of_birth": application[10].isoformat() if application[10] else None,
-            "gender": application[11],
-            "embedding": application[12]
+        job = cursor.fetchone()
+        
+        if not job:
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+            
+        job_data = {
+            "id": job[0],
+            "title": job[1],
+            "job_level": job[2],
+            "years_experience": job[3],
+            "requirements": json.loads(job[4]) if job[4] else [],
+            "responsibilities": json.loads(job[5]) if job[5] else [],
+            "required_certifications": json.loads(job[6]) if job[6] else [],
+            "status": job[7],
+            "date_offered": job[8].isoformat() if job[8] else None,
+            "created_at": job[9].isoformat() if job[9] else None,
+            "dept_id": job[10],
+            "department_name": job[11]
         }
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({"status": "success", "job": job_data}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/get_department/<int:dept_id>', methods=['GET'])
+def get_department(dept_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get department details
+        cursor.execute("""
+            SELECT id, name, email, created_at
+            FROM departments
+            WHERE id = %s;
+        """, (dept_id,))
+        
+        dept = cursor.fetchone()
+        
+        if not dept:
+            return jsonify({"status": "error", "message": "Department not found"}), 404
+            
+        dept_data = {
+            "id": dept[0],
+            "department_name": dept[1],
+            "email": dept[2],
+            "created_at": dept[3].isoformat() if dept[3] else None
+        }
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({"status": "success", "department": dept_data}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/add_applied_job', methods=['POST'])
+def add_applied_job():
+    try:
+        data = request.json
+        required_fields = ['applicant_id', 'job_id', 'status', 'result']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if job exists and is open
+        cursor.execute("""
+            SELECT status FROM jobs 
+            WHERE id = %s;
+        """, (data['job_id'],))
+        
+        job = cursor.fetchone()
+        if not job:
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+            
+        if job[0].lower() != 'open':
+            return jsonify({"status": "error", "message": "This job is no longer available"}), 400
+
+        # Check if user has already applied for this job
+        cursor.execute("""
+            SELECT id FROM applied_jobs 
+            WHERE applicant_id = %s AND job_id = %s;
+        """, (data['applicant_id'], data['job_id']))
+        
+        if cursor.fetchone():
+            return jsonify({"status": "error", "message": "You have already applied for this job"}), 400
+
+        # Insert the application
+        cursor.execute("""
+            INSERT INTO applied_jobs (
+                applicant_id, job_id, status, scores, 
+                thresholds, meets_threshold, passed_criteria, 
+                qualified_cv, reason
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;
+        """, (
+            data['applicant_id'],
+            data['job_id'],
+            data['status'],
+            json.dumps(data['result'].get('scores', {})),
+            json.dumps(data['result'].get('thresholds', {})),
+            json.dumps(data['result'].get('meets_threshold', {})),
+            data['result'].get('passed_criteria', ''),
+            data['result'].get('qualified_cv', False),
+            data['result'].get('reason', '')
+        ))
+
+        application_id = cursor.fetchone()[0]
+        conn.commit()
 
         return jsonify({
             "status": "success",
-            "application": application_data
-        }), 200
+            "message": "Application submitted successfully",
+            "application_id": application_id
+        }), 201
 
     except Exception as e:
+        if conn:
+            conn.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    
+@app.route('/get_all_applicants/<job_ids>', methods=['POST'])
+def get_all_applicants(job_ids):
+    try:
+        # Convert job_ids string to list of integers
+        job_id_list = [int(id) for id in job_ids.strip('[]').split(',') if id.strip()]
+        
+        if not job_id_list:
+            return jsonify({"status": "error", "message": "No job IDs provided"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get applicants with their application details and CV information
+        cursor.execute("""
+            SELECT 
+                aj.id as application_id,
+                aj.applicant_id,
+                aj.job_id,
+                aj.status as application_status,
+                aj.scores,
+                aj.thresholds,
+                aj.meets_threshold,
+                aj.passed_criteria,
+                aj.qualified_cv,
+                aj.reason,
+                aj.created_at as application_date,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone_number,
+                ac.education,
+                ac.skills,
+                ac.experience,
+                ac.experience_years,
+                ac.projects,
+                ac.certifications,
+                j.title as job_title,
+                j.job_level,
+                j.years_experience as required_years,
+                d.name as department_name
+            FROM applied_jobs aj
+            JOIN users u ON aj.applicant_id = u.id
+            LEFT JOIN applicant_cv ac ON u.id = ac.user_id
+            JOIN jobs j ON aj.job_id = j.id
+            JOIN departments d ON j.department_id = d.id
+            WHERE aj.job_id = ANY(%s)
+            ORDER BY aj.created_at DESC;
+        """, (job_id_list,))
+        
+        applicants = []
+        for row in cursor.fetchall():
+            applicant = {
+                "application_id": row[0],
+                "applicant_id": row[1],
+                "job_id": row[2],
+                "application_status": row[3],
+                "scores": json.loads(row[4]) if row[4] else {},
+                "thresholds": json.loads(row[5]) if row[5] else {},
+                "meets_threshold": json.loads(row[6]) if row[6] else {},
+                "passed_criteria": row[7],
+                "qualified_cv": row[8],
+                "reason": row[9],
+                "application_date": row[10].isoformat() if row[10] else None,
+                "applicant": {
+                    "first_name": row[11],
+                    "last_name": row[12],
+                    "email": row[13],
+                    "phone_number": row[14]
+                },
+                "cv": {
+                    "education": json.loads(row[15]) if row[15] else [],
+                    "skills": json.loads(row[16]) if row[16] else [],
+                    "experience": json.loads(row[17]) if row[17] else [],
+                    "experience_years": row[18],
+                    "projects": json.loads(row[19]) if row[19] else [],
+                    "certifications": json.loads(row[20]) if row[20] else []
+                },
+                "job": {
+                    "title": row[21],
+                    "job_level": row[22],
+                    "required_years": row[23],
+                    "department_name": row[24]
+                }
+            }
+            applicants.append(applicant)
+
         cursor.close()
         conn.close()
+
+        return jsonify({"status": "success", "applicants": applicants}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 #Create Job
 @app.route('/job', methods=['POST'])
