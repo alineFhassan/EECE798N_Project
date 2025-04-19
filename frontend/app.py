@@ -16,6 +16,7 @@ def index():
     return render_template('index.html')
 
 ### Login ###
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
@@ -41,14 +42,15 @@ def login():
                     session['email'] = email
                     
                     # Redirect based on user type
-                    if data.get('register_option') == 'company' and data.get('user_id') == 1 :
-                        return redirect(url_for('hr_dashboard'))
-                    elif data.get('register_option') == 'company':
-                        return redirect(url_for('company_dashboard'))
-                    else:
-                        return redirect(url_for('jobseeker_dashboard'))
+                    if data.get('register_option') == 'company':
+                        if session['user_id'] == 1:
+                            return redirect(url_for('hr_dashboard'))
+                        else:
+                            return redirect(url_for('company_dashboard'))
+                    
+                    return redirect(url_for('jobseeker_dashboard'))
             else:
-                    flash('Invalid email or password', 'error')
+                flash('Invalid email or password', 'error')
                     
         except requests.exceptions.RequestException as e:
             flash('Connection error: Please try again later', 'error')
