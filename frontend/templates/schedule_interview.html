@@ -29,7 +29,9 @@
                 </div>
                 
                 <div class="form-container">
-                    <form id="meeting-form">
+                  
+                        <form id="meeting-form" action="{{ url_for('schedule_meeting', applicant_id=applicant_id, job_id=job_id) }}" method="POST">
+
                         <div class="form-group">
                             <label for="title">Meeting Title</label>
                             <input type="text" id="title" name="title" required>
@@ -51,16 +53,8 @@
                                 <input type="time" id="end-time" name="end_time" required>
                             </div>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="attendees">Attendees (comma separated emails)</label>
-                            <input type="text" id="attendees" name="attendees">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <textarea id="description" name="description" rows="4"></textarea>
-                        </div>
+                
+               
                         
                         <div class="form-group">
                             <button type="submit" class="btn-primary">Schedule Meeting</button>

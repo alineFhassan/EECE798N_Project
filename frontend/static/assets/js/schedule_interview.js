@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchMeetings();
     
     // Event listeners
-    meetingForm.addEventListener('submit', handleFormSubmit);
     prevMonthButton.addEventListener('click', () => changeMonth(-1));
     nextMonthButton.addEventListener('click', () => changeMonth(1));
     closeModal.addEventListener('click', () => meetingModal.style.display = 'none');

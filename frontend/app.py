@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import requests
 import os
 from datetime import datetime
+from flask_mail import Mail, Message
+
+
 
 app = Flask(__name__)
 # To be Changes 
@@ -10,6 +13,7 @@ app.secret_key = 'dev-key-123-abc!@#'
 DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5002')
 CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5003')
 JOB_GENERATOR_URL = os.getenv('JOB_GENERATOR_URL', 'http://job-generator:5004')
+Interview_Questions_URL = os.getenv('Interview_Questions_URL', 'http://cv-job-matcher:5005')
 
 
 # Main Dashboard
@@ -850,12 +854,133 @@ def hr_view_applied_applicant(job_id):
                          job=job, 
                          applicants=applicants)
 
-@app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>')
+
+# Configuring Flask-Mail with Gmail and your App Password
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'zynab.ahmad.saad@gmail.com'  # Replace with your Gmail
+app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'    # ← Your App Password
+
+
+mail = Mail(app)
+
+### If match score fit requirement then schedule a meeting ###
+@app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>', methods=['GET', 'POST'])
 def schedule_meeting(applicant_id, job_id):
-    # Your logic to show the scheduling page
-    return render_template('schedule_interview.html', 
-                         applicant_id=applicant_id, 
-                         job_id=job_id)
+    # if 'user_id' not in session:
+    #     flash('Please login', 'error')
+    #     return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        meeting_title = request.form['title']
+        meeting_date = request.form['date']
+        start_time = request.form['start_time']
+        end_time = request.form['end_time']
+   
+
+        user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+        if user_response.status_code != 200:
+            flash('Error fetching user data', 'error')
+            return redirect(url_for('schedule_meeting'))
+        user_data = user_response.json().get('user', {})
+
+        offered_job_response = requests.get(f"{DATABASE_URL}/get_aoffered_job/{job_id}")
+        if  offered_job_response.status_code != 200:
+            flash('Error fetching job data', 'error')
+            return redirect(url_for('schedule_meeting'))
+        offered_job_response = user_response.json().get('', {})
+
+        
+        # Assume you've extracted this data:
+        first_name = user_data.get('first_name', '')
+        last_name = user_data.get('last_name', '')
+        email = user_data.get('email', '')
+        job_title =  offered_job_response.get('job_title', '')  
+        job_level = offered_job_response.get('job_level', '')  
+ 
+  
+        # Construct a professional message body
+       # Construct email body for in-person interview
+        email_body = f"""
+        Dear {first_name} {last_name},
+
+        We are pleased to inform you that you have successfully passed the first stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
+
+        🎉 **Congratulations!**
+
+        We would like to invite you to the next step — an **in-person interview** with our hiring team.
+
+        **Interview Details**
+        - **Title:** {meeting_title}
+        - **Date:** {meeting_date}
+        - **Time:** {start_time} - {end_time}
+        - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
+
+        Please make sure to arrive at least 10 minutes early and bring:
+        - A copy of your resume
+        - A valid ID for entry
+
+        If you have any questions or need to reschedule, please reply to this email or contact us directly.
+
+        We look forward to meeting you in person!
+
+        Warm regards,  
+        **Hirevo HR Team**  
+        hr@hirevo.com
+        """
+        job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+        if job_response.status_code != 200:
+            flash('Error fetching job details', 'error')
+            return redirect(url_for('jobseeker_dashboard'))
+                
+        job_data = job_response.json().get('job', {})
+                
+                 # check if the status of job is open
+        if job_data.get('status', '').lower() != 'open':
+            flash('This job is no longer available', 'error')
+            return redirect(url_for('jobseeker_dashboard'))
+               
+        cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{applicant_id}")
+        cv_data = cv_response.json().get('cv_data', {})
+        generate_question_response = requests.post(
+                    f"{Interview_Questions_URL}/handle_question_generation",
+                    json={
+                        'cv': cv_data,
+                        'job': job_data
+                    }
+                )
+        
+
+        msg = Message(
+            subject="You're Invited: Next Step in Your Hirevo Application 🎯",
+            recipients=[email],
+            body=email_body
+        )
+        save_interview = requests.post(f"{DATABASE_URL}/add_interview", json={
+            'interview': {
+                "applicant_id": applicant_id,
+                "job_id": job_id,
+                'meeting_title': request.form['title'],
+                'meeting_date': request.form['date'],
+                'start_time': request.form['start_time'],
+                'end_time': request.form['end_time']
+            },
+            'questions': generate_question_response
+        })
+
+
+        msg = Message(
+        subject="Hello from Flask",
+        recipients=["zainabsaad5ur4@gmail.com"],  # Replace with who you're emailing
+        body="This is a test email sent from my Flask app using Gmail SMTP."
+        )
+        mail.send(msg)
+        #teyv eues tgoq ipvt
+        # Add logic to handle the form data
+        return "Meeting scheduled successfully"  # For testing purposes
+    return render_template('schedule_interview.html', applicant_id=applicant_id, job_id=job_id)
+
 
 @app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
 def reject_applicant(applicant_id, job_id):
