@@ -47,8 +47,9 @@
               {% for job in jobs %}
               <tr data-title="{{ job.title|lower }}" data-company="{{ job.company.name|lower }}" data-experience="{{ job.years_experience }}">
                 <td>{{ job.title }}</td>
-                <td>{{ job.company.name }}</td>
+                <td>{{ job.depatment_name }}</td>
                 <td>{{ job.years_experience }} years</td>
+                <td>{{ job.status }}</td>
                 <td>{{ job.created_at }}</td>
                 <td>
                   <div class="action-buttons">
