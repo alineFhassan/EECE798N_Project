@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import requests
 import os
 from datetime import datetime
@@ -750,11 +750,130 @@ def view_application(app_id):
                          applicant=applicant)
 
 
-### HR ###
-    
+### HR ###  
 @app.route('/hr_dashboard')
 def hr_dashboard():
     return render_template('hr_dashboard.html')
+
+# @app.route('/hr_applied_applicant/<int:job_id>')
+@app.route('/hr_applied_applicant')
+# def hr_view_applied_applicant(job_id):
+def hr_view_applied_applicant():
+ 
+    # # Fetch job details --> requirements 
+    # job_response = requests.get(f"{DATABASE_URL}/offered_jobs/{job_id}")
+    # if job_response.status_code != 200:
+    #     flash('Error fetching your offeredt jobs', 'error')
+    #     return render_template('hr_view_applied_applicant.html', jobs=[])
+        
+    # job = job_response.json()
+    
+    # # Fetch applicants for this job --> with his match result
+    # applicants_response = requests.get(f"{DATABASE_URL}/applied_job?job_id={job_id}")
+    # if applicants_response.status_code != 200:
+    #     flash('Error fetching your applicant', 'error')
+    #     return render_template('hr_view_applied_applicant.html', jobs=[])
+    
+    # applicants_data = []
+    # for application in applicants_response.json():
+    #     # Get applicant details
+    #     user_response = requests.get(f"{DATABASE_URL}/user/{application['applicant_id']}")
+    #     if user_response.status_code != 200:
+    #         continue
+            
+    #     user = user_response.json()
+        
+    #     # Get applicant CV
+    #     cv_response = requests.get(f"{DATABASE_URL}/applicant_cv?applicant_id={application['applicant_id']}")
+    #     cv = cv_response.json()[0] if cv_response.status_code == 200 and cv_response.json() else None
+        
+    #    # Use the score from applied_job table
+    #     match_score = application.get('scores', 0)
+        
+    #     applicants_data.append({
+    #         'id': user['ID'],
+    #         'name': f"{user['first_name']} {user['last_name']}",
+    #         'similarity_score': match_score,
+    #         'exp_years': cv['experience_years'] if cv else 0,
+    #         'email': user['email'],
+    #         'phone_number': user['phone_number'],
+    #         'skills': cv['skills'].split(',') if cv and cv['skills'] else [],
+    #         'status': application['status'],
+    #         'meets_threshold': application['meets_threshold'],
+    #         'qualified_cv': application['qualified_cv']
+    #     })
+
+    job = {
+        "ID": 101,
+        "job_title": "Senior Backend Engineer",
+        "job_level": "Mid-Senior",
+        "years_experience": 5,
+        "date_offering": "2024-12-01",
+        "status": "open"
+    }
+
+    applicants = [
+        {
+            "id": 202,
+            "name": "Michael Chen",
+            "similarity_score": 62,
+            "exp_years": 5,
+            "email": "michael.c@example.com",
+            "phone_number": "+12345550102",
+            "skills": ["Java", "Spring", "SQL"],
+            "qualified_cv": True,
+            "status": "under_review"
+        },
+        {
+            "id": 203,
+            "name": "Sara Ibrahim",
+            "similarity_score": 45,
+            "exp_years": 2,
+            "email": "zynab.ahamd.saad@gmail.com",
+            "phone_number": "+12345550103",
+            "skills": ["HTML", "CSS", "Bootstrap", "JavaScript", "Vue.js"],
+            "qualified_cv": False,
+            "status": "rejected"
+        },
+        {
+            "id": 204,
+            "name": "David O'Connor",
+            "similarity_score": 88,
+            "exp_years": 7,
+            "email": "zynab.ahamd.saad@gmail.com",
+            "phone_number": "+12345550104",
+            "skills": ["Python", "Django", "PostgreSQL", "Docker"],
+            "qualified_cv": True,
+            "status": "interview_scheduled"
+        }
+    ]
+    
+    return render_template('hr_view_applied_applicant.html', 
+                         job=job, 
+                         applicants=applicants)
+
+@app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>')
+def schedule_meeting(applicant_id, job_id):
+    # Your logic to show the scheduling page
+    return render_template('schedule_interview.html', 
+                         applicant_id=applicant_id, 
+                         job_id=job_id)
+
+@app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
+def reject_applicant(applicant_id, job_id):
+    # Add your rejection logic here
+    # For example:
+    # 1. Update the applicant's status in the database
+    # 2. Send a rejection email
+    # 3. Log the action
+    
+    # Example pseudocode:
+    # applicant = get_applicant_by_id(applicant_id)
+    # update_applicant_status(applicant_id, 'Rejected')
+    # send_rejection_email(applicant.email)
+    
+    print('Applicant has been rejected', 'success')
+    return redirect(url_for('hr_view_applied_applicant'))       
     
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5000)  
