@@ -755,12 +755,11 @@ def view_application(app_id):
 def hr_dashboard():
     return render_template('hr_dashboard.html')
 
+### list of applicant applied to a Job ###
 @app.route('/hr_applied_applicant/<int:job_id>')
-def hr_view_applied_applicant(job_id):
-
- 
+def hr_view_applied_applicant(job_id): 
     # # Fetch job details --> requirements 
-    # job_response = requests.get(f"{DATABASE_URL}/offered_jobs/{job_id}")
+    # job_response = requests.get(f"{DATABASE_URL}/get_offered_jobs/{job_id}")
     # if job_response.status_code != 200:
     #     flash('Error fetching your offeredt jobs', 'error')
     #     return render_template('hr_view_applied_applicant.html', jobs=[])
@@ -768,7 +767,7 @@ def hr_view_applied_applicant(job_id):
     # job = job_response.json()
     
     # # Fetch applicants for this job --> with his match result
-    # applicants_response = requests.get(f"{DATABASE_URL}/applied_job?job_id={job_id}")
+    # applicants_response = requests.get(f"{DATABASE_URL}/get_applied_job/{job_id}")
     # if applicants_response.status_code != 200:
     #     flash('Error fetching your applicant', 'error')
     #     return render_template('hr_view_applied_applicant.html', jobs=[])
@@ -776,14 +775,14 @@ def hr_view_applied_applicant(job_id):
     # applicants_data = []
     # for application in applicants_response.json():
     #     # Get applicant details
-    #     user_response = requests.get(f"{DATABASE_URL}/user/{application['applicant_id']}")
+    #     user_response = requests.get(f"{DATABASE_URL}/get_user/{application['applicant_id']}")
     #     if user_response.status_code != 200:
     #         continue
             
     #     user = user_response.json()
         
     #     # Get applicant CV
-    #     cv_response = requests.get(f"{DATABASE_URL}/applicant_cv?applicant_id={application['applicant_id']}")
+    #     cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{application['applicant_id']}")
     #     cv = cv_response.json()[0] if cv_response.status_code == 200 and cv_response.json() else None
         
     #    # Use the score from applied_job table
@@ -803,7 +802,7 @@ def hr_view_applied_applicant(job_id):
     #     })
 
     job = {
-        "ID": 101,
+        "iD": 101,
         "job_title": "Senior Backend Engineer",
         "job_level": "Mid-Senior",
         "years_experience": 5,
@@ -907,6 +906,7 @@ def meeting_answers(meeting_id):
     if not meeting:
         return redirect(url_for('index'))
     return render_template('meeting_answers.html', meeting=meeting)   
+
 ### Offered Job List ###
 @app.route('/offered_job')
 def offered_job():
