@@ -315,7 +315,7 @@ def jobseeker_dashboard():
                 
                 return redirect(url_for('jobseeker_dashboard'))
         
-        return render_template('jobseeker_dashboard.html', jobs=jobs)
+        return render_template('jobseeker_dashboard.html', jobs=open_jobs)
     
     except Exception as e:
         flash(f'Error loading dashboard: {str(e)}', 'error')
