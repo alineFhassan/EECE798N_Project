@@ -243,17 +243,30 @@ def jobseeker_dashboard():
         
         jobs = response.json().get('jobs', [])
 
+        # Filter only open jobs
+        open_jobs = [job for job in jobs if job.get('status', '').lower() == 'open']
+
         # get name of the department based on department id
-        for job in jobs:
+        for job in open_jobs:
             dept_id = job['dept_id']
             dept_response = requests.get(f"{DATABASE_URL}/department/{dept_id}")
             dept_response.raise_for_status()
             department = dept_response.json()
             job['department_name'] = department['department_name']
+        
+        # Check if user has uploaded CV
+        cv_response = requests.get(f"{DATABASE_URL}/get_cv/{session['user_id']}")
+        has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
         # If user apply for a Job 
         if request.method == 'POST':
             job_id = request.form.get('job_id')
+
+            # check if user upload his cv
+            if not has_cv:
+                flash('Please upload your CV before applying for jobs', 'error')
+                return redirect(url_for('jobseeker_dashboard'))
+
 
             if job_id:
                 # Get job details
