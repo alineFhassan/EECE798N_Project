@@ -873,7 +873,41 @@ def reject_applicant(applicant_id, job_id):
     # send_rejection_email(applicant.email)
     
     print('Applicant has been rejected', 'success')
-    return redirect(url_for('hr_view_applied_applicant'))       
+    return redirect(url_for('hr_view_applied_applicant'))    
+
+MEETINGS = [
+    {
+        "id": 123,
+        "title": "Product Development Standup",
+        "date": "2024-05-22",
+        "start_time": "09:00",
+        "end_time": "10:00",
+        "duration": "1 hour",
+        "team": "Team Alpha",
+        "location": "Virtual",
+        "meeting_type": "Zoom Meeting",
+        "status": "upcoming",
+        "questions": [
+            {"id": 1, "text": "What progress has been made on the new feature implementation?", "priority": "high", "answered": False},
+            {"id": 2, "text": "Are there any blockers that need to be addressed?", "priority": "medium", "answered": False},
+            {"id": 3, "text": "What is the timeline for the next release?", "priority": "high", "answered": False},
+            {"id": 4, "text": "What resources are needed for the upcoming sprint?", "priority": "medium", "answered": False},
+            {"id": 5, "text": "How can we improve our development process?", "priority": "low", "answered": False}
+        ]
+    },
+    # Add more meetings here
+]
+
+@app.route('/weekly_meeting')
+def weekly_meeting():
+    return render_template('weekly_meetings.html', meetings=MEETINGS)
+
+@app.route('/meeting/<int:meeting_id>')
+def meeting_answers(meeting_id):
+    meeting = next((m for m in MEETINGS if m["id"] == meeting_id), None)
+    if not meeting:
+        return redirect(url_for('index'))
+    return render_template('meeting_answers.html', meeting=meeting)   
     
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)  
