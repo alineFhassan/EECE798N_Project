@@ -312,7 +312,7 @@ def company_dashboard():
     try:
         # Get jobs posted by department
         dept_id = session['user_id']
-        job_offere_response = requests.get(f"{DATABASE_URL}/get_job/{dept_id}")
+        job_offere_response = requests.get(f"{DATABASE_URL}/get_offered_job/{dept_id}")
         
         if job_offere_response.status_code != 200:
             flash('Error fetching your department jobs', 'error')
@@ -427,7 +427,7 @@ def company_dashboard():
 def view_all_jobs():
     try:
         dept_id = session['user_id']
-        job_offere_response = requests.get(f"{DATABASE_URL}/get_job/{dept_id}")
+        job_offere_response = requests.get(f"{DATABASE_URL}/get_offered_job/{dept_id}")
         
         if job_offere_response.status_code != 200:
             flash('Error fetching jobs', 'error')
@@ -755,10 +755,9 @@ def view_application(app_id):
 def hr_dashboard():
     return render_template('hr_dashboard.html')
 
-# @app.route('/hr_applied_applicant/<int:job_id>')
-@app.route('/hr_applied_applicant')
-# def hr_view_applied_applicant(job_id):
-def hr_view_applied_applicant():
+@app.route('/hr_applied_applicant/<int:job_id>')
+def hr_view_applied_applicant(job_id):
+
  
     # # Fetch job details --> requirements 
     # job_response = requests.get(f"{DATABASE_URL}/offered_jobs/{job_id}")
@@ -908,6 +907,144 @@ def meeting_answers(meeting_id):
     if not meeting:
         return redirect(url_for('index'))
     return render_template('meeting_answers.html', meeting=meeting)   
+
+@app.route('/offered_job')
+def offered_job():
+    # if 'user_id' not in session:
+    #     flash('Please login', 'error')
+    #     return redirect(url_for('login'))
+    
+    # try:
+    #     # Get jobs posted by department
+    #     hr_id = session['user_id']
+    #     job_offere_response = requests.get(f"{DATABASE_URL}/get_offered_job")
+        
+    #     if job_offere_response.status_code != 200:
+    #         flash('Error fetching your department jobs', 'error')
+    #         return render_template('company_dashboard.html', jobs=[])
+        
+    #     jobs = job_offere_response.json().get('jobs', [])
+
+    #     job_ids = [job['ID'] for job in jobs]
+    jobs = [
+    {
+        "id": 1,
+        "title": "Senior Software Engineer",
+        "job_id": "#JOB-001",
+        "department": "Engineering",
+        "level": "Senior Level",
+        "experience": "5+ years experience",
+        "status": "Open",
+        "posted": "May 15, 2024",
+        "requirements": [
+            "Bachelor's degree in Computer Science or related field",
+            "5+ years of experience in software development",
+            "Proficiency in JavaScript, TypeScript, and React",
+            "Experience with cloud platforms (AWS, Azure, GCP)",
+            "Strong problem-solving skills and attention to detail"
+        ],
+        "responsibilities": [
+            "Design and implement new features for our web applications",
+            "Collaborate with cross-functional teams to define requirements",
+            "Write clean, maintainable, and efficient code",
+            "Perform code reviews and mentor junior developers",
+            "Troubleshoot and debug issues in production environments"
+        ],
+        "certifications": [
+            "AWS Certified Developer (preferred)",
+            "Google Cloud Professional Developer (preferred)"
+        ],
+        "applicants": 12
+    },
+    {
+        "id": 2,
+        "title": "Marketing Specialist",
+        "job_id": "#JOB-002",
+        "department": "Marketing",
+        "level": "Mid Level",
+        "experience": "3-5 years experience",
+        "status": "Open",
+        "posted": "May 10, 2024",
+        "requirements": [
+            "Bachelor's degree in Marketing, Communications, or related field",
+            "3-5 years of experience in digital marketing",
+            "Proficiency in social media platforms and analytics tools",
+            "Experience with content creation and campaign management",
+            "Strong communication and analytical skills"
+        ],
+        "responsibilities": [
+            "Develop and implement marketing strategies",
+            "Create engaging content for various platforms",
+            "Manage social media accounts and campaigns",
+            "Analyze marketing metrics and prepare reports",
+            "Collaborate with design and sales teams"
+        ],
+        "certifications": [
+            "Google Analytics Certification",
+            "HubSpot Content Marketing Certification (preferred)"
+        ],
+        "applicants": 8
+    },
+    {
+        "id": 3,
+        "title": "Sales Representative",
+        "job_id": "#JOB-003",
+        "department": "Sales",
+        "level": "Entry Level",
+        "experience": "0-1 years experience",
+        "status": "Open",
+        "posted": "May 18, 2024",
+        "requirements": [
+            "Bachelor's degree in Business, Marketing, or related field",
+            "0-1 years of experience in sales (internships count)",
+            "Excellent communication and interpersonal skills",
+            "Self-motivated with a strong desire to succeed",
+            "Ability to work in a fast-paced environment"
+        ],
+        "responsibilities": [
+            "Generate leads and build relationships with potential clients",
+            "Conduct product demonstrations and presentations",
+            "Meet or exceed sales targets",
+            "Maintain accurate records in CRM system",
+            "Collaborate with marketing and product teams"
+        ],
+        "certifications": [
+            "No specific certifications required"
+        ],
+        "applicants": 15
+    },
+    {
+        "id": 4,
+        "title": "HR Specialist",
+        "job_id": "#JOB-004",
+        "department": "Human Resources",
+        "level": "Mid Level",
+        "experience": "3-5 years experience",
+        "status": "Closed",
+        "posted": "April 25, 2024",
+        "requirements": [
+            "Bachelor's degree in Human Resources, Business, or related field",
+            "3-5 years of experience in HR",
+            "Knowledge of HR practices, policies, and employment laws",
+            "Experience with HRIS systems",
+            "Strong interpersonal and communication skills"
+        ],
+        "responsibilities": [
+            "Develop and implement HR policies and procedures",
+            "Manage recruitment and onboarding processes",
+            "Handle employee relations and performance management",
+            "Maintain employee records and ensure legal compliance",
+            "Provide HR support to employees and managers"
+        ],
+        "certifications": [
+            "PHR or SHRM-CP certification (preferred)"
+        ],
+        "applicants": 6
+    },
+    
+]
+
+    return render_template('offered_job.html', jobs=jobs)  
     
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)  
