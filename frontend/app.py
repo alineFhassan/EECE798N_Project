@@ -260,7 +260,6 @@ def jobseeker_dashboard():
                 if job_data.get('status', '').lower() != 'open':
                     flash('This job is no longer available', 'error')
                     return redirect(url_for('jobseeker_dashboard'))
-
                 # Get CV data
                 cv_data = cv_response.json().get('cv_data', {})
 
@@ -280,7 +279,7 @@ def jobseeker_dashboard():
                 application_response = requests.post(
                     f"{DATABASE_URL}/apply_job",
                     json={
-                        'user_id': session['user_id'],
+                        'applicant_id': session['user_id'],
                         'job_id': job_id,
                         'status': 'scheduling_interview',
                         "result": match_result
@@ -432,6 +431,7 @@ def post_job():
                     'years_experience' : job_data['years_experience'],
                     'additional_info' : job_data['additional_info'],
                     'date_offering': datetime.now(),
+                    'status': "open",
                     "job_description": job_description
                 })
         if add_offer_job_response.status_code != 200:
