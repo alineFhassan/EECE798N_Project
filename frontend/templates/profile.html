@@ -24,35 +24,33 @@
           </div>
           <div class="card-content">
             <div class="profile-header">
-           
               <div class="profile-info">
-                <h3 class="profile-name">{{ user.full_name }}</h3>
-              
+                <h3 class="profile-name">{{ user.first_name }} {{ user.last_name }}</h3>
               </div>
             </div>
 
             <div class="profile-details">
-           
               {% if application %}
               <div class="profile-detail">
                 <span class="detail-label">Experience:</span>
-                <span class="detail-value">{{ application.get('exp_years', 0) }} years</span>
+                <span class="detail-value">
+                  {% set total_years = application.experience|sum(attribute='years') %}
+                  {{ total_years }} years total
+                </span>
               </div>
               <div class="profile-detail">
                 <span class="detail-label">Education:</span>
                 <span class="detail-value">
-                  {% if application.education %}
-                    {{ application.education[0].get('degree', 'Not specified') }}
-                  {% else %}
-                    Not specified
-                  {% endif %}
+                  {% for edu in application.education %}
+                    {{ edu.degree }} from {{ edu.school }}{% if not loop.last %}, {% endif %}
+                  {% endfor %}
                 </span>
               </div>
+              {% endif %}
               <div class="profile-detail">
                 <span class="detail-label">Phone:</span>
-                <span class="detail-value">{{ application.get('phone_number', 'Not specified') }}</span>
+                <span class="detail-value">{{ user.phone_number }}</span>
               </div>
-              {% endif %}
               <div class="profile-detail">
                 <span class="detail-label">Email:</span>
                 <span class="detail-value">{{ user.email }}</span>
@@ -70,7 +68,7 @@
             <div class="profile-about">
               <h4>Skills</h4>
               <div class="skills-container">
-                {% for skill in application.get('skills', []) %}
+                {% for skill in application.skills %}
                   <span class="skill-tag">{{ skill }}</span>
                 {% endfor %}
               </div>
@@ -78,10 +76,20 @@
 
             <div class="profile-experience">
               <h4>Experience</h4>
-              {% for exp in application.get('experience', []) %}
+              {% for exp in application.experience %}
                 <div class="experience-item">
-                  <h5>{{ exp.get('role', 'Position') }} at {{ exp.get('company', 'Company') }}</h5>
-                  <p>{{ exp.get('responsibilities', 'No description available') }}</p>
+                  <h5>{{ exp.role }} at {{ exp.company }}</h5>
+                  <p>Duration: {{ exp.years }} years</p>
+                  {% if exp.responsibilities %}
+                    <h6>Responsibilities:</h6>
+                    <ul>
+                      {% for responsibility in exp.responsibilities %}
+                        <li>{{ responsibility }}</li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p>No responsibilities listed</p>
+                  {% endif %}
                 </div>
               {% endfor %}
             </div>
@@ -103,11 +111,11 @@
           <h3 class="card-title">Edit Basic Information</h3>
         </div>
         <div class="card-content">
-          <form id="profileForm" class="profile-form" method="POST" action="{{ url_for('update_profile') }}">
+          <form id="profileForm" class="profile-form" method="POST" action="{{ url_for('jobseeker_profile') }}">
             <div class="form-grid">
               <div class="form-group">
                 <label for="full_name" class="form-label">Full Name</label>
-                <input type="text" id="full_name" name="full_name" class="form-input" value="{{ user.full_name }}">
+                <input type="text" id="full_name" name="full_name" class="form-input" value="{{ user.first_name }} {{ user.last_name}}">
               </div>
 
               <div class="form-group">
@@ -117,8 +125,7 @@
 
               <div class="form-group">
                 <label for="phone_number" class="form-label">Phone</label>
-                <input type="text" id="phone_number" name="phone_number" class="form-input" 
-                      value="{% if application %}{{ application.get('phone_number', '') }}{% endif %}">
+                <input type="text" id="phone_number" name="phone_number" class="form-input" value="{{ user.phone_number }}">
               </div>
             </div>
 

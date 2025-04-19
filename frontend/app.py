@@ -169,73 +169,40 @@ def upload_cv():
     
     return render_template('upload_cv.html')
 
+### jobseeker profile ###
 @app.route('/profile')
 def jobseeker_profile():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
-    # try:
-    #     # Get user info from database API
-    #     user_response = requests.get(f"{DATABASE_URL}/get_user_info/{session['user_id']}")
-    #     if user_response.status_code != 200:
-    #         flash('Error fetching user data', 'error')
-    #         return redirect(url_for('jobseeker_dashboard'))
+    try:
+        # Get user info from database API
+        user_response = requests.get(f"{DATABASE_URL}/get_user/{session['user_id']}")
+        if user_response.status_code != 200:
+            flash('Error fetching user data', 'error')
+            return redirect(url_for('jobseeker_dashboard'))
         
-    #     user_data = user_response.json().get('user', {})
+        user_data = user_response.json().get('user', {})
         
-    #     # Get application info if exists
-    #     application_response = requests.get(
-    #         f"{DATABASE_URL}/get_applications?user_id={session['user_id']}"
-    #     )
-    #     application_data = {}
-    #     if application_response.status_code == 200:
-    #         applications = application_response.json().get('applications', [])
-    #         if applications:
-    #             application_data = applications[0]  # Get most recent application
+        # Get application info if exists
+        application_response = requests.get(
+            f"{DATABASE_URL}/applications/{session['user_id']}"
+        )
+        if application_response.status_code != 200:
+            flash('Error fetching application data', 'error')
+            return redirect(url_for('jobseeker_dashboard'))
         
-    #     return render_template('profile.html', 
-    #                         user=user_data, 
-    #                         application=application_data)
+        application_data = user_response.json().get('cv_data', {})
+ 
+        return render_template('profile.html', 
+                            user=user_data, 
+                            application=application_data)
     
-    # except Exception as e:
-    #     flash(f'Error loading profile: {str(e)}', 'error')
-    #     return redirect(url_for('jobseeker_dashboard'))
-    sample_user = {
-        'full_name': 'John Doe',
-        'email': 'john.doe@example.com'
-    }
-    
-    # Sample application data (matches your template structure)
-    sample_application = {
-        'skills': ['Python', 'Flask', 'HTML/CSS', 'JavaScript'],
-        'exp_years': 5,
-        'phone_number': '+1 (555) 123-4567',
-        'education': [
-            {
-                'degree': 'B.Sc Computer Science',
-                'institution': 'State University'
-            }
-        ],
-        'experience': [
-            {
-                'role': 'Senior Developer',
-                'company': 'Tech Solutions Inc.',
-                'responsibilities': 'Led a team of developers building web applications'
-            },
-            {
-                'role': 'Software Engineer',
-                'company': 'Digital Creations',
-                'responsibilities': 'Developed backend services and APIs'
-            }
-        ]
-    }
-    
-    return render_template(
-        'profile.html', 
-        user=sample_user, 
-        application=sample_application
-    )
+    except Exception as e:
+        flash(f'Error loading profile: {str(e)}', 'error')
+        return redirect(url_for('jobseeker_dashboard'))
+
 
 ### Jobseeker dashboard ###
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
@@ -261,7 +228,7 @@ def jobseeker_dashboard():
             dept_id = job['dept_id']
             dept_response = requests.get(f"{DATABASE_URL}/department/{dept_id}")
             dept_response.raise_for_status()
-            department = dept_response.json()
+            department = dept_response.json().get('department', [])
             job['department_name'] = department['department_name']
         
         # Check if user has uploaded CV
