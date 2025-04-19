@@ -73,9 +73,13 @@ CREATE TABLE interviews (
     id SERIAL PRIMARY KEY,
     applicant_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-    interview_date TIMESTAMP NOT NULL,
+    meeting_title VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
     questions JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (applicant_id, job_id, date, start_time)
 );
 
 -- Interview answers table
