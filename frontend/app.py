@@ -106,12 +106,22 @@ def signup():
     
     return render_template('signup.html')
 
-# Upload CV
+### Upload CV ###
+
+# Configuration of allowed file
+ALLOWED_EXTENSIONS = {'pdf'} # alowed extension
+MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2MB limit
+
+# function to the allowed file
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
     if request.method == 'POST':
         if 'file' not in request.files:
@@ -125,7 +135,7 @@ def upload_cv():
         
         if file and allowed_file(file.filename):
             try:
-                # Send file to CV extraction service
+                # Extract content of cv file 
                 files = {'file': (file.filename, file.stream, file.mimetype)}
                 response = requests.post(
                     "http://cv-extraction:5001/extract-cv",
@@ -135,10 +145,10 @@ def upload_cv():
                 if response.status_code == 200:
                     cv_data = response.json().get('cv_data', {})
                     
-                    # Save to database with user_id
+                  
                     # save csv info using user id
                     save_response = requests.post(
-                        f"{DATABASE_URL}/add_application",
+                        f"{DATABASE_URL}/add_applicantion",
                         json={
                             'cv_data': cv_data,
                             'user_id': session['user_id']
