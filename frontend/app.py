@@ -24,8 +24,8 @@ DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5002')
 CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5003')
 JOB_GENERATOR_URL = os.getenv('JOB_GENERATOR_URL', 'http://job-generator:5004')
 Interview_Questions_URL = os.getenv('Interview_Questions_URL', 'http://cv-job-matcher:5005')
-
-
+Match_all_URL = os.getenv('Match_all_URL','http://cv-job-matcher:5006')
+Final_decision = os.getenv('Final_decision''http://final-decision:5006',)
 # Main Dashboard
 @app.route('/')
 def index():
@@ -276,6 +276,7 @@ def jobseeker_dashboard():
                     flash('This job is no longer available', 'error')
                     return redirect(url_for('jobseeker_dashboard'))
                 # Get CV data
+     
                 cv_data = cv_response.json().get('cv_data', {})
 
                 # Match CV with job
@@ -917,7 +918,7 @@ def schedule_meeting(applicant_id, job_id):
         #         return redirect(url_for('schedule_meeting'))
         #     user_data = user_response.json().get('user', {})
 
-        #     offered_job_response = requests.get(f"{DATABASE_URL}/get_aoffered_job/{job_id}")
+        #     offered_job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
         #     if  offered_job_response.status_code != 200:
         #         flash('Error fetching job data', 'error')
         #         return redirect(url_for('schedule_meeting'))
@@ -1111,8 +1112,7 @@ def reject_applicant(applicant_id, job_id):
     #     job_title = job_data.get('job_title', 'the position')
     #     company_name = "Hirevo"  # You might want to fetch this from your database
 
-    #     # Construct rejection email
-    #     subject = f"Update on Your Application for {job_title}"
+
         
     #     email_body = f"""
     #     Dear {first_name} {last_name},
@@ -1141,7 +1141,7 @@ def reject_applicant(applicant_id, job_id):
 
     #     # Send email (assuming you have Flask-Mail configured)
     #     msg = Message(
-    #         subject=subject,
+    #         subject= "You’re Selected! Next Step: Interview at Hirevo",
     #         recipients=[email],
     #         body=email_body
     #     )
@@ -1191,16 +1191,7 @@ MEETINGS = [
     # Add more meetings here
 ]
 
-@app.route('/weekly_meeting')
-def weekly_meeting():
-    return render_template('weekly_meetings.html', meetings=MEETINGS)
 
-@app.route('/meeting/<int:meeting_id>')
-def meeting_answers(meeting_id):
-    meeting = next((m for m in MEETINGS if m["id"] == meeting_id), None)
-    if not meeting:
-        return redirect(url_for('index'))
-    return render_template('meeting_answers.html', meeting=meeting)   
 
 ### Offered Job List ###
 @app.route('/offered_job')
@@ -1344,7 +1335,8 @@ def offered_job():
             "Handle employee relations and performance management",
             "Maintain employee records and ensure legal compliance",
             "Provide HR support to employees and managers"
-        ],
+        ]
+        ,
         "required_certifications": [
             "PHR or SHRM-CP certification (preferred)"
         ],
@@ -1354,6 +1346,610 @@ def offered_job():
 ]
 
     return render_template('offered_job.html', jobs=jobs)  
+
+# Answers 
+# Mock data for testing
+from datetime import datetime, timedelta
+
+# @app.route('/weekly_questions')
+# def weekly_questions():    
+#     try:
+#         selected_date = request.args.get('date', None)
+#         if not selected_date:
+#             today = datetime.now()
+#             selected_date = today.strftime('%Y-%m-%d')
+
+#         date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
+
+#         # Fetch interviews
+#         get_interview_response = requests.get(f"{DATABASE_URL}/get_interview")
+#         if get_interview_response.status_code != 200:
+#             flash('Error fetching interviews', 'error')
+#             return redirect(url_for('company_dashboard'))
+
+#         interviews = get_interview_response.json().get('interviews', [])
+
+#         # Fetch answered interviews
+#         answers_response = requests.get(f"{DATABASE_URL}/get_interview_answers")
+#         answered_ids = set()
+#         if answers_response.status_code == 200:
+#             answers = answers_response.json().get('answers', [])
+#             answered_ids = {answer['id_interview'] for answer in answers}
+
+#         questions = []
+
+#         for interview in interviews:
+#             applicant_id = interview.get('applicant_id')
+#             job_id = interview.get('job_id')
+#             interview_id = interview.get('id')
+#             raw_date = interview.get('meeting_date', '')
+
+#             try:
+#                 interview_date = datetime.strptime(raw_date, '%Y-%m-%d').strftime('%Y-%m-%d')
+#             except ValueError:
+#                 interview_date = raw_date
+
+#             if interview_date != selected_date:
+#                 continue
+
+#             # Get user info
+#             user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+#             if user_response.status_code != 200:
+#                 continue
+#             user_data = user_response.json()
+#             full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
+
+#             # Get job info
+#             job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+#             if job_response.status_code != 200:
+#                 continue
+#             job_data = job_response.json()
+#             job_title = job_data.get('job_title', 'Unknown Job')
+
+#             # Format time
+#             time_range = f"{interview.get('start_time', '')} - {interview.get('end_time', '')}"
+
+#             # Parse questions
+#             raw_questions = interview.get('questions')
+#             if isinstance(raw_questions, str):
+#                 try:
+#                     questions_list = eval(raw_questions) if raw_questions.strip().startswith('[') else [raw_questions]
+#                 except:
+#                     questions_list = [raw_questions]
+#             elif isinstance(raw_questions, list):
+#                 questions_list = raw_questions
+#             else:
+#                 questions_list = [str(raw_questions)]
+
+#             # Add to final list
+#             date_obj = datetime.strptime(interview_date, '%Y-%m-%d')
+#             questions.append({
+#                 "id": interview_id,
+#                 "applicant_name": full_name,
+#                 "job_title": job_title,
+#                 "questions": questions_list,
+#                 "interview_date": interview_date,
+#                 "interview_time": time_range,
+#                 "status": interview_id in answered_ids,
+#                 "day_of_week": date_obj.strftime('%A')
+#             })
+
+#         # Calculate progress
+#         total_questions = len(questions)
+#         answered_questions = len([q for q in questions if q['status']])
+#         progress_percent = (answered_questions / total_questions * 100) if total_questions > 0 else 0
+
+#         # Format selected date
+#         selected_date_display = date_obj.strftime('%A, %b %d, %Y')
+#         day_of_week = date_obj.strftime('%A')
+
+#         return render_template('weekly_questions.html', 
+#                                questions=questions,
+#                                progress_percent=progress_percent,
+#                                total_questions=total_questions,
+#                                answered_questions=answered_questions,
+#                                selected_date=selected_date,
+#                                selected_date_display=selected_date_display,
+#                                day_of_week=day_of_week)
+
+#     except Exception as e:
+#         flash(f'Error loading questions: {str(e)}', 'error')
+#         today = datetime.now()
+#         return render_template('weekly_questions.html', 
+#                                questions=[], 
+#                                selected_date=today.strftime('%Y-%m-%d'),
+#                                selected_date_display=today.strftime('%A, %b %d, %Y'),
+#                                day_of_week=today.strftime('%A'))
+
+@app.route('/weekly_questions')
+def weekly_questions():    
+    try:
+        # Get filter parameters from URL
+        selected_date = request.args.get('date', None)
+        
+        # Sample data provided by user
+        questions = [
+            {
+                "id": 1,
+                "applicant_name": "Alice Johnson",
+                "job_title": "Data Analyst",
+                "questions": [
+                    "What tools do you use for data cleaning?",
+                    "Explain a project where you used data visualization.",
+                    "How do you handle missing data?"
+                ],
+                "interview_date": "2018-09-01", 
+                "interview_time": "09:30 - 10:15",
+                "status": True
+            },
+            {
+                "id": 2,
+                "applicant_name": "Brian Smith",
+                "job_title": "Frontend Developer",
+                "questions": [
+                    "What are the main differences between React and Vue?",
+                    "How do you handle state management in large applications?",
+                    "Describe your approach to responsive design."
+                ],
+                "interview_date": "2025-04-02",
+                "interview_time": "14:00 - 15:00",
+                "status": False
+            },
+            {
+                "id": 3,
+                "applicant_name": "Carol Williams",
+                "job_title": "Backend Developer",
+                "questions": [
+                    "Explain RESTful API design principles",
+                    "How do you handle database migrations?",
+                    "Describe your experience with microservices"
+                ],
+                "interview_date": "2025-04-19",
+                "interview_time": "11:00 - 12:00",
+                "status": True
+            }
+        ]
+      
+        # Add day_of_week to each question
+        for question in questions:
+            date_obj = datetime.strptime(question['interview_date'], '%Y-%m-%d')
+            question['day_of_week'] = date_obj.strftime('%A')  # Monday, Tuesday, etc.
+        
+        # If no date is specified, use today
+        if not selected_date:
+            today = datetime.now()
+            selected_date = today.strftime('%Y-%m-%d')
+        
+        # Parse the selected date
+        date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
+        
+        # Filter questions for the selected day only
+        filtered_questions = [q for q in questions if q['interview_date'] == selected_date]
+
+        # Calculate progress for the filtered questions
+        total_questions = len(filtered_questions)
+        answered_questions = len([q for q in filtered_questions if q['status']])
+        progress_percent = (answered_questions / total_questions * 100) if total_questions > 0 else 0
+
+        # Format the selected date for display
+        selected_date_display = date_obj.strftime('%A, %b %d, %Y')  # e.g., "Monday, Apr 19, 2025"
+        
+        # Get day of week for display
+        day_of_week = date_obj.strftime('%A')
+
+        return render_template('weekly_questions.html', 
+                            questions=filtered_questions,
+                            progress_percent=progress_percent,
+                            total_questions=total_questions,
+                            answered_questions=answered_questions,
+                            selected_date=selected_date,
+                            selected_date_display=selected_date_display,
+                            day_of_week=day_of_week)
     
+    except Exception as e:
+        flash(f'Error loading questions: {str(e)}', 'error')
+        today = datetime.now()
+        return render_template('weekly_questions.html', 
+                              questions=[], 
+                              selected_date=today.strftime('%Y-%m-%d'),
+                              selected_date_display=today.strftime('%A, %b %d, %Y'),
+                              day_of_week=today.strftime('%A'))
+
+@app.route('/answer_question/<int:question_id>')
+
+def answer_question(question_id):
+    print("submit", question_id)
+    # """Display a form with a list of questions to answer."""
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
+  
+    try:
+        # database 
+        # get_interview_response = requests.get(f"{DATABASE_URL}/get_interview/{question_id}")
+        # if get_interview_response.status_code != 200:
+        #     flash('Error fetching interviews', 'error')
+        #     return redirect(url_for('company_dashboard'))
+
+     
+       
+        # questions = get_interview_response.json().get('questions')
+
+        questions = [
+        "What are the main differences between React and Vue?",
+        "How do you handle state management in large applications?",
+        "Describe your approach to responsive design."
+    ]
+           
+        
+        return render_template('answer_question.html', questions=questions, target_question_id=question_id)
+    
+    except Exception as e:
+        flash(f'Error loading questions: {str(e)}', 'error')
+        return redirect(url_for('weekly_questions'))
+
+
+@app.route('/submit_answers/<int:interview_id>', methods=['POST'])
+def submit_answers(interview_id):
+    # """Process the submitted answers for multiple questions."""
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
+    
+    # try:
+    #     # Get all the answers from the form
+    #     answers = []
+    #     for key, value in request.form.items():
+    #         if key.startswith('answer_'):
+    #             question_id = int(key.split('_')[1])
+    #             answers.append((question_id, value))
+
+    #     print(answers)
+       
+     
+    #     # Save the answer to the database
+    #     save_response = requests.post(f"{DATABASE_URL}/add_interview_answers", json={
+    #             'interview_id': interview_id,
+    #             'answers': answers
+    #         })
+            
+    #     if save_response.status_code != 201:
+    #         flash(f'Error saving answer for question {question_id}', 'error')
+         
+                
+    #     interview_response = requests.get(f"{DATABASE_URL}/get_interview/{question_id}")    
+    #     if interview_response.status_code != 201:
+    #             flash(f'Error getting question', 'error')
+    #             return redirect(url_for('weekly_questions'))
+             
+    #     job_id =   interview_response.json().get('job_id') 
+    #     applicant_id = interview_response.json().get('applicant_id') 
+    #     questions =   interview_response.json().get('questions') 
+
+    #     applied_job_response = requests.get(f"{DATABASE_URL}/get_applied_job/{job_id}")    
+    #     if applied_job_response.status_code != 201:
+    #             flash(f'Error getting job', 'error')
+    #             return redirect(url_for('weekly_questions'))
+      
+    #     requirements = applied_job_response.json().get("requirements")
+    #     responsibilities = applied_job_response.json().get("responsibilities")
+
+    #     # Evaluate the answer using the Evaluation_Question model
+    #     eval_response = requests.post(f"{Interview_Questions_URL}/evaluate", json={
+    #            'interview_questions': questions, 
+    #            'interview_answers': answers,
+    #             'requirements': requirements,
+    #             'responsibilities':responsibilities
+    #         })
+            
+    #     if eval_response.status_code != 200:
+    #             flash(f'Answer saved but evaluation failed for question ', 'warning')
+    #             return redirect(url_for('weekly_questions'))
+               
+    #     evaluation = eval_response.json().get('evaluation') 
+
+    #     overall_scores = evaluation.get("overall_scores", {})
+    #     requirements_scores = overall_scores.get("requirements", {})
+    #     responsibilities_scores = overall_scores.get("responsibilities", {})
+
+    #     # Extract the scores, defaulting to 0.0 if not present
+    #     req_avg = requirements_scores.get("average_score_all_answers", 0.0)
+    #     resp_avg = responsibilities_scores.get("average_score_all_answers", 0.0)
+
+    #     # Calculate the average of the two
+    #     final_average = (req_avg + resp_avg) / 2
+            
+    #     if save_response.status_code != 201:
+    #             flash(f'Error saving evaluation', 'error')
+            
+                
+  
+    #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+    #     if user_response.status_code != 200:
+    #             flash('Error fetching user data', 'error')
+    #             return redirect(url_for('weekly_questions'))
+              
+    #     user_data = user_response.json().get('user', {})
+
+    #     offered_job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+    #     if  offered_job_response.status_code != 200:
+    #             flash('Error fetching job data', 'error')
+    #             return redirect(url_for('weekly_questions'))
+               
+    #     offered_job_response = user_response.json().get('', {})
+
+            
+    #         # Assume you've extracted this data:
+    #     first_name = user_data.get('first_name', '')
+    #     last_name = user_data.get('last_name', '')
+    #     email = user_data.get('email', '')
+    #     job_title =  offered_job_response.get('job_title', '')  
+    #     job_level = offered_job_response.get('job_level', '')  
+
+    #     # get all answer
+    #     if final_average >= 50:
+    #         email_body = f"""
+    #         Dear {first_name} {last_name},
+
+    #         We are pleased to inform you that you have successfully passed the second stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.  
+
+    #         🎉 **Congratulations!**  
+
+    #         You are now advancing to the **technical interview**, which will be scheduled shortly. We will send you the details (date, time, and format) very soon.  
+
+    #         In the meantime, please ensure you are prepared for a technical discussion relevant to the role. If you have any questions or need assistance, feel free to reply to this email.  
+
+    #         We appreciate your patience and look forward to continuing the process with you!  
+
+    #         Warm regards,  
+    #         **Hirevo HR Team**  
+    #         hr@hirevo.com  
+    #         """
+    #         msg = Message(
+    #             subject="Passed the Second Phase – Technical Interview Coming Soon 🎯",
+    #             recipients=[email],
+    #             body=email_body
+    #         )
+           
+
+    #         mail.send(msg)    
+    #         get_interview = requests.post(f"{DATABASE_URL}/get_interview_answers/{interview_id}")
+    #         answer_id = get_interview.json().get('id')    
+
+    #         # Save the answer to the database
+    #         save_response = requests.post(f"{DATABASE_URL}/add_Answer_evaluation", json={
+    #             "answer_id": answer_id,
+    #             'evaluation': evaluation,
+    #             "qualified_interview": "qualified"
+
+    #         })
+    #     else:
+    #         save_response = requests.post(f"{DATABASE_URL}/add_Answer_evaluation", json={
+    #             "answer_id": answer_id,
+    #             'evaluation': evaluation,
+    #             "qualified_interview": "Unqualified"
+
+    #         })  
+    #         offered_job_response = requests.get(f"{DATABASE_URL}/get_offered_job") 
+
+    #         if offered_job_response.status_code != 201:
+    #             flash(f'Error getting job', 'error')  
+    #             return redirect(url_for('weekly_questions'))
+
+    #         jobs = offered_job_response.json().get('jobs') 
+    #         eval_all_response = requests.post(f"{Match_all_URL}/evaluate-multi-job", json={
+    #            'interview_questions': questions, 
+    #            'interview_answers': answers,
+    #             'jobs': jobs,
+               
+    #         })
+    #         best_match = eval_all_response.json().get('best_match')
+    #         best_match = eval_all_response.json().get('best_match', {})
+
+    #         # Extract overall scores
+    #         overall_scores = best_match.get('overall_scores', {})
+    #         requirements_scores = overall_scores.get("requirements", {})
+    #         responsibilities_scores = overall_scores.get("responsibilities", {})
+
+    #         # Extract average_score_all_answers with default values
+    #         req_avg = requirements_scores.get("average_score_all_answers", 0.0)
+    #         resp_avg = responsibilities_scores.get("average_score_all_answers", 0.0)
+
+    #         # Calculate combined average
+    #         final_average = (req_avg + resp_avg) / 2
+
+          
+    #         if final_average < 50:
+    #             email_body = f"""
+    #             Dear {first_name} {last_name},
+
+    #             Thank you for your interest in the **{job_title} ({job_level})** position at Hirevo.
+
+    #             After careful consideration, we regret to inform you that at this time, we will not be moving forward with your application for this or any current openings.  
+
+    #             Please know that this decision was not easy, and it does not reflect negatively on your qualifications or experience. We encourage you to apply again in the future as new opportunities arise.  
+
+    #             We sincerely appreciate the time and effort you invested in the application process.  
+
+    #             Wishing you the best in your job search and future endeavors.  
+
+    #             Warm regards,  
+    #             **Hirevo HR Team**  
+    #             hr@hirevo.com  
+    #             """
+
+    #             msg = Message(
+    #                 subject="Application Update from Hirevo",
+    #                 recipients=[email],
+    #                 body=email_body
+    #             )
+
+    #             mail.send(msg)
+    #         else:
+    #             cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{applicant_id}")
+    #             cv_data = cv_response.json().get('cv_data', {})
+
+    #             # final descision
+    #             final_decision_response = requests.post(f"{Final_decision}/final-decision", json={
+    #            'cv_data': cv_data, 
+    #             'jobs': jobs,
+               
+    #              }) 
+    #             evaluation = final_decision_response.json().get('evaluation', {})
+
+    #             # Extract and clean percentage_met
+    #             percentage_str = evaluation.get('percentage_met', '0%')
+    #             percentage_number = float(percentage_str.strip('%'))
+
+    #             # Extract final_reason
+    #             final_reason = evaluation.get('final_reason', 'No reason provided')
+                
+    #             job_title_best = eval_all_response.json().get('job_title')
+    #             job_level_best = eval_all_response.json().get('job_level')
+    #             evaluation =  eval_all_response.json().get('job_level')
+    #             if percentage_number >= 50:
+    #                 email_body = f"""
+    #                 Dear {first_name} {last_name},
+
+    #                 Thank you for taking part in our hiring process.
+
+    #                 While you were not selected for the position of **{job_title} ({job_level})**, we’re excited to let you know that you've been identified as a strong candidate for another opportunity at Hirevo:  
+    #                 **{job_title_best} ({job_level_best})**.
+
+
+    #                 We believe this role better aligns with your background and skills, and we’re pleased to proceed with your application under this new track.
+
+    #                 If you have any questions in the meantime, feel free to reach out.
+
+    #                 We’re looking forward to moving ahead with you!
+
+    #                 Warm regards,  
+    #                 **Hirevo HR Team**  
+    #                 hr@hirevo.com  
+    #                 """
+
+    #                 msg = Message(
+    #                     subject="New Opportunity Match at Hirevo 🎯",
+    #                     recipients=[email],
+    #                     body=email_body
+    #                 )
+
+    #                 mail.send(msg)
+    #                 # Save the answer to the database
+
+    #                 save_response = requests.post(f"{DATABASE_URL}/add_best_match", json={
+    #                     "applicant_id": applicant_id,
+    #                     'job_id': job_id,
+    #                     "evaluation": evaluation
+
+    #                 })
+    #             else:
+    #                 email_body = """"
+    #                 Dear {first_name} {last_name},
+
+    #                 Thank you for taking the time to interview with us for the {job_title} position at Hirevo. We appreciate the effort you put into the process and the opportunity to learn more about your skills and experience.
+
+    #                 After careful consideration, we regret to inform you that your profile does not currently meet the specific requirements for this role or other open positions at Hirevo. {final_reason}
+
+    #                 While we don’t have a match for you at this time, we encourage you to stay connected with us for future opportunities that may align better with your background.
+
+    #                 We sincerely appreciate your interest in joining our team and wish you the best in your job search.
+
+    #                 Warm regards,
+    #                 Hirevo HR Team
+    #                 hr@hirevo.com
+    #                 """
+
+        flash('Your answers have been submitted successfully', 'success')
+        return redirect(url_for('weekly_questions'))
+    
+    # except Exception as e:
+    #     flash(f'Error processing answers: {str(e)}', 'error')
+    #     return redirect(url_for('weekly_questions'))
+
+@app.route('/view_answer/<int:question_id>')
+def view_answer(question_id):
+    # """View a previously submitted answer."""
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
+    print(question_id)
+    try:
+        question = [
+        "What are the main differences between React and Vue?",
+        "How do you handle state management in large applications?",
+        "Describe your approach to responsive design."
+        ]
+        answer = [
+        "What are the main differences between React and Vue?",
+        "How do you handle state management in large applications?",
+        "Describe your approach to responsive design."
+        ]
+        evaluation= 80
+        data = {
+            'question': question,
+            'answer': answer,
+            'evaluation': evaluation
+
+        }
+     
+        
+        return render_template('view_answer.html', answer=data)
+    
+    except Exception as e:
+        print(e)
+        flash(f'Error loading answer: {str(e)}', 'error')
+        return redirect(url_for('weekly_questions'))
+# @app.route('/view_answer/<int:question_id>')
+# def view_answer(question_id):
+#     # """View a previously submitted answer."""
+#     # if 'user_id' not in session:
+#     #     flash('Please login first', 'error')
+#     #     return redirect(url_for('login'))
+    
+#     try:
+#         # Use mock data instead of actual database call
+#         question = next((q for q in MOCK_QUESTIONS if q['id'] == question_id), None)
+        
+#         if not question:
+#             flash('Question not found', 'error')
+#             return redirect(url_for('weekly_questions'))
+        
+#         answer = next((a for a in MOCK_ANSWERS if a['question_id'] == question_id and a['applicant_id'] == session['user_id']), None)
+        
+#         if not answer:
+#             flash('Answer not found', 'error')
+#             return redirect(url_for('weekly_questions'))
+        
+#         # Actual database calls (commented out)
+#         """
+#         # Fetch the question details
+#         question_response = requests.get(f"{Interview_Questions_URL}/get_question/{question_id}")
+        
+#         if question_response.status_code != 200:
+#             flash('Error fetching question details', 'error')
+#             return redirect(url_for('weekly_questions'))
+        
+#         question = question_response.json().get('question', {})
+        
+#         # Fetch the answer details
+#         answer_response = requests.get(
+#             f"{DATABASE_URL}/get_answer",
+#             params={'question_id': question_id, 'applicant_id': session['user_id']}
+#         )
+        
+#         if answer_response.status_code != 200:
+#             flash('Error fetching answer details', 'error')
+#             return redirect(url_for('weekly_questions'))
+        
+#         answer = answer_response.json().get('answer', {})
+#         """
+        
+#         return render_template('view_answer.html', question=question, answer=answer)
+    
+#     except Exception as e:
+#         flash(f'Error loading answer: {str(e)}', 'error')
+#         return redirect(url_for('weekly_questions'))
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)  
