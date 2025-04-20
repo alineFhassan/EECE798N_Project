@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import requests
 import os
 from datetime import datetime
-from flask_mail import Mail, Message
+from flask_mail import Mail
+import re
 
 
 
@@ -14,42 +15,52 @@ app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'zynab.ahmad.saad@gmail.com'  # Replace with your Gmail
 app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'    # ← Your App Password
-
-
 mail = Mail(app)
-# To be Changes 
+
+# Secret Key
 app.secret_key = 'dev-key-123-abc!@#'
 
+# Service Endpoints Configuration
 DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5002')
 CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5003')
 JOB_GENERATOR_URL = os.getenv('JOB_GENERATOR_URL', 'http://job-generator:5004')
 Interview_Questions_URL = os.getenv('Interview_Questions_URL', 'http://cv-job-matcher:5005')
 Match_all_URL = os.getenv('Match_all_URL','http://cv-job-matcher:5006')
 Final_decision = os.getenv('Final_decision''http://final-decision:5006',)
-# Main Dashboard
+
+# ========================
+#  MAIN APPLICATION ENTRY
+# ========================
 @app.route('/')
 def index():
     return render_template('index.html')
 
-### Login ###
+# ========================
+#   LOGIN
+# ========================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = request.form.get('email').strip()
         password = request.form.get('password')
         register_option = request.form.get('user_type')
         
+        # Validate inputs
         if not email or not password or not register_option:
             flash('Please fill in all fields', 'error')
             return redirect(url_for('login'))
         
+        if not validate_email_format(email):
+            flash('Please enter a valid email address', 'error')
+            return redirect(url_for('login'))
+    
         try:
-            # verify credentials for login user
+            # Verifying Credentials 
             auth_response = requests.post(f"{DATABASE_URL}/login", json={
                     'email': email,
                     'password': password,
                     'register_option': register_option
-                })
+                }, timeout=5 ) # ADD TIMEOUT
                 
             if auth_response.status_code == 200:
                     data = auth_response.json()
@@ -57,7 +68,7 @@ def login():
                     session['register_option'] = data.get('register_option')
                     session['email'] = email
                     
-                    # Redirect based on user type
+                     # Redirect based on user type (consider using a mapping)
                     if data.get('register_option') == 'company':
                         if session['user_id'] == 1:
                             return redirect(url_for('hr_dashboard'))
@@ -66,36 +77,83 @@ def login():
                     
                     return redirect(url_for('jobseeker_dashboard'))
             else:
-                flash('Invalid email or password', 'error')
+                # Generic error message to prevent information disclosure
+                flash('Login failed. Please check your credentials and try again', 'error')
                     
         except requests.exceptions.RequestException as e:
-            flash('Connection error: Please try again later', 'error')
+            app.logger.error(f"Login connection error: {str(e)}")
+            flash('Service temporarily unavailable. Please try again later', 'error')
         except Exception as e:
-            flash('An unexpected error occurred', 'error')
-            print(f"Login error: {str(e)}")
-        
+            app.logger.error(f"Login error: {str(e)}")
+            flash('An unexpected error occurred during login', 'error')
         return redirect(url_for('login')) 
     return render_template('login.html')
 
-### Signup ###
+# Function To Validate email
+def validate_email_format(email):
+    """Basic email format validation"""
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
+
+
+# ========================
+#  SIGNUP
+# ========================
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        first_name = request.form.get('first_name')
-        last_name = request.form.get('last_name')
-        email = request.form.get('email')
-        phone = request.form.get('phone_number')
-        date = request.form.get('dob')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+        # 1. Stronger Input Validation
+        first_name = request.form.get('first_name','').strip()
+        last_name = request.form.get('last_name','').strip()
+        email = request.form.get('email','').strip()
+        phone = request.form.get('phone_number','').strip()
+        date_str = request.form.get('dob','').strip()
+        password = request.form.get('password','').strip()
+        confirm_password = request.form.get('confirm_password','').strip()
         
-        # confirm that password and confirm one are matched 
+        # 2. Better Password Validation
+        if len(password) < 8:
+            flash('Password must be at least 8 characters', 'error')
+            return redirect(url_for('signup'))
+            
         if password != confirm_password:
             flash('Passwords do not match', 'error')
             return redirect(url_for('signup'))
         
-        # check that entry are not missing 
-        if not all([first_name, last_name, email, phone, date, password, confirm_password]):
+        # 3. Email Validation
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            flash('Invalid email address', 'error')
+            return redirect(url_for('signup'))
+            
+        # 4. Phone Number Validation (basic)
+        if not phone.isdigit() or len(phone) < 10:
+            flash('Invalid phone number', 'error')
+            return redirect(url_for('signup'))
+        
+        # 5. Date Validation
+        try:
+            # Parse the date in DD/MM/YYYY format
+            dob = datetime.strptime(date_str, '%d/%m/%Y')
+            
+            # Additional validation (e.g., not future date, reasonable age)
+            if dob > datetime.now():
+                flash('Date of birth cannot be in the future', 'error')
+                return redirect(url_for('signup'))
+                
+            # Calculate age
+            age = (datetime.now() - dob).days // 365
+            if age < 13:  # Minimum age requirement
+                flash('You must be at least 13 years old to register', 'error')
+                return redirect(url_for('signup'))
+                
+            # Convert to standard format for storage (YYYY-MM-DD)
+            date_for_storage = dob.strftime('%Y-%m-%d')
+            
+        except ValueError:
+            flash('Invalid date format. Please use DD/MM/YYYY', 'error')
+            return redirect(url_for('signup'))
+        
+        # 6. Check for empty fields after cleaning
+        if not all([first_name, last_name, email, phone, date_str, password]):
             flash('All fields are required', 'error')
             return redirect(url_for('signup'))
         
@@ -105,22 +163,31 @@ def signup():
                 'first_name': first_name,
                 'last_name': last_name,
                 'email': email,
-                'date':date,
+                'date':date_str,
                 'phone_number': phone,
                 'password': password
-            })
+            }, timeout=10)
             
             if response.status_code == 201:
                 flash('Registration successful! Please login.', 'success')
                 return redirect(url_for('login'))
             else:
-                flash(response.json().get('message', 'Registration failed'), 'error')
+                try:
+                    error_msg = response.json().get('message', 'Registration failed')
+                    flash(error_msg, 'error')
+                except ValueError:
+                    flash('Registration failed - server error', 'error')
+        except requests.exceptions.RequestException as e:
+            flash('Service temporarily unavailable. Please try again later.', 'error')
+            app.logger.error(f"Signup API error: {str(e)}")
         except Exception as e:
-            flash('Connection error: ' + str(e), 'error')
+            flash('An unexpected error occurred', 'error')
+            app.logger.exception("Unexpected signup error")
         
         return redirect(url_for('signup'))
     
     return render_template('signup.html')
+
 
 ### jobseeker required view function ###
 
