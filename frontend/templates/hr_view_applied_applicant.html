@@ -210,10 +210,7 @@
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <a href="{{ url_for('view_application', app_id=applicant.id) }}" 
-                       class="btn-icon" title="View Full Profile">
-                      <i class="fas fa-user"></i>
-                    </a>
+                
                     
                     {% if applicant.similarity_score < 60 %}
                     <a href="{{ url_for('reject_applicant', applicant_id=applicant.id, job_id=job.id) }}" 

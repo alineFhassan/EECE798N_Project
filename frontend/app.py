@@ -95,7 +95,6 @@ def validate_email_format(email):
     """Basic email format validation"""
     return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
 
-
 # ========================
 #  SIGNUP
 # ========================
@@ -276,7 +275,6 @@ def upload_cv():
     
     return render_template('upload_cv.html')     
 
-
 # -------- APPLICANT PROFILE PAGE  --------
 @app.route('/profile')
 def jobseeker_profile():
@@ -316,7 +314,6 @@ def jobseeker_profile():
     
     return redirect(url_for('jobseeker_dashboard'))
 
-
 # -------- APPLICANT DASHBOARD --------
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
@@ -326,7 +323,7 @@ def jobseeker_dashboard():
     
     try:
         # Get all jobs from database
-        response = requests.get(f"{DATABASE_URL}/get_offered_job")
+        response = requests.get(f"{DATABASE_URL}/get_offered_job",timeout=10)
         if response.status_code != 200:
             flash('Error fetching jobs', 'error')
             return render_template('jobseeker_dashboard.html', jobs=[])
@@ -339,7 +336,7 @@ def jobseeker_dashboard():
         # Get department names for open jobs
         for job in open_jobs:
             dept_id = job['dept_id']
-            dept_response = requests.get(f"{DATABASE_URL}/get_department/{dept_id}")
+            dept_response = requests.get(f"{DATABASE_URL}/get_department/{dept_id}",timeout=10)
             if dept_response.status_code == 200:
                 department = dept_response.json().get('department', {})
                 job['department_name'] = department.get('department_name', 'N/A')
@@ -347,7 +344,7 @@ def jobseeker_dashboard():
                 job['department_name'] = 'N/A'
         
         # Check if user has uploaded CV
-        cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{session['user_id']}")
+        cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{session['user_id']}",timeout=10)
         has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
         # Handle job application
@@ -363,7 +360,7 @@ def jobseeker_dashboard():
                 return redirect(url_for('jobseeker_dashboard'))
 
             # Get job details
-            job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+            job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}",timeout=10)
             if job_response.status_code != 200:
                 flash('Error fetching job details', 'error')
                 return redirect(url_for('jobseeker_dashboard'))
@@ -413,160 +410,66 @@ def jobseeker_dashboard():
         flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('jobseeker_dashboard.html', jobs=[])
 
-### company required view functions ###
 
-### company dashboard ###
+# ========================
+#  APPLICANR DASHBOARD
+# ========================
+
+# -------- DEPARTMENT DASHBOARD --------
 @app.route('/company_dashboard')
 def company_dashboard():
-    # if 'user_id' not in session:
-    #     flash('Please login', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login', 'error')
+        return redirect(url_for('login'))
     
     try:
-        # Get jobs posted by department
         dept_id = session['user_id']
-        job_offere_response = requests.get(f"{DATABASE_URL}/get_offered_job/{dept_id}")
+        job_offer_response = requests.get(f"{DATABASE_URL}/get_offered_job/{dept_id}",timeout=10)
         
-        if job_offere_response.status_code != 200:
-            flash('Error fetching your department jobs', 'error')
-            return render_template('company_dashboard.html', jobs=[])
+        if job_offer_response.status_code != 200:
+            flash('Error fetching your company jobs', 'error')
+            return render_template('company_dashboard.html', jobs=[], stats={})
         
-        jobs = job_offere_response.json().get('jobs', [])
+        jobs = job_offer_response.json().get('jobs', [])
+        
+        # Transform job data to match template expectations
+        processed_jobs = []
+        for job in jobs:
+            processed_job = {
+                'id': job.get('ID', job.get('id', 0)),
+                'job_title': job.get('job_title', ''),
+                'job_level': job.get('job_level', ''),
+                'years_experience': job.get('years_experience', ''),
+                'date_offering': job.get('created_at', ''),
+                'status': job.get('status', ''),
+              
+            }
+            processed_jobs.append(processed_job)
 
-        job_ids = [job['ID'] for job in jobs]
-
-        # 2. Get all applicants who applied to these jobs
-        applicants = []
-        if job_ids:
-            applicants_response = requests.post(f"{DATABASE_URL}/get_all_applicants/{job_ids}")
-            
-            if applicants_response.status_code == 200:
-                applicants = applicants_response.json().get('applicants', [])
-
-        # 3. Prepare statistics
+        # Calculate Some Statics To Display
         stats = {
-            'total_jobs': len(jobs),
-            'open_jobs': sum(1 for job in jobs if job['status'] == 'open'),
-            'closed_jobs': sum(1 for job in jobs if job['status'] == 'closed'),
-            'total_applicants': len(applicants),         
+            'total_jobs': len(processed_jobs),
+            'open_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'open'),
+            'closed_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'closed'),
+            'total_applicants': sum(job.get('applicant_count', 0) for job in processed_jobs)
         }
-
+        
         return render_template(
-            'department_dashboard.html',
-            jobs=jobs,
+            'company_dashboard.html',
+            jobs=processed_jobs,
             stats=stats
         )
 
     except Exception as e:
-       flash(f'Error loading dashboard: {str(e)}', 'error')
-    jobs=  [
-        {
-        "id": 42,
-        "title": "Senior Python Developer",
-        "description": "We're looking for an experienced Python developer...",
-        "company_id": 15,
-        "job_level": "Senior",
-        "years_experience": "5+ years",
-        "responsibilities": ["Design services", "Mentor juniors"],
-        "requirements": ["5+ Python", "Flask/Django"],
-        "created_at": "2023-11-15T14:30:22.123456",
-        "company": {
-            "id": 15,
-            "name": "Tech Innovations Inc."
-        },
-        "applicant_count": 8
-        },
-        {
-        "id": 43,
-        "title": "Frontend Engineer",
-        "description": "Looking for React specialist...",
-        "company_id": 15,
-        "job_level": "Mid Level",
-        "years_experience": "3-5 years",
-        "responsibilities": ["Build UIs", "Optimize performance"],
-        "requirements": ["3+ React", "TypeScript"],
-        "created_at": "2023-11-10T09:15:33.456789",
-        "company": {
-            "id": 15,
-            "name": "Tech Innovations Inc."
-        },
-        "applicant_count": 12
-        },
-         {
-        "id": 43,
-        "title": "Frontend Engineer",
-        "description": "Looking for React specialist...",
-        "company_id": 15,
-        "job_level": "Mid Level",
-        "years_experience": "3-5 years",
-        "responsibilities": ["Build UIs", "Optimize performance"],
-        "requirements": ["3+ React", "TypeScript"],
-        "created_at": "2023-11-10T09:15:33.456789",
-        "company": {
-            "id": 15,
-            "name": "Tech Innovations Inc."
-        },
-        "applicant_count": 12
-        },
-         {
-        "id": 43,
-        "title": "Frontend Engineer",
-        "description": "Looking for React specialist...",
-        "company_id": 15,
-        "job_level": "Mid Level",
-        "years_experience": "3-5 years",
-        "responsibilities": ["Build UIs", "Optimize performance"],
-        "requirements": ["3+ React", "TypeScript"],
-        "created_at": "2023-11-10T09:15:33.456789",
-        "company": {
-            "id": 15,
-            "name": "Tech Innovations Inc."
-        },
-        "applicant_count": 12
-        }
-    ]
-    stats = {
-            'total_jobs': 2,
-            'open_jobs': 2,
-            'closed_jobs': 2,
-            'total_applicants': 2,     
-        }
-    
-        # return render_template('company_dashboard.html', jobs=[])
-    return render_template('company_dashboard.html',jobs=jobs, stats=stats)
-
-### view all offered Job ###
-@app.route('/view_all_jobs')
-def view_all_jobs():
-    try:
-        dept_id = session['user_id']
-        job_offere_response = requests.get(f"{DATABASE_URL}/get_offered_job/{dept_id}")
-        
-        if job_offere_response.status_code != 200:
-            flash('Error fetching jobs', 'error')
-            return redirect(url_for('company_dashboard'))
-        
-        jobs = job_offere_response.json().get('jobs', [])
-        
-        return render_template('all_jobs.html', jobs=jobs)
-        
-    except Exception as e:
-        flash(f'Error loading jobs: {str(e)}', 'error')
-        return redirect(url_for('company_dashboard'))
-    
-@app.template_filter('format_date')
-def format_date_filter(date_str):
-    try:
-        date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S')
-        return date_obj.strftime('%b %d, %Y')
-    except:
-        return date_str
-    
+        flash(f'Error loading dashboard: {str(e)}', 'error')
+        return render_template('company_dashboard.html', jobs=[], stats={})
+      
+# -------- OFFER NEW JOB --------
 @app.route('/post_job', methods=['POST','GET'])
 def post_job():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
     if request.method == 'POST':
         try:
@@ -625,13 +528,12 @@ def post_job():
         
     return render_template('post_job.html')
 
-
-
+# -------- DISPLAY JOB OFFERED BY DEPARTMENT --------
 @app.route('/job_applicants/<int:job_id>')
 def job_applicants(job_id):
     # try:
     #     # First get the job details
-    #     job_response = requests.get(f"{DATABASE_URL}/jobs/{job_id}")
+    #     job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
     #     if job_response.status_code != 200:
     #         flash('Job not found', 'error')
     #         return redirect(url_for('company_dashboard'))
@@ -644,7 +546,7 @@ def job_applicants(job_id):
     #         return redirect(url_for('company_dashboard'))
         
     #     # Get all applications from the database
-    #     applications_response = requests.get(f"{DATABASE_URL}/get_applications")
+    #     applications_response = requests.get(f"{DATABASE_URL}/get_applicat")
     #     if applications_response.status_code != 200:
     #         flash('Error fetching applications', 'error')
     #         return render_template('job_applicants.html', job=job, applicants=[])
@@ -781,94 +683,15 @@ def job_applicants(job_id):
     return render_template('job_applicants.html', 
                              job=job, 
                              applicants=all_applications)
-@app.route('/view_application/<int:app_id>')
-def view_application(app_id):
-    # In a real application, you would:
-    # 1. Verify the user is logged in as a company
-    # 2. Verify this application is for one of their jobs
-    # 3. Fetch the application details from your database
-    
-    # For demo purposes, we'll use the test data
-    job = {
-        "id": 42,
-        "title": "Senior Python Developer",
-        "company": {
-            "id": 15,
-            "name": "Tech Innovations Inc."
-        }
-    }
-    
-    # Find the applicant in our test data
-    all_applications = [
-        {
-            "id": 101,
-            "name": "John Smith",
-            "email": "john.smith@example.com",
-            "phone_number": "+1 (555) 123-4567",
-            "exp_years": 6,
-            "skills": ["Python", "Flask", "Django", "PostgreSQL", "AWS"],
-            "experience": [
-                {"role": "Senior Developer", "company": "TechCorp", "years": 3},
-                {"role": "Python Developer", "company": "WebSolutions", "years": 3}
-            ],
-            "education": {
-                "degree": "B.Sc Computer Science",
-                "school": "State University"
-            },
-            "match_score": 0.92
-        },
-        {
-            "id": 102,
-            "name": "Maria Garcia",
-            "email": "maria.g@example.com",
-            "phone_number": "+1 (555) 987-6543",
-            "exp_years": 5,
-            "skills": ["Python", "Django", "JavaScript", "MySQL"],
-            "experience": [
-                {"role": "Backend Developer", "company": "DataSystems", "years": 5}
-            ],
-            "education": {
-                "degree": "M.Sc Software Engineering",
-                "school": "Tech Institute"
-            },
-            "match_score": 0.85
-        },
-        {
-            "id": 103,
-            "name": "David Kim",
-            "email": "david.kim@example.com",
-            "phone_number": "+1 (555) 456-7890",
-            "exp_years": 7,
-            "skills": ["Python", "FastAPI", "MongoDB", "Docker"],
-            "experience": [
-                {"role": "Lead Developer", "company": "InnovateCo", "years": 4},
-                {"role": "Python Developer", "company": "CodeMasters", "years": 3}
-            ],
-            "education": {
-                "degree": "B.Eng Computer Engineering",
-                "school": "Polytechnic University"
-            },
-            "match_score": 0.78
-        }
-    ]
-    
-    applicant = next((app for app in all_applications if app['id'] == app_id), None)
-    
-    if not applicant:
-        flash('Applicant not found', 'error')
-        return redirect(url_for('company_dashboard'))
-    
-    return render_template('view_application.html', 
-                         job=job, 
-                         applicant=applicant)
 
-
-### HR ###  
+# ========================
+#  APPLICANR DASHBOARD
+# ========================
 @app.route('/hr_dashboard')
 def hr_dashboard():
     return render_template('hr_dashboard.html')
 
-### list of applicant applied to a Job ###
+# -------- LIST OF APPLICANT APPLIED TO A JOB--------
 @app.route('/hr_applied_applicant/<int:job_id>')
 def hr_view_applied_applicant(job_id): 
     # # Fetch job details --> requirements 
@@ -963,10 +786,7 @@ def hr_view_applied_applicant(job_id):
                          job=job, 
                          applicants=applicants)
 
-
-
-
-### If match score fit requirement then schedule a meeting ###
+# -------- SCHEDULE A MEETING IF MATCH THE BEST SCORE --------
 @app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>', methods=['GET', 'POST'])
 def schedule_meeting(applicant_id, job_id):
     # if 'user_id' not in session:
@@ -1183,9 +1003,7 @@ def schedule_meeting(applicant_id, job_id):
     # Send all interview data to the template
     return render_template('schedule_interview.html', meetings=meeting_data, applicant_id=applicant_id,job_id =job_id)
 
-
-
-
+# -------- SEND REJECT EMAIL IF DOESN'T MATCH BEST SCORE --------
 @app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
 def reject_applicant(applicant_id, job_id):
     # try:
@@ -1265,32 +1083,7 @@ def reject_applicant(applicant_id, job_id):
     
     return redirect(url_for('hr_view_applied_applicant', job_id=job_id, applicants=applicant_id))
 
-
-MEETINGS = [
-    {
-        "id": 123,
-        "title": "Product Development Standup",
-        "date": "2024-05-22",
-        "start_time": "09:00",
-        "end_time": "10:00",
-        "duration": "1 hour",
-        "team": "Team Alpha",
-        "location": "Virtual",
-        "meeting_type": "Zoom Meeting",
-        "status": "upcoming",
-        "questions": [
-            {"id": 1, "text": "What progress has been made on the new feature implementation?", "priority": "high", "answered": False},
-            {"id": 2, "text": "Are there any blockers that need to be addressed?", "priority": "medium", "answered": False},
-            {"id": 3, "text": "What is the timeline for the next release?", "priority": "high", "answered": False},
-            {"id": 4, "text": "What resources are needed for the upcoming sprint?", "priority": "medium", "answered": False},
-            {"id": 5, "text": "How can we improve our development process?", "priority": "low", "answered": False}
-        ]
-    },
-    # Add more meetings here
-]
-
-
-
+# -------- DISPLAY ALL JOB OFFERED  --------
 ### Offered Job List ###
 @app.route('/offered_job')
 def offered_job():
@@ -1445,10 +1238,8 @@ def offered_job():
 
     return render_template('offered_job.html', jobs=jobs)  
 
-# Answers 
-# Mock data for testing
-from datetime import datetime, timedelta
 
+# -------- DISPLAY QUESTION FOR INTERVIEW AND FILTER BY DAY --------
 # @app.route('/weekly_questions')
 # def weekly_questions():    
 #     try:
@@ -1559,6 +1350,7 @@ from datetime import datetime, timedelta
 #                                selected_date_display=today.strftime('%A, %b %d, %Y'),
 #                                day_of_week=today.strftime('%A'))
 
+# -------- USE FOR TEST --------
 @app.route('/weekly_questions')
 def weekly_questions():    
     try:
@@ -1653,8 +1445,8 @@ def weekly_questions():
                               selected_date_display=today.strftime('%A, %b %d, %Y'),
                               day_of_week=today.strftime('%A'))
 
+# -------- DISPLAY INTERVIEW QUESTIONS AND THEIR ANSWERS  --------
 @app.route('/answer_question/<int:question_id>')
-
 def answer_question(question_id):
     print("submit", question_id)
     # """Display a form with a list of questions to answer."""
@@ -1686,7 +1478,7 @@ def answer_question(question_id):
         flash(f'Error loading questions: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
 
-
+# -------- SUBMIT ANSWERS OF INTERVIEW QUESTION  --------
 @app.route('/submit_answers/<int:interview_id>', methods=['POST'])
 def submit_answers(interview_id):
     # """Process the submitted answers for multiple questions."""
@@ -1965,6 +1757,7 @@ def submit_answers(interview_id):
     #     flash(f'Error processing answers: {str(e)}', 'error')
     #     return redirect(url_for('weekly_questions'))
 
+# -------- VIEW INTERVIEW ANSWERS AND THEIR QUESTIONS  --------
 @app.route('/view_answer/<int:question_id>')
 def view_answer(question_id):
     # """View a previously submitted answer."""
@@ -1998,56 +1791,6 @@ def view_answer(question_id):
         print(e)
         flash(f'Error loading answer: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
-# @app.route('/view_answer/<int:question_id>')
-# def view_answer(question_id):
-#     # """View a previously submitted answer."""
-#     # if 'user_id' not in session:
-#     #     flash('Please login first', 'error')
-#     #     return redirect(url_for('login'))
-    
-#     try:
-#         # Use mock data instead of actual database call
-#         question = next((q for q in MOCK_QUESTIONS if q['id'] == question_id), None)
-        
-#         if not question:
-#             flash('Question not found', 'error')
-#             return redirect(url_for('weekly_questions'))
-        
-#         answer = next((a for a in MOCK_ANSWERS if a['question_id'] == question_id and a['applicant_id'] == session['user_id']), None)
-        
-#         if not answer:
-#             flash('Answer not found', 'error')
-#             return redirect(url_for('weekly_questions'))
-        
-#         # Actual database calls (commented out)
-#         """
-#         # Fetch the question details
-#         question_response = requests.get(f"{Interview_Questions_URL}/get_question/{question_id}")
-        
-#         if question_response.status_code != 200:
-#             flash('Error fetching question details', 'error')
-#             return redirect(url_for('weekly_questions'))
-        
-#         question = question_response.json().get('question', {})
-        
-#         # Fetch the answer details
-#         answer_response = requests.get(
-#             f"{DATABASE_URL}/get_answer",
-#             params={'question_id': question_id, 'applicant_id': session['user_id']}
-#         )
-        
-#         if answer_response.status_code != 200:
-#             flash('Error fetching answer details', 'error')
-#             return redirect(url_for('weekly_questions'))
-        
-#         answer = answer_response.json().get('answer', {})
-#         """
-        
-#         return render_template('view_answer.html', question=question, answer=answer)
-    
-#     except Exception as e:
-#         flash(f'Error loading answer: {str(e)}', 'error')
-#         return redirect(url_for('weekly_questions'))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)  

@@ -40,7 +40,7 @@
                 <th>Experience</th>
                 <th>Contact</th>
                 <th>Skills</th>
-                <th>Actions</th>
+           
               </tr>
             </thead>
             <tbody>
@@ -48,9 +48,9 @@
               <tr>
                 <td>
                   <div class="applicant-info">
-                    <div class="applicant-avatar">{{ applicant.name|first|upper }}</div>
+                    <div class="applicant-avatar">{{ applicant.name }}</div>
                     <div>
-                      <div class="applicant-name">{{ applicant.name }}</div>
+                      
                     </div>
                   </div>
                 </td>
@@ -79,17 +79,7 @@
                     {% endif %}
                   </div>
                 </td>
-                <td>
-                  <div class="action-buttons">
-                    <a href="{{ url_for('view_application', app_id=applicant.id) }}" 
-                       class="btn-icon" title="View Full Profile">
-                      <i class="fas fa-user"></i>
-                    </a>
-                    <button class="btn-icon" title="Schedule Interview">
-                      <i class="fas fa-calendar-alt"></i>
-                    </button>
-                  </div>
-                </td>
+              
               </tr>
               {% endfor %}
             </tbody>
