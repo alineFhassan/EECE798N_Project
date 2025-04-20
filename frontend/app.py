@@ -816,7 +816,7 @@ def hr_view_applied_applicant(job_id):
     #     })
 
     job = {
-        "iD": 101,
+        "id": 101,
         "job_title": "Senior Backend Engineer",
         "job_level": "Mid-Senior",
         "years_experience": 5,
@@ -1089,19 +1089,84 @@ def schedule_meeting(applicant_id, job_id):
 
 @app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
 def reject_applicant(applicant_id, job_id):
-    # Add your rejection logic here
-    # For example:
-    # 1. Update the applicant's status in the database
-    # 2. Send a rejection email
-    # 3. Log the action
+    # try:
+    #     # Get applicant details
+    #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+    #     if user_response.status_code != 200:
+    #         flash('Error fetching applicant data', 'error')
+    #         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
+        
+    #     user_data = user_response.json()
+    #     first_name = user_data.get('first_name', '')
+    #     last_name = user_data.get('last_name', '')
+    #     email = user_data.get('email', '')
+
+    #     # Get job details
+    #     job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+    #     if job_response.status_code != 200:
+    #         flash('Error fetching job data', 'error')
+    #         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
+        
+    #     job_data = job_response.json()
+    #     job_title = job_data.get('job_title', 'the position')
+    #     company_name = "Hirevo"  # You might want to fetch this from your database
+
+    #     # Construct rejection email
+    #     subject = f"Update on Your Application for {job_title}"
+        
+    #     email_body = f"""
+    #     Dear {first_name} {last_name},
+
+    #     Thank you for taking the time to apply for the {job_title} position at {company_name} 
+    #     and for sharing your qualifications with us.
+
+    #     After careful consideration, we regret to inform you that we have decided to move forward 
+    #     with other candidates whose qualifications more closely match our current needs.
+
+    #     We genuinely appreciate your interest in {company_name} and the effort you put into your 
+    #     application. This decision was not easy to make, as we were impressed with many aspects 
+    #     of your background.
+
+    #     We encourage you to apply for future openings that may be a better fit for your skills 
+    #     and experience. We'll keep your resume on file and will reach out if any suitable 
+    #     opportunities arise.
+
+    #     We wish you the best in your job search and future career endeavors.
+
+    #     Sincerely,
+    #     The Hiring Team
+    #     {company_name}
+    #     hr@{company_name.lower()}.com
+    #     """
+
+    #     # Send email (assuming you have Flask-Mail configured)
+    #     msg = Message(
+    #         subject=subject,
+    #         recipients=[email],
+    #         body=email_body
+    #     )
+    #     mail.send(msg)
+
+    #     # Update applicant status in database (optional)
+    #     # update_response = requests.put(f"{DATABASE_URL}/update_application_status", json={
+    #     #     'applicant_id': applicant_id,
+    #     #     'job_id': job_id,
+    #     #     'status': 'rejected'
+    #     # })
+
+    #     print('Applicant has been rejected', 'success')
     
-    # Example pseudocode:
-    # applicant = get_applicant_by_id(applicant_id)
-    # update_applicant_status(applicant_id, 'Rejected')
-    # send_rejection_email(applicant.email)
+    #     return redirect(url_for('hr_view_applied_applicant', job_id=job_id, applicants=applicant_id))
+    # except Exception as e:
+    #     print(f"Error rejecting applicant: {str(e)}")
+    #     flash('An error occurred while processing the rejection', 'error')
+    #     return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
     
+    # Just testing output
     print('Applicant has been rejected', 'success')
-    return redirect(url_for('hr_view_applied_applicant'))    
+    
+    return redirect(url_for('hr_view_applied_applicant', job_id=job_id, applicants=applicant_id))
+
 
 MEETINGS = [
     {
