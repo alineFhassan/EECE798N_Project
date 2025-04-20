@@ -873,113 +873,216 @@ def schedule_meeting(applicant_id, job_id):
     #     return redirect(url_for('login'))
 
     if request.method == 'POST':
-        meeting_title = request.form['title']
-        meeting_date = request.form['date']
-        start_time = request.form['start_time']
-        end_time = request.form['end_time']
-   
-
-        user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
-        if user_response.status_code != 200:
-            flash('Error fetching user data', 'error')
-            return redirect(url_for('schedule_meeting'))
-        user_data = user_response.json().get('user', {})
-
-        offered_job_response = requests.get(f"{DATABASE_URL}/get_aoffered_job/{job_id}")
-        if  offered_job_response.status_code != 200:
-            flash('Error fetching job data', 'error')
-            return redirect(url_for('schedule_meeting'))
-        offered_job_response = user_response.json().get('', {})
-
+        meeting_id = request.form.get('meeting_id', '')
+        # meeting_title = request.form['title']
+        # meeting_date = request.form['date']
+        # start_time = request.form['start_time']
+        # end_time = request.form['end_time']
+        # Get applicant_id and job_id from form
+        form_applicant_id = request.form.get('applicant_id', '')
+        form_job_id = request.form.get('job_id', '')
+        print(form_job_id)
+    
+    # Check if we're updating an existing meeting
+        if meeting_id:
+            print(meeting_id)
+            # updated_meeting = {
+            # 'meeting_id': meeting_id,
+            # 'meeting_title': request.form.get('title', ''),
+            # 'meeting_date': request.form.get('date', ''),
+            # 'start_time': request.form.get('start_time', ''),
+            # 'end_time': request.form.get('end_time', ''),
+            # 'applicant_id': request.form.get('applicant_id', ''),
+            # 'job_id': request.form.get('job_id', '')
+            # }
         
-        # Assume you've extracted this data:
-        first_name = user_data.get('first_name', '')
-        last_name = user_data.get('last_name', '')
-        email = user_data.get('email', '')
-        job_title =  offered_job_response.get('job_title', '')  
-        job_level = offered_job_response.get('job_level', '')  
- 
-  
-        # Construct a professional message body
-       # Construct email body for in-person interview
-        email_body = f"""
-        Dear {first_name} {last_name},
-
-        We are pleased to inform you that you have successfully passed the first stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
-
-        🎉 **Congratulations!**
-
-        We would like to invite you to the next step — an **in-person interview** with our hiring team.
-
-        **Interview Details**
-        - **Title:** {meeting_title}
-        - **Date:** {meeting_date}
-        - **Time:** {start_time} - {end_time}
-        - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
-
-        Please make sure to arrive at least 10 minutes early and bring:
-        - A copy of your resume
-        - A valid ID for entry
-
-        If you have any questions or need to reschedule, please reply to this email or contact us directly.
-
-        We look forward to meeting you in person!
-
-        Warm regards,  
-        **Hirevo HR Team**  
-        hr@hirevo.com
-        """
-        job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
-        if job_response.status_code != 200:
-            flash('Error fetching job details', 'error')
-            return redirect(url_for('jobseeker_dashboard'))
-                
-        job_data = job_response.json().get('job', {})
-                
-                 # check if the status of job is open
-        if job_data.get('status', '').lower() != 'open':
-            flash('This job is no longer available', 'error')
-            return redirect(url_for('jobseeker_dashboard'))
-               
-        cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{applicant_id}")
-        cv_data = cv_response.json().get('cv_data', {})
-        generate_question_response = requests.post(
-                    f"{Interview_Questions_URL}/handle_question_generation",
-                    json={
-                        'cv': cv_data,
-                        'job': job_data
-                    }
-                )
+            # # Make the API call to update the meeting in your database
+            # update_response = requests.put(f"{DATABASE_URL}/update_interview/{meeting_id}", json=updated_meeting)
+            # if update_response.status_code == 200:
+            #     print('Meeting updated successfully!')
+            #     flash('Meeting updated successfully!', 'success')
+            # Update existing meeting
+            # In a real app, you would update the meeting in your database
+            print('Meeting updated successfully!')
+            flash('Meeting updated successfully!', 'success')
+        else:
+            print("schedule is submitted")
+        #    # Create new meeting
         
+        #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+        #     if user_response.status_code != 200:
+        #         flash('Error fetching user data', 'error')
+        #         return redirect(url_for('schedule_meeting'))
+        #     user_data = user_response.json().get('user', {})
 
-        msg = Message(
-            subject="You're Invited: Next Step in Your Hirevo Application 🎯",
-            recipients=[email],
-            body=email_body
-        )
-        save_interview = requests.post(f"{DATABASE_URL}/add_interview", json={
-            'interview': {
-                "applicant_id": applicant_id,
-                "job_id": job_id,
-                'meeting_title': request.form['title'],
-                'meeting_date': request.form['date'],
-                'start_time': request.form['start_time'],
-                'end_time': request.form['end_time']
-            },
-            'questions': generate_question_response
-        })
+        #     offered_job_response = requests.get(f"{DATABASE_URL}/get_aoffered_job/{job_id}")
+        #     if  offered_job_response.status_code != 200:
+        #         flash('Error fetching job data', 'error')
+        #         return redirect(url_for('schedule_meeting'))
+        #     offered_job_response = user_response.json().get('', {})
+
+            
+        #     # Assume you've extracted this data:
+        #     first_name = user_data.get('first_name', '')
+        #     last_name = user_data.get('last_name', '')
+        #     email = user_data.get('email', '')
+        #     job_title =  offered_job_response.get('job_title', '')  
+        #     job_level = offered_job_response.get('job_level', '')  
+    
+    
+        #     # Construct a professional message body
+        # # Construct email body for in-person interview
+        #     email_body = f"""
+        #     Dear {first_name} {last_name},
+
+        #     We are pleased to inform you that you have successfully passed the first stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
+
+        #     🎉 **Congratulations!**
+
+        #     We would like to invite you to the next step — an **in-person interview** with our hiring team.
+
+        #     **Interview Details**
+        #     - **Title:** {meeting_title}
+        #     - **Date:** {meeting_date}
+        #     - **Time:** {start_time} - {end_time}
+        #     - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
+
+        #     Please make sure to arrive at least 10 minutes early and bring:
+        #     - A copy of your resume
+        #     - A valid ID for entry
+
+        #     If you have any questions or need to reschedule, please reply to this email or contact us directly.
+
+        #     We look forward to meeting you in person!
+
+        #     Warm regards,  
+        #     **Hirevo HR Team**  
+        #     hr@hirevo.com
+        #     """
+        #     job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+        #     if job_response.status_code != 200:
+        #         flash('Error fetching job details', 'error')
+        #         return redirect(url_for('jobseeker_dashboard'))
+                    
+        #     job_data = job_response.json().get('job', {})
+                    
+        #             # check if the status of job is open
+        #     if job_data.get('status', '').lower() != 'open':
+        #         flash('This job is no longer available', 'error')
+        #         return redirect(url_for('jobseeker_dashboard'))
+                
+        #     cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{applicant_id}")
+        #     cv_data = cv_response.json().get('cv_data', {})
+        #     generate_question_response = requests.post(
+        #                 f"{Interview_Questions_URL}/handle_question_generation",
+        #                 json={
+        #                     'cv': cv_data,
+        #                     'job': job_data
+        #                 }
+        #             )
+            
+
+        #     msg = Message(
+        #         subject="You're Invited: Next Step in Your Hirevo Application 🎯",
+        #         recipients=[email],
+        #         body=email_body
+        #     )
+
+        #     save_interview = requests.post(f"{DATABASE_URL}/add_interview", json={
+        #         'interview': {
+        #             "applicant_id": applicant_id,
+        #             "job_id": job_id,
+        #             'meeting_title': request.form['title'],
+        #             'meeting_date': request.form['date'],
+        #             'start_time': request.form['start_time'],
+        #             'end_time': request.form['end_time']
+        #         },
+        #         'questions': generate_question_response
+        #     })
+
+        #     mail.send(msg)
+        # Redirect to prevent form resubmission
+        return redirect(url_for('schedule_meeting', 
+                                applicant_id=applicant_id, 
+                             job_id=job_id))   
+    # get_interview_response = requests.get(f"{DATABASE_URL}/get_interview")
+
+    # if get_interview_response.status_code != 200:
+    #         flash('Error fetching interviews', 'error')
+    #         return render_template('company_dashboard.html', jobs=[])
+
+    # interviews = get_interview_response.json().get('interviews', [])
+
+    # meeting_data = []
+
+    # for interview in interviews:
+    #         applicant_id = interview.get('applicant_id')
+    #         job_id = interview.get('job_id')
+
+    #         # Skip if missing data
+    #         if not applicant_id or not job_id:
+    #             continue
+
+    #         # Get applicant info
+    #         user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+    #         if user_response.status_code != 200:
+    #             continue
+    #         user_data = user_response.json()
+    #         full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
+
+    #         # Get job info
+    #         job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+    #         if job_response.status_code != 200:
+    #             continue
+    #         job_data = job_response.json()
+    #         job_title = job_data.get('job_title', 'Unknown Job')
+
+    #         # Append full info per interview
+    #         meeting_data.append({
+    #             "applicant_name": full_name,
+    #             "job_title": job_title,
+    #             "meeting_title": interview.get('meeting_title', 'Untitled'),
+    #             "meeting_date": interview.get('meeting_date', ''),
+    #             "start_time": interview.get('start_time', ''),
+    #             "end_time": interview.get('end_time', '')
+    #         })
+    meeting_data = [
+        {
+            "applicant_name": "Alice Johnson",
+            "job_title": "Frontend Developer",
+            "meeting_title": "Frontend Developer Interview",
+            "meeting_date": "2025-04-22",
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "applicant_id": "1",  # Make sure to include these IDs
+            "job_id": "101"
+        },
+        {
+            "applicant_name": "Bob Smith",
+            "job_title": "Backend Developer",
+            "meeting_title": "Backend Developer Interview",
+            "meeting_date": "2025-04-22",
+            "start_time": "12:00",
+            "end_time": "13:00",
+            "applicant_id": "2",
+            "job_id": "102"
+        },
+        {
+            "applicant_name": "Carol Lee",
+            "job_title": "UI/UX Designer",
+            "meeting_title": "Design Interview",
+            "meeting_date": "2025-04-23",
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "applicant_id": "3",
+            "job_id": "103"
+        }
+    ]
+
+    # Send all interview data to the template
+    return render_template('schedule_interview.html', meetings=meeting_data, applicant_id=applicant_id,job_id =job_id)
 
 
-        msg = Message(
-        subject="Hello from Flask",
-        recipients=["zainabsaad5ur4@gmail.com"],  # Replace with who you're emailing
-        body="This is a test email sent from my Flask app using Gmail SMTP."
-        )
-        mail.send(msg)
-        #teyv eues tgoq ipvt
-        # Add logic to handle the form data
-        return "Meeting scheduled successfully"  # For testing purposes
-    return render_template('schedule_interview.html', applicant_id=applicant_id, job_id=job_id)
 
 
 @app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
