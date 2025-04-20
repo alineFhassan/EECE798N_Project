@@ -7,6 +7,16 @@ from flask_mail import Mail, Message
 
 
 app = Flask(__name__)
+
+# Configuring Flask-Mail with Gmail and your App Password
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'zynab.ahmad.saad@gmail.com'  # Replace with your Gmail
+app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'    # ← Your App Password
+
+
+mail = Mail(app)
 # To be Changes 
 app.secret_key = 'dev-key-123-abc!@#'
 
@@ -855,15 +865,7 @@ def hr_view_applied_applicant(job_id):
                          applicants=applicants)
 
 
-# Configuring Flask-Mail with Gmail and your App Password
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'zynab.ahmad.saad@gmail.com'  # Replace with your Gmail
-app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'    # ← Your App Password
 
-
-mail = Mail(app)
 
 ### If match score fit requirement then schedule a meeting ###
 @app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>', methods=['GET', 'POST'])
