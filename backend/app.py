@@ -807,3 +807,342 @@ def get_applicants(job_id):
         if 'conn' in locals():
             conn.close()
 
+@app.route('/get_applied_job/<int:job_id>', methods=['GET'])
+def get_applied_job(job_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # First check if the job exists
+        cursor.execute("""
+            SELECT id FROM jobs
+            WHERE id = %s
+        """, (job_id,))
+        
+        if not cursor.fetchone():
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+
+        # Get all applications for this job
+        cursor.execute("""
+            SELECT 
+                aj.id,
+                aj.applicant_id,
+                aj.status,
+                aj.scores,
+                aj.thresholds,
+                aj.meets_threshold,
+                aj.passed_criteria,
+                aj.qualified_cv,
+                aj.reason,
+                aj.created_at
+            FROM applied_jobs aj
+            WHERE aj.job_id = %s
+            ORDER BY aj.created_at DESC
+        """, (job_id,))
+        
+        applications = []
+        for row in cursor.fetchall():
+            # Parse JSON fields
+            scores = json.loads(row[3]) if row[3] else {}
+            thresholds = json.loads(row[4]) if row[4] else {}
+            meets_threshold = json.loads(row[5]) if row[5] else {}
+            
+            application = {
+                "id": row[0],
+                "applicant_id": row[1],
+                "status": row[2],
+                "scores": scores,
+                "thresholds": thresholds,
+                "meets_threshold": meets_threshold,
+                "passed_criteria": row[6],
+                "qualified_cv": row[7],
+                "reason": row[8],
+                "created_at": row[9].isoformat() if row[9] else None
+            }
+            applications.append(application)
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success", 
+            "job_id": job_id,
+            "applications": applications
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/update_interview/<int:meeting_id>', methods=['PUT'])
+def update_interview(meeting_id):
+    try:
+        data = request.json
+        required_fields = ['meeting_title', 'meeting_date', 'start_time', 'end_time']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if interview exists
+        cursor.execute("""
+            SELECT id FROM interviews 
+            WHERE id = %s
+        """, (meeting_id,))
+        
+        if not cursor.fetchone():
+            return jsonify({"status": "error", "message": "Interview not found"}), 404
+
+        # Update the interview
+        cursor.execute("""
+            UPDATE interviews 
+            SET meeting_title = %s, date = %s, start_time = %s, end_time = %s
+            WHERE id = %s
+        """, (
+            data['meeting_title'],
+            data['meeting_date'],
+            data['start_time'],
+            data['end_time'],
+            meeting_id
+        ))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "message": "Interview updated successfully"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/update_technical_interview/<int:meeting_id>', methods=['PUT'])
+def update_technical_interview(meeting_id):
+    try:
+        data = request.json
+        required_fields = ['meeting_title', 'meeting_date', 'start_time', 'end_time']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if technical interview exists
+        cursor.execute("""
+            SELECT id FROM technical_interviews 
+            WHERE id = %s
+        """, (meeting_id,))
+        
+        if not cursor.fetchone():
+            return jsonify({"status": "error", "message": "Technical interview not found"}), 404
+
+        # Update the technical interview
+        cursor.execute("""
+            UPDATE technical_interviews 
+            SET meeting_title = %s, interview_date = %s, start_time = %s, end_time = %s
+            WHERE id = %s
+        """, (
+            data['meeting_title'],
+            data['meeting_date'],
+            data['start_time'],
+            data['end_time'],
+            meeting_id
+        ))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "message": "Technical interview updated successfully"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/add_technical_interview', methods=['POST'])
+def add_technical_interview():
+    try:
+        data = request.json
+        required_fields = ['interview']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+            
+        interview_data = data['interview']
+        
+        # Validate interview data
+        interview_required_fields = ['applicant_id', 'job_id', 'meeting_title', 'meeting_date', 'start_time', 'end_time']
+        if not all(field in interview_data for field in interview_required_fields):
+            return jsonify({"status": "error", "message": "Missing required interview fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if applicant exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (interview_data['applicant_id'],))
+        if not cursor.fetchone():
+            return jsonify({"status": "error", "message": "Applicant not found"}), 404
+
+        # Check if job exists and is open
+        cursor.execute("SELECT status FROM jobs WHERE id = %s", (interview_data['job_id'],))
+        job = cursor.fetchone()
+        if not job:
+            return jsonify({"status": "error", "message": "Job not found"}), 404
+            
+        if job[0].lower() != 'open':
+            return jsonify({"status": "error", "message": "This job is no longer available"}), 400
+
+        # Check if interview already scheduled for this time slot
+        cursor.execute("""
+            SELECT id FROM technical_interviews 
+            WHERE applicant_id = %s AND job_id = %s AND interview_date = %s AND start_time = %s;
+        """, (
+            interview_data['applicant_id'], 
+            interview_data['job_id'], 
+            interview_data['meeting_date'], 
+            interview_data['start_time']
+        ))
+        
+        if cursor.fetchone():
+            return jsonify({"status": "error", "message": "A technical interview is already scheduled for this time slot"}), 400
+
+        # Insert the technical interview
+        cursor.execute("""
+            INSERT INTO technical_interviews (
+                applicant_id, job_id, meeting_title, interview_date, 
+                start_time, end_time
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id;
+        """, (
+            interview_data['applicant_id'],
+            interview_data['job_id'],
+            interview_data['meeting_title'],
+            interview_data['meeting_date'],
+            interview_data['start_time'],
+            interview_data['end_time']
+        ))
+
+        interview_id = cursor.fetchone()[0]
+        conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Technical interview scheduled successfully",
+            "interview_id": interview_id
+        }), 201
+
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/get_interview', methods=['GET'])
+def get_interview():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get all interviews
+        cursor.execute("""
+            SELECT 
+                id,
+                applicant_id,
+                job_id,
+                meeting_title,
+                date,
+                start_time,
+                end_time,
+                created_at
+            FROM interviews
+            ORDER BY date, start_time
+        """)
+        
+        interviews = []
+        for row in cursor.fetchall():
+            interview = {
+                "id": row[0],
+                "applicant_id": row[1],
+                "job_id": row[2],
+                "meeting_title": row[3],
+                "meeting_date": row[4].isoformat() if row[4] else None,
+                "start_time": row[5].isoformat() if row[5] else None,
+                "end_time": row[6].isoformat() if row[6] else None,
+                "created_at": row[7].isoformat() if row[7] else None
+            }
+            interviews.append(interview)
+
+        # Get all technical interviews
+        cursor.execute("""
+            SELECT 
+                id,
+                applicant_id,
+                job_id,
+                meeting_title,
+                interview_date,
+                start_time,
+                end_time,
+                created_at
+            FROM technical_interviews
+            ORDER BY interview_date, start_time
+        """)
+        
+        technical_interviews = []
+        for row in cursor.fetchall():
+            interview = {
+                "id": row[0],
+                "applicant_id": row[1],
+                "job_id": row[2],
+                "meeting_title": row[3],
+                "meeting_date": row[4].isoformat() if row[4] else None,
+                "start_time": row[5].isoformat() if row[5] else None,
+                "end_time": row[6].isoformat() if row[6] else None,
+                "created_at": row[7].isoformat() if row[7] else None,
+                "is_technical": True
+            }
+            technical_interviews.append(interview)
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success", 
+            "interviews": interviews + technical_interviews
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
