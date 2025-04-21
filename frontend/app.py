@@ -21,13 +21,15 @@ mail = Mail(app)
 app.secret_key = 'dev-key-123-abc!@#'
 
 # Service Endpoints Configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'http://database:5001')
-CV_EXTRACTION =os.getenv('CV_EXTRACTION','"http://cv-extraction:5002"')
-CV_JOB_MATCHER_URL = os.getenv('CV_JOB_MATCHER_URL', 'http://cv-job-matcher:5003')
-JOB_GENERATOR_URL = os.getenv('JOB_GENERATOR_URL', 'http://job-generator:5004')
-Interview_Questions_URL = os.getenv('Interview_Questions_URL', 'http://cv-job-matcher:5005')
-Match_all_URL = os.getenv('Match_all_URL','http://cv-job-matcher:5006')
-Final_decision = os.getenv('Final_decision''http://final-decision:5007',)
+PORT = int(os.environ.get("PORT", 5000))
+CV_EXTRACTION_URL = os.environ.get("CV_EXTRACTION_URL", "http://localhost:5002/extract-cv")
+JOB_DESCRIPTION_URL = os.environ.get("JOB_DESCRIPTION_URL", "http://localhost:5003/generate-job-description")
+CV_JOB_MATCHING_URL = os.environ.get("CV_JOB_MATCHING_URL", "http://localhost:5004/cv-job-match")
+INTERVIEW_QUESTIONS_URL = os.environ.get("INTERVIEW_QUESTIONS_URL", "http://localhost:5005/generate-questions")
+EVALUATE_ANSWERS_URL = os.environ.get("EVALUATE_ANSWERS_URL", "http://localhost:5006/evaluate")
+JOB_MATCHER_ALL_URL = os.environ.get("JOB_MATCHER_ALL_URL", "http://localhost:5007/evaluate-multi-job")
+FINAL_DECISION_URL = os.environ.get("FINAL_DECISION_URL", "http://localhost:5008/final-decision")
+BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:5001")
 
 # ========================
 #  MAIN APPLICATION ENTRY
@@ -57,7 +59,7 @@ def login():
     
         try:
             # Verifying Credentials 
-            auth_response = requests.post(f"{DATABASE_URL}/login", json={
+            auth_response = requests.post(f"{BACKEND_API_URL}/login", json={
                     'email': email,
                     'password': password,
                     'register_option': register_option
@@ -159,7 +161,7 @@ def signup():
         
         try:
             # Call database service to create user
-            response = requests.post(f"{DATABASE_URL}/signup", json={
+            response = requests.post(f"{BACKEND_API_URL}/signup", json={
                 'first_name': first_name,
                 'last_name': last_name,
                 'email': email,
@@ -235,7 +237,7 @@ def upload_cv():
         try:
             # Extract content of cv file 
             files = {'file': (file.filename, file.stream, file.mimetype)}
-            response = requests.post({CV_EXTRACTION}
+            response = requests.post({CV_EXTRACTION_URL}
                     ,
                     files=files,
                     timeout=30
@@ -250,7 +252,7 @@ def upload_cv():
             
             # Save CV data
             save_response = requests.post(
-                        f"{DATABASE_URL}/add_applicant",
+                        f"{BACKEND_API_URL}/add_applicant",
                         json={
                             'cv_data': cv_data,
                             'user_id': session['user_id']
@@ -284,14 +286,14 @@ def jobseeker_profile():
     
     try:
        # Get user info
-        user_response = requests.get(f"{DATABASE_URL}/get_user/{session['user_id']}", timeout=5)
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{session['user_id']}", timeout=5)
         user_response.raise_for_status()
 
         user_data = user_response.json().get('user', {})
         
         # Get application info
         app_response = requests.get(
-            f"{DATABASE_URL}/get_applicat/{session['user_id']}",timeout=5
+            f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=5
         )
         application_data = {}
         if app_response.status_code == 200:
@@ -323,7 +325,7 @@ def jobseeker_dashboard():
     
     try:
         # Get all jobs from database
-        response = requests.get(f"{DATABASE_URL}/get_offered_job",timeout=10)
+        response = requests.get(f"{BACKEND_API_URL}/get_offered_job",timeout=10)
         if response.status_code != 200:
             flash('Error fetching jobs', 'error')
             return render_template('jobseeker_dashboard.html', jobs=[])
@@ -336,7 +338,7 @@ def jobseeker_dashboard():
         # Get department names for open jobs
         for job in open_jobs:
             dept_id = job['dept_id']
-            dept_response = requests.get(f"{DATABASE_URL}/get_department/{dept_id}",timeout=10)
+            dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}",timeout=10)
             if dept_response.status_code == 200:
                 department = dept_response.json().get('department', {})
                 job['department_name'] = department.get('department_name', 'N/A')
@@ -344,7 +346,7 @@ def jobseeker_dashboard():
                 job['department_name'] = 'N/A'
         
         # Check if user has uploaded CV
-        cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{session['user_id']}",timeout=10)
+        cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=10)
         has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
         # Handle job application
@@ -360,7 +362,7 @@ def jobseeker_dashboard():
                 return redirect(url_for('jobseeker_dashboard'))
 
             # Get job details
-            job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}",timeout=10)
+            job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}",timeout=10)
             if job_response.status_code != 200:
                 flash('Error fetching job details', 'error')
                 return redirect(url_for('jobseeker_dashboard'))
@@ -376,7 +378,7 @@ def jobseeker_dashboard():
 
             # Match CV with job
             match_response = requests.post(
-                f"{CV_JOB_MATCHER_URL}/cv-job-match",
+                f"{CV_JOB_MATCHING_URL}/cv-job-match",
                 json={'cv': cv_data, 'job': job_data}
             )
 
@@ -388,7 +390,7 @@ def jobseeker_dashboard():
 
             # Save application
             application_response = requests.post(
-                f"{DATABASE_URL}/add_applied_job",
+                f"{BACKEND_API_URL}/add_applied_job",
                 json={
                     'applicant_id': session['user_id'],
                     'job_id': job_id,
@@ -424,7 +426,7 @@ def company_dashboard():
     
     try:
         dept_id = session['user_id']
-        job_offer_response = requests.get(f"{DATABASE_URL}/get_offered_job/{dept_id}",timeout=10)
+        job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{dept_id}",timeout=10)
         
         if job_offer_response.status_code != 200:
             flash('Error fetching your company jobs', 'error')
@@ -467,14 +469,14 @@ def company_dashboard():
 # -------- OFFER NEW JOB --------
 @app.route('/post_job', methods=['POST','GET'])
 def post_job():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
     
     if request.method == 'POST':
         try:
             # Validate required fields first
-            required_fields = ['jobTitle', 'jobLevel', 'yearsExperience']
+            required_fields = ['jobTitle', 'jobLevel', 'yearsExperience','jobDescription']
             if not all(request.form.get(field) for field in required_fields):
                 flash('Please fill all required fields', 'error')
                 return redirect(url_for('post_job'))
@@ -495,24 +497,23 @@ def post_job():
             flash(f'An unexpected error occurred: {str(e)}', 'error')
             app.logger.error(f"Error creating job posting: {str(e)}")
             return redirect(url_for('post_job'))
+        get_job_description_responce = requests.post(f"{JOB_DESCRIPTION_URL}/generate-job-description",
+                                            json={
+                                            'job_title' : job_data['job_title'],
+                                            'job_level' : job_data['job_level'],
+                                            'years_experience' : job_data['years_experience'],
+                                            'additional_info' : job_data['additional_info']   
+                                         })
+        job_description_responce = get_job_description_responce.json().get('job_description','')
 
-        match_response = requests.post(
-                    f"{CV_JOB_MATCHER_URL}/cv-job-match",
-                    json={
-                    'job_title' : job_data['job_title'],
-                    'department_id' : job_data['department_id'],
-                    'job_level' : job_data['job_level'],
-                    'years_experience' : job_data['years_experience'],
-                    'additional_info' : job_data['additional_info']   
-                    }
-                ) 
-        if match_response.status_code != 200:
-                    flash('Error Extract job description', 'error')
+       
+        if job_description_responce.status_code != 200:
+                    flash('Error saving job description', 'error')
                     return redirect(url_for('post_job'))
  
-        job_description = match_response.json().get('job_description', {})
+        job_description = job_description_responce.json().get('job_description', {})
 
-        add_offer_job_response = requests.post(f"{DATABASE_URL}/add_offer_job", json={
+        add_offer_job_response = requests.post(f"{BACKEND_API_URL}/add_offer_job", json={
                     'job_title' : job_data['job_title'],
                     'department_id' : job_data['department_id'],
                     'job_level' : job_data['job_level'],
@@ -533,7 +534,7 @@ def post_job():
 def job_applicants(job_id):
     # try:
     #     # First get the job details
-    #     job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+    #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
     #     if job_response.status_code != 200:
     #         flash('Job not found', 'error')
     #         return redirect(url_for('company_dashboard'))
@@ -546,7 +547,7 @@ def job_applicants(job_id):
     #         return redirect(url_for('company_dashboard'))
         
     #     # Get all applications from the database
-    #     applications_response = requests.get(f"{DATABASE_URL}/get_applicat")
+    #     applications_response = requests.get(f"{BACKEND_API_URL}/get_applicat")
     #     if applications_response.status_code != 200:
     #         flash('Error fetching applications', 'error')
     #         return render_template('job_applicants.html', job=job, applicants=[])
@@ -702,7 +703,7 @@ def hr_dashboard():
 @app.route('/hr_applied_applicant/<int:job_id>')
 def hr_view_applied_applicant(job_id): 
     # # Fetch job details --> requirements 
-    # job_response = requests.get(f"{DATABASE_URL}/get_offered_jobs/{job_id}")
+    # job_response = requests.get(f"{BACKEND_API_URL}/get_offered_jobs/{job_id}")
     # if job_response.status_code != 200:
     #     flash('Error fetching your offeredt jobs', 'error')
     #     return render_template('hr_view_applied_applicant.html', jobs=[])
@@ -710,7 +711,7 @@ def hr_view_applied_applicant(job_id):
     # job = job_response.json()
     
     # # Fetch applicants for this job --> with his match result
-    # applicants_response = requests.get(f"{DATABASE_URL}/get_applied_job/{job_id}")
+    # applicants_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
     # if applicants_response.status_code != 200:
     #     flash('Error fetching your applicant', 'error')
     #     return render_template('hr_view_applied_applicant.html', jobs=[])
@@ -718,14 +719,14 @@ def hr_view_applied_applicant(job_id):
     # applicants_data = []
     # for application in applicants_response.json():
     #     # Get applicant details
-    #     user_response = requests.get(f"{DATABASE_URL}/get_user/{application['applicant_id']}")
+    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{application['applicant_id']}")
     #     if user_response.status_code != 200:
     #         continue
             
     #     user = user_response.json()
         
     #     # Get applicant CV
-    #     cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{application['applicant_id']}")
+    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{application['applicant_id']}")
     #     cv = cv_response.json()[0] if cv_response.status_code == 200 and cv_response.json() else None
         
     #    # Use the score from applied_job table
@@ -826,12 +827,12 @@ def schedule_meeting(applicant_id, job_id):
             # }
             # if meeting_title == "HR Interview":
             #     # Make the API call to update the meeting in your database
-            #     update_response = requests.put(f"{DATABASE_URL}/update_interview/{meeting_id}", json=updated_meeting)
+            #     update_response = requests.put(f"{BACKEND_API_URL}/update_interview/{meeting_id}", json=updated_meeting)
             #     if update_response.status_code == 200:
             #         print('Meeting updated successfully!')
             #         flash('Meeting updated successfully!', 'success')
             # else:
-            #       update_response = requests.put(f"{DATABASE_URL}/update_technical_interview/{meeting_id}", json=updated_meeting)
+            #       update_response = requests.put(f"{BACKEND_API_URL}/update_technical_interview/{meeting_id}", json=updated_meeting)
             # Update existing meeting
             # In a real app, you would update the meeting in your database
             print('Meeting updated successfully!')
@@ -841,13 +842,13 @@ def schedule_meeting(applicant_id, job_id):
             #     print("schedule is submitted")
             #    # Create new meeting
             
-            #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+            #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
             #     if user_response.status_code != 200:
             #         flash('Error fetching user data', 'error')
             #         return redirect(url_for('schedule_meeting'))
             #     user_data = user_response.json().get('user', {})
 
-            #     offered_job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+            #     offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
             #     if  offered_job_response.status_code != 200:
             #         flash('Error fetching job data', 'error')
             #         return redirect(url_for('schedule_meeting'))
@@ -891,7 +892,7 @@ def schedule_meeting(applicant_id, job_id):
             #     **Hirevo HR Team**  
             #     hr@hirevo.com
             #     """
-            #     job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+            #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
             #     if job_response.status_code != 200:
             #         flash('Error fetching job details', 'error')
             #         return redirect(url_for('jobseeker_dashboard'))
@@ -903,10 +904,10 @@ def schedule_meeting(applicant_id, job_id):
             #         flash('This job is no longer available', 'error')
             #         return redirect(url_for('jobseeker_dashboard'))
                     
-            #     cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{applicant_id}")
+            #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
             #     cv_data = cv_response.json().get('cv_data', {})
             #     generate_question_response = requests.post(
-            #                 f"{Interview_Questions_URL}/handle_question_generation",
+            #                 f"{INTERVIEW_QUESTIONS_URL}/handle_question_generation",
             #                 json={
             #                     'cv': cv_data,
             #                     'job': job_data
@@ -920,7 +921,7 @@ def schedule_meeting(applicant_id, job_id):
             #         body=email_body
             #     )
 
-            #     save_interview = requests.post(f"{DATABASE_URL}/add_interview", json={
+            #     save_interview = requests.post(f"{BACKEND_API_URL}/add_interview", json={
             #         'interview': {
             #             "applicant_id": applicant_id,
             #             "job_id": job_id,
@@ -940,13 +941,13 @@ def schedule_meeting(applicant_id, job_id):
             else:
                    # Create new meeting
             
-            #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+            #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
             #     if user_response.status_code != 200:
             #         flash('Error fetching user data', 'error')
             #         return redirect(url_for('schedule_meeting'))
             #     user_data = user_response.json().get('user', {})
 
-            #     offered_job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+            #     offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
             #     if  offered_job_response.status_code != 200:
             #         flash('Error fetching job data', 'error')
             #         return redirect(url_for('schedule_meeting'))
@@ -994,7 +995,7 @@ def schedule_meeting(applicant_id, job_id):
             #     **Hirevo HR Team**  
             #     hr@hirevo.com
             #     """
-            #     job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+            #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
             #     if job_response.status_code != 200:
             #         flash('Error fetching job details', 'error')
             #         return redirect(url_for('jobseeker_dashboard'))
@@ -1013,7 +1014,7 @@ def schedule_meeting(applicant_id, job_id):
             #         body=email_body
             #     )
 
-            #     save_interview = requests.post(f"{DATABASE_URL}/add_technical_interview", json={
+            #     save_interview = requests.post(f"{BACKEND_API_URL}/add_technical_interview", json={
             #         'interview': {
             #             "applicant_id": applicant_id,
             #             "job_id": job_id,
@@ -1030,7 +1031,7 @@ def schedule_meeting(applicant_id, job_id):
                                 job_id=job_id))  
     
 
-    # get_interview_response = requests.get(f"{DATABASE_URL}/get_interview")
+    # get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
 
     # if get_interview_response.status_code != 200:
     #         flash('Error fetching interviews', 'error')
@@ -1049,14 +1050,14 @@ def schedule_meeting(applicant_id, job_id):
     #             continue
 
     #         # Get applicant info
-    #         user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+    #         user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
     #         if user_response.status_code != 200:
     #             continue
     #         user_data = user_response.json()
     #         full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
 
     #         # Get job info
-    #         job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+    #         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
     #         if job_response.status_code != 200:
     #             continue
     #         job_data = job_response.json()
@@ -1112,7 +1113,7 @@ def schedule_meeting(applicant_id, job_id):
 def reject_applicant(applicant_id, job_id):
     # try:
     #     # Get applicant details
-    #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
     #     if user_response.status_code != 200:
     #         flash('Error fetching applicant data', 'error')
     #         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
@@ -1123,7 +1124,7 @@ def reject_applicant(applicant_id, job_id):
     #     email = user_data.get('email', '')
 
     #     # Get job details
-    #     job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+    #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
     #     if job_response.status_code != 200:
     #         flash('Error fetching job data', 'error')
     #         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
@@ -1168,7 +1169,7 @@ def reject_applicant(applicant_id, job_id):
     #     mail.send(msg)
 
     #     # Update applicant status in database (optional)
-    #     # update_response = requests.put(f"{DATABASE_URL}/update_application_status", json={
+    #     # update_response = requests.put(f"{BACKEND_API_URL}/update_application_status", json={
     #     #     'applicant_id': applicant_id,
     #     #     'job_id': job_id,
     #     #     'status': 'rejected'
@@ -1198,7 +1199,7 @@ def offered_job():
     # try:
     #     # Get jobs posted by department
     #     hr_id = session['user_id']
-    #     job_offere_response = requests.get(f"{DATABASE_URL}/get_offered_job")
+    #     job_offere_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
         
     #     if job_offere_response.status_code != 200:
     #         flash('Error fetching your department jobs', 'error')
@@ -1211,7 +1212,7 @@ def offered_job():
     #   # get name of the department based on department id
     #     for job in jobs:
     #         dept_id = job['dept_id']
-    #         dept_response = requests.get(f"{DATABASE_URL}/get_department/{dept_id}")
+    #         dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
     #         dept_response.raise_for_status()
     #         department = dept_response.json().get('department', [])
     #         job['department_name'] = department['department_name']
@@ -1355,7 +1356,7 @@ def offered_job():
 #         date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
 
 #         # Fetch interviews
-#         get_interview_response = requests.get(f"{DATABASE_URL}/get_interview")
+#         get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
 #         if get_interview_response.status_code != 200:
 #             flash('Error fetching interviews', 'error')
 #             return redirect(url_for('company_dashboard'))
@@ -1363,7 +1364,7 @@ def offered_job():
 #         interviews = get_interview_response.json().get('interviews', [])
 
 #         # Fetch answered interviews
-#         answers_response = requests.get(f"{DATABASE_URL}/get_interview_answers")
+#         answers_response = requests.get(f"{BACKEND_API_URL}/get_interview_answers")
 #         answered_ids = set()
 #         if answers_response.status_code == 200:
 #             answers = answers_response.json().get('answers', [])
@@ -1386,14 +1387,14 @@ def offered_job():
 #                 continue
 
 #             # Get user info
-#             user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+#             user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
 #             if user_response.status_code != 200:
 #                 continue
 #             user_data = user_response.json()
 #             full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
 
 #             # Get job info
-#             job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+#             job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
 #             if job_response.status_code != 200:
 #                 continue
 #             job_data = job_response.json()
@@ -1560,7 +1561,7 @@ def answer_question(question_id):
   
     try:
         # database 
-        # get_interview_response = requests.get(f"{DATABASE_URL}/get_interview/{question_id}")
+        # get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")
         # if get_interview_response.status_code != 200:
         #     flash('Error fetching interviews', 'error')
         #     return redirect(url_for('company_dashboard'))
@@ -1602,7 +1603,7 @@ def submit_answers(interview_id):
        
      
     #     # Save the answer to the database
-    #     save_response = requests.post(f"{DATABASE_URL}/add_interview_answers", json={
+    #     save_response = requests.post(f"{BACKEND_API_URL}/add_interview_answers", json={
     #             'interview_id': interview_id,
     #             'answers': answers
     #         })
@@ -1611,7 +1612,7 @@ def submit_answers(interview_id):
     #         flash(f'Error saving answer for question {question_id}', 'error')
          
                 
-    #     interview_response = requests.get(f"{DATABASE_URL}/get_interview/{question_id}")    
+    #     interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
     #     if interview_response.status_code != 201:
     #             flash(f'Error getting question', 'error')
     #             return redirect(url_for('weekly_questions'))
@@ -1620,7 +1621,7 @@ def submit_answers(interview_id):
     #     applicant_id = interview_response.json().get('applicant_id') 
     #     questions =   interview_response.json().get('questions') 
 
-    #     applied_job_response = requests.get(f"{DATABASE_URL}/get_applied_job/{job_id}")    
+    #     applied_job_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")    
     #     if applied_job_response.status_code != 201:
     #             flash(f'Error getting job', 'error')
     #             return redirect(url_for('weekly_questions'))
@@ -1629,7 +1630,7 @@ def submit_answers(interview_id):
     #     responsibilities = applied_job_response.json().get("responsibilities")
 
     #     # Evaluate the answer using the Evaluation_Question model
-    #     eval_response = requests.post(f"{Interview_Questions_URL}/evaluate", json={
+    #     eval_response = requests.post(f"{EVALUATE_ANSWERS_URL}/evaluate", json={
     #            'interview_questions': questions, 
     #            'interview_answers': answers,
     #             'requirements': requirements,
@@ -1658,14 +1659,14 @@ def submit_answers(interview_id):
             
                 
   
-    #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
     #     if user_response.status_code != 200:
     #             flash('Error fetching user data', 'error')
     #             return redirect(url_for('weekly_questions'))
               
     #     user_data = user_response.json().get('user', {})
 
-    #     offered_job_response = requests.get(f"{DATABASE_URL}/get_offered_job/{job_id}")
+    #     offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
     #     if  offered_job_response.status_code != 200:
     #             flash('Error fetching job data', 'error')
     #             return redirect(url_for('weekly_questions'))
@@ -1707,31 +1708,31 @@ def submit_answers(interview_id):
            
 
     #         mail.send(msg)    
-    #         get_interview = requests.post(f"{DATABASE_URL}/get_interview_answers/{interview_id}")
+    #         get_interview = requests.post(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
     #         answer_id = get_interview.json().get('id')    
 
     #         # Save the answer to the database
-    #         save_response = requests.post(f"{DATABASE_URL}/add_Answer_evaluation", json={
+    #         save_response = requests.post(f"{BACKEND_API_URL}/add_Answer_evaluation", json={
     #             "answer_id": answer_id,
     #             'evaluation': evaluation,
     #             "qualified_interview": "qualified"
 
     #         })
     #     else:
-    #         save_response = requests.post(f"{DATABASE_URL}/add_Answer_evaluation", json={
+    #         save_response = requests.post(f"{BACKEND_API_URL}/add_Answer_evaluation", json={
     #             "answer_id": answer_id,
     #             'evaluation': evaluation,
     #             "qualified_interview": "Unqualified"
 
     #         })  
-    #         offered_job_response = requests.get(f"{DATABASE_URL}/get_offered_job") 
+    #         offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job") 
 
     #         if offered_job_response.status_code != 201:
     #             flash(f'Error getting job', 'error')  
     #             return redirect(url_for('weekly_questions'))
 
     #         jobs = offered_job_response.json().get('jobs') 
-    #         eval_all_response = requests.post(f"{Match_all_URL}/evaluate-multi-job", json={
+    #         eval_all_response = requests.post(f"{JOB_MATCHER_ALL_URL}/evaluate-multi-job", json={
     #            'interview_questions': questions, 
     #            'interview_answers': answers,
     #             'jobs': jobs,
@@ -1780,16 +1781,16 @@ def submit_answers(interview_id):
 
     #             mail.send(msg)
     #         else:
-    #             cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{applicant_id}")
+    #             cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
     #             cv_data = cv_response.json().get('cv_data', {})
 
     #             # final descision
-    #             final_decision_response = requests.post(f"{Final_decision}/final-decision", json={
+    #             FINAL_DECISION_URL_response = requests.post(f"{FINAL_DECISION_URL}/final-decision", json={
     #            'cv_data': cv_data, 
     #             'jobs': jobs,
                
     #              }) 
-    #             evaluation = final_decision_response.json().get('evaluation', {})
+    #             evaluation = FINAL_DECISION_URL_response.json().get('evaluation', {})
 
     #             # Extract and clean percentage_met
     #             percentage_str = evaluation.get('percentage_met', '0%')
@@ -1831,7 +1832,7 @@ def submit_answers(interview_id):
     #                 mail.send(msg)
     #                 # Save the answer to the database
 
-    #                 save_response = requests.post(f"{DATABASE_URL}/add_best_match", json={
+    #                 save_response = requests.post(f"{BACKEND_API_URL}/add_best_match", json={
     #                     "applicant_id": applicant_id,
     #                     'job_id': job_id,
     #                     "evaluation": evaluation
@@ -1901,7 +1902,7 @@ def view_answer(question_id):
 @app.route('/hr_view_technical_interview_applicant/<int:job_id>')
 def hr_view_technical_interview_applicant(job_id): 
     #   # Get job details
-    # job_response = requests.get(f"{DATABASE_URL}/get_offered_jobs/{job_id}")
+    # job_response = requests.get(f"{BACKEND_API_URL}/get_offered_jobs/{job_id}")
     # if job_response.status_code != 200:
     #     flash('Error fetching your offered jobs', 'error')
     #     return render_template('hr_view_applied_applicant.html', jobs=[])
@@ -1909,7 +1910,7 @@ def hr_view_technical_interview_applicant(job_id):
     # job = job_response.json()
 
     # # Get applied applicants
-    # applied_response = requests.get(f"{DATABASE_URL}/get_applied_job/{job_id}")
+    # applied_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
     # if applied_response.status_code != 200:
     #     flash('Error fetching your applicants', 'error')
     #     return render_template('hr_view_applied_applicant.html', jobs=[])
@@ -1922,13 +1923,13 @@ def hr_view_technical_interview_applicant(job_id):
     #     status = application['status']
 
     #     # Get user details
-    #     user_response = requests.get(f"{DATABASE_URL}/get_user/{applicant_id}")
+    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
     #     if user_response.status_code != 200:
     #         continue
     #     user = user_response.json()
 
     #     # Get CV
-    #     cv_response = requests.get(f"{DATABASE_URL}/get_applicant/{applicant_id}")
+    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
     #     cv = cv_response.json()[0] if cv_response.status_code == 200 and cv_response.json() else None
 
     #     # --------------------------
@@ -1936,21 +1937,21 @@ def hr_view_technical_interview_applicant(job_id):
     #     # --------------------------
     #     avg_req = avg_resp = qualified_interview_score = 0
 
-    #     interview_response = requests.get(f"{DATABASE_URL}/get_interview/{applicant_id}/{job_id}")
+    #     interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{applicant_id}/{job_id}")
     #     if interview_response.status_code == 200:
     #         interview_data = interview_response.json()
     #         if interview_data:
     #             interview_id = interview_data['id']
 
     #             # Get interview answers
-    #             answers_response = requests.get(f"{DATABASE_URL}/get_interview_answers/{interview_id}")
+    #             answers_response = requests.get(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
     #             if answers_response.status_code == 200:
     #                 answers_data = answers_response.json()
     #                 if answers_data:
     #                     answer_id = answers_data['id']
 
     #                     # Get evaluation scores
-    #                     eval_response = requests.get(f"{DATABASE_URL}/get_answer_evaluation/{answer_id}")
+    #                     eval_response = requests.get(f"{BACKEND_API_URL}/get_answer_evaluation/{answer_id}")
     #                     if eval_response.status_code == 200:
     #                         eval_data = eval_response.json()
     #                         avg_req = eval_data.get('average_score_requirements', 0)
