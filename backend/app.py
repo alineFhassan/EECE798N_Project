@@ -309,7 +309,7 @@ def get_user(user_id):
         return jsonify({"status": "error", "message": str(e)}), 500
     
 @app.route('/get_offered_job', methods=['GET'])
-def get_offered_jobs():
+def get_all_offered_jobs():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -322,32 +322,42 @@ def get_offered_jobs():
                    d.name as department_name
             FROM jobs j
             JOIN departments d ON j.department_id = d.id
-            ORDER BY j.created_at DESC;
+            ORDER BY j.created_at DESC
         """)
         
         jobs = []
-        for job in cursor.fetchall():
-            jobs.append({
-                "id": job[0],
-                "title": job[1],
-                "job_level": job[2],
-                "years_experience": job[3],
-                "requirements": json.loads(job[4]) if job[4] else [],
-                "responsibilities": json.loads(job[5]) if job[5] else [],
-                "required_certifications": json.loads(job[6]) if job[6] else [],
-                "status": job[7],
-                "date_offered": job[8].isoformat() if job[8] else None,
-                "created_at": job[9].isoformat() if job[9] else None,
-                "dept_id": job[10],
-                "department_name": job[11]
-            })
+        for row in cursor.fetchall():
+            job = {
+                "ID": row[0],
+                "title": row[1],
+                "job_level": row[2],
+                "years_experience": row[3],
+                "requirements": json.loads(row[4]) if row[4] else [],
+                "responsibilities": json.loads(row[5]) if row[5] else [],
+                "required_certifications": json.loads(row[6]) if row[6] else [],
+                "status": row[7],
+                "date_offered": row[8].isoformat() if row[8] else None,
+                "created_at": row[9].isoformat() if row[9] else None,
+                "dept_id": row[10],
+                "department_name": row[11]
+            }
+            jobs.append(job)
 
         cursor.close()
         conn.close()
 
-        return jsonify({"status": "success", "jobs": jobs}), 200
+        return jsonify({
+            "status": "success", 
+            "jobs": jobs
+        }), 200
+
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
 
 @app.route('/get_offered_job/<int:job_id>', methods=['GET'])
 def get_offered_job(job_id):
@@ -1136,6 +1146,100 @@ def get_interview():
         return jsonify({
             "status": "success", 
             "interviews": interviews + technical_interviews
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/update_application_status', methods=['PUT'])
+def update_application_status():
+    try:
+        data = request.json
+        required_fields = ['applicant_id', 'job_id', 'status']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if application exists
+        cursor.execute("""
+            SELECT id FROM applied_jobs 
+            WHERE applicant_id = %s AND job_id = %s
+        """, (data['applicant_id'], data['job_id']))
+        
+        application = cursor.fetchone()
+        if not application:
+            return jsonify({"status": "error", "message": "Application not found"}), 404
+
+        # Update the application status
+        cursor.execute("""
+            UPDATE applied_jobs 
+            SET status = %s
+            WHERE applicant_id = %s AND job_id = %s
+        """, (
+            data['status'],
+            data['applicant_id'],
+            data['job_id']
+        ))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "message": "Application status updated successfully"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/get_interview_answers', methods=['GET'])
+def get_interview_answers():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get all interview answers
+        cursor.execute("""
+            SELECT 
+                id,
+                interview_id,
+                answers,
+                created_at
+            FROM interview_answers
+            ORDER BY created_at DESC
+        """)
+        
+        answers = []
+        for row in cursor.fetchall():
+            answer = {
+                "id": row[0],
+                "id_interview": row[1],
+                "answers": json.loads(row[2]) if row[2] else {},
+                "created_at": row[3].isoformat() if row[3] else None
+            }
+            answers.append(answer)
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success", 
+            "answers": answers
         }), 200
 
     except Exception as e:
