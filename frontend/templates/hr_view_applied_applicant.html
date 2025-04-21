@@ -75,7 +75,7 @@
           <i class="fas fa-check-circle"></i>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ applicants|selectattr('qualified_cv', 'equalto', true)|list|length }}</div>
+          <div class="stat-value">{{ applicants|selectattr('qualified', 'equalto', true)|list|length }}</div>
           <div class="stat-label">Qualified</div>
         </div>
       </div>
@@ -84,7 +84,7 @@
           <i class="fas fa-times-circle"></i>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ applicants|selectattr('qualified_cv', 'equalto', false)|list|length }}</div>
+          <div class="stat-value">{{ applicants|selectattr('qualified', 'equalto', false)|list|length }}</div>
           <div class="stat-label">Unqualified</div>
         </div>
       </div>
@@ -92,10 +92,19 @@
         <div class="stat-icon high-match-icon">
           <i class="fas fa-star"></i>
         </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ applicants|selectattr('similarity_score', 'ge', 80)|list|length }}</div>
-          <div class="stat-label">High Match</div>
-        </div>
+        {% set high_similarity = applicants | selectattr('similarity_score', 'ge', 80) | list %}
+        {% if high_similarity | length > 0 %}
+          <div class="stat-content">
+            <div class="stat-value">{{ high_similarity | length }}</div>
+            <div class="stat-label">High Match</div>
+          </div>
+        {% else %}
+          <div class="stat-content">
+            <div class="stat-value">{{ applicants | selectattr('similarity_score_technical', 'ge', 80) | list | length }}</div>
+            <div class="stat-label">High Match</div>
+          </div>
+        {% endif %}
+        
       </div>
       <div class="stat-card">
         <div class="stat-icon pending-icon">
@@ -148,7 +157,15 @@
             </thead>
             <tbody>
               {% for applicant in applicants %}
-              <tr class="{{ 'high-match' if applicant.similarity_score >= 80 }}">
+              {% if applicant.similarity_score and applicant.similarity_score > 0 %}
+                {% set score = applicant.similarity_score %}
+                {% set reject = score < 60 %}
+              {% else %}
+                {% set score = applicant.similarity_score_technical %}
+                {% set reject = score < 50 %}
+              {% endif %}
+            
+              <tr class="{{ 'high-match' if score >= 80 }}">
                 <td>
                   <div class="applicant-info">
                     <div class="applicant-avatar" style="background-color: {{ ['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#F44336']|random }}">
@@ -157,35 +174,38 @@
                     <div class="applicant-details">
                       <div class="applicant-name">{{ applicant.name }}</div>
                       <div class="applicant-status">
-                        <span class="status-badge {{ 'qualified' if applicant.qualified_cv else 'unqualified' }}">
-                          {{ 'Qualified' if applicant.qualified_cv else 'Unqualified' }}
+                        <span class="status-badge {{ 'qualified' if applicant.qualified else 'unqualified' }}">
+                          {{ 'Qualified' if applicant.qualified else 'Unqualified' }}
                         </span>
                       </div>
                     </div>
                   </div>
                 </td>
+            
                 <td>
                   <div class="match-score">
-                    <div class="score-value">{{ applicant.similarity_score }}%</div>
+                    <div class="score-value">{{ score }}%</div>
                     <div class="score-bar">
-                      <div class="score-fill" style="width: {{ applicant.similarity_score }}%; 
-                          {% if applicant.similarity_score >= 80 %}
-                            background-color: var(--success-color);
-                          {% elif applicant.similarity_score >= 60 %}
-                            background-color: var(--warning-color);
-                          {% else %}
-                            background-color: var(--error-color);
-                          {% endif %}">
+                      <div class="score-fill" style="width: {{ score }}%;
+                        {% if score >= 80 %}
+                          background-color: var(--success-color);
+                        {% elif score >= 60 %}
+                          background-color: var(--warning-color);
+                        {% else %}
+                          background-color: var(--error-color);
+                        {% endif %}">
                       </div>
                     </div>
                   </div>
                 </td>
+            
                 <td>
                   <div class="experience-value">
                     <i class="fas fa-briefcase"></i>
                     <span>{{ applicant.exp_years }} years</span>
                   </div>
                 </td>
+            
                 <td>
                   <div class="contact-info">
                     <div class="contact-item">
@@ -198,33 +218,33 @@
                     </div>
                   </div>
                 </td>
+            
                 <td>
                   <div class="skills-list">
                     {% for skill in applicant.skills[:3] %}
-                    <span class="skill-tag">{{ skill }}</span>
+                      <span class="skill-tag">{{ skill }}</span>
                     {% endfor %}
                     {% if applicant.skills|length > 3 %}
-                    <span class="skill-more" title="{{ applicant.skills[3:]|join(', ') }}">+{{ applicant.skills|length - 3 }}</span>
+                      <span class="skill-more" title="{{ applicant.skills[3:]|join(', ') }}">+{{ applicant.skills|length - 3 }}</span>
                     {% endif %}
                   </div>
                 </td>
+            
                 <td>
                   <div class="action-buttons">
-                
-                    
-                    {% if applicant.similarity_score < 60 %}
-                    <a href="{{ url_for('reject_applicant', applicant_id=applicant.id, job_id=job.id) }}" 
-                    class="btn-reject" title="Reject Applicant"
-                    onclick="return confirm('Are you sure you want to reject this applicant?');">
-                   <i class="fas fa-times"></i>
-                 </a>
+                    {% if reject %}
+                      <a href="{{ url_for('reject_applicant', applicant_id=applicant.id, job_id=job.id) }}" 
+                         class="btn-reject" title="Reject Applicant"
+                         onclick="return confirm('Are you sure you want to reject this applicant?');">
+                        <i class="fas fa-times"></i>
+                      </a>
                     {% else %}
                       <a href="{{ url_for('schedule_meeting', applicant_id=applicant.id, job_id=job.id) }}" 
                          class="btn-schedule" title="Schedule Interview">
                         <i class="fas fa-calendar-alt"></i>
                       </a>
                     {% endif %}
-                    
+            
                     <div class="dropdown">
                       <button class="btn-icon dropdown-toggle">
                         <i class="fas fa-ellipsis-v"></i>
@@ -244,7 +264,8 @@
                   </div>
                 </td>
               </tr>
-              {% endfor %}
+            {% endfor %}
+            
             </tbody>
           </table>
         </div>

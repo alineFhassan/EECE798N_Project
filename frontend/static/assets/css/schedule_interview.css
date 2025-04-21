@@ -377,6 +377,23 @@ input:focus, textarea:focus, select:focus {
   margin-top: 8px;
 }
 
+/* Meeting meta information */
+.meeting-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.meeting-meta span {
+  font-size: 13px;
+  color: #666;
+}
+
+.meeting-meta i {
+  margin-right: 5px;
+}
+
 /* Modal Styles */
 .modal {
   display: none;
@@ -413,6 +430,45 @@ input:focus, textarea:focus, select:focus {
   color: var(--accent-color);
 }
 
+.modal-meeting-details {
+  margin-bottom: 20px;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 500;
+  width: 120px;
+  color: #666;
+}
+
+.detail-value {
+  flex: 1;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 /* Footer Styles */
 footer {
   background-color: #f4f4f4;
@@ -440,6 +496,11 @@ footer {
   nav ul li {
     margin-left: 15px;
   }
+  
+  .meeting-meta {
+    flex-direction: column;
+    gap: 5px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -457,5 +518,19 @@ footer {
   
   .calendar-header, .calendar-days {
     min-width: 700px;
+  }
+  
+  .modal-content {
+    width: 90%;
+    margin: 20% auto;
+  }
+  
+  .detail-row {
+    flex-direction: column;
+  }
+  
+  .detail-label {
+    width: 100%;
+    margin-bottom: 5px;
   }
 }
