@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # Configure OpenAI
-OPENAI_API_KEY = ''
+OPENAI_API_KEY = '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'
 client = OpenAI(api_key=OPENAI_API_KEY)
     
 @app.route('/generate-job-description', methods=['POST'])
@@ -115,4 +115,4 @@ def generate_job_description():
         }), 500
 
 if __name__ == '__main__':
-    app.run(port=5002, debug=True)
+    app.run(host='0.0.0.0', port=3002, debug=True)
