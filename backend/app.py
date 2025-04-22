@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-import psycopg2
 import os
 import json
 import requests
@@ -9,15 +8,17 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Database connection parameters
-DB_HOST = 'host.docker.internal'
-DB_PORT = '5433'  # Map to your Docker container's port
-DB_NAME = 'jobmatch'
-DB_USER = 'postgres'
-DB_PASSWORD = 'password'
+import mysql.connector  # instead of psycopg2
+import os
+
+DB_HOST = os.getenv('DB_HOST', 'db')  # 'db' matches the service name in docker-compose.yml
+DB_PORT = os.getenv('DB_PORT', '3306')
+DB_NAME = os.getenv('DB_NAME', 'eece798')
+DB_USER = os.getenv('DB_USER', 'root')
+DB_PASSWORD = os.getenv('DB_PASSWORD', 'password')
 
 def get_db_connection():
-    conn = psycopg2.connect(
+    conn = mysql.connector.connect(
         host=DB_HOST,
         port=DB_PORT,
         database=DB_NAME,
@@ -309,7 +310,7 @@ def get_user(user_id):
         return jsonify({"status": "error", "message": str(e)}), 500
     
 @app.route('/get_offered_job', methods=['GET'])
-def get_all_offered_jobs():
+def get_offered_jobs():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -322,42 +323,32 @@ def get_all_offered_jobs():
                    d.name as department_name
             FROM jobs j
             JOIN departments d ON j.department_id = d.id
-            ORDER BY j.created_at DESC
+            ORDER BY j.created_at DESC;
         """)
         
         jobs = []
-        for row in cursor.fetchall():
-            job = {
-                "ID": row[0],
-                "title": row[1],
-                "job_level": row[2],
-                "years_experience": row[3],
-                "requirements": json.loads(row[4]) if row[4] else [],
-                "responsibilities": json.loads(row[5]) if row[5] else [],
-                "required_certifications": json.loads(row[6]) if row[6] else [],
-                "status": row[7],
-                "date_offered": row[8].isoformat() if row[8] else None,
-                "created_at": row[9].isoformat() if row[9] else None,
-                "dept_id": row[10],
-                "department_name": row[11]
-            }
-            jobs.append(job)
+        for job in cursor.fetchall():
+            jobs.append({
+                "id": job[0],
+                "title": job[1],
+                "job_level": job[2],
+                "years_experience": job[3],
+                "requirements": json.loads(job[4]) if job[4] else [],
+                "responsibilities": json.loads(job[5]) if job[5] else [],
+                "required_certifications": json.loads(job[6]) if job[6] else [],
+                "status": job[7],
+                "date_offered": job[8].isoformat() if job[8] else None,
+                "created_at": job[9].isoformat() if job[9] else None,
+                "dept_id": job[10],
+                "department_name": job[11]
+            })
 
         cursor.close()
         conn.close()
 
-        return jsonify({
-            "status": "success", 
-            "jobs": jobs
-        }), 200
-
+        return jsonify({"status": "success", "jobs": jobs}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
 
 @app.route('/get_offered_job/<int:job_id>', methods=['GET'])
 def get_offered_job(job_id):
@@ -1146,371 +1137,6 @@ def get_interview():
         return jsonify({
             "status": "success", 
             "interviews": interviews + technical_interviews
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-@app.route('/update_application_status', methods=['PUT'])
-def update_application_status():
-    try:
-        data = request.json
-        required_fields = ['applicant_id', 'job_id', 'status']
-        
-        # Validate required fields
-        if not all(field in data for field in required_fields):
-            return jsonify({"status": "error", "message": "Missing required fields"}), 400
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Check if application exists
-        cursor.execute("""
-            SELECT id FROM applied_jobs 
-            WHERE applicant_id = %s AND job_id = %s
-        """, (data['applicant_id'], data['job_id']))
-        
-        application = cursor.fetchone()
-        if not application:
-            return jsonify({"status": "error", "message": "Application not found"}), 404
-
-        # Update the application status
-        cursor.execute("""
-            UPDATE applied_jobs 
-            SET status = %s
-            WHERE applicant_id = %s AND job_id = %s
-        """, (
-            data['status'],
-            data['applicant_id'],
-            data['job_id']
-        ))
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "status": "success",
-            "message": "Application status updated successfully"
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-@app.route('/get_interview_answers', methods=['GET'])
-def get_interview_answers():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Get all interview answers
-        cursor.execute("""
-            SELECT 
-                id,
-                interview_id,
-                answers,
-                created_at
-            FROM interview_answers
-            ORDER BY created_at DESC
-        """)
-        
-        answers = []
-        for row in cursor.fetchall():
-            answer = {
-                "id": row[0],
-                "id_interview": row[1],
-                "answers": json.loads(row[2]) if row[2] else {},
-                "created_at": row[3].isoformat() if row[3] else None
-            }
-            answers.append(answer)
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "status": "success", 
-            "answers": answers
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-@app.route('/get_interview/<int:interview_id>', methods=['GET'])
-def get_interview_by_id(interview_id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Get the interview
-        cursor.execute("""
-            SELECT 
-                id,
-                applicant_id,
-                job_id,
-                meeting_title,
-                date,
-                start_time,
-                end_time,
-                questions,
-                created_at
-            FROM interviews
-            WHERE id = %s
-        """, (interview_id,))
-        
-        interview = cursor.fetchone()
-        
-        if not interview:
-            return jsonify({"status": "error", "message": "Interview not found"}), 404
-            
-        # Format the interview data
-        interview_data = {
-            "id": interview[0],
-            "applicant_id": interview[1],
-            "job_id": interview[2],
-            "meeting_title": interview[3],
-            "meeting_date": interview[4].isoformat() if interview[4] else None,
-            "start_time": interview[5].isoformat() if interview[5] else None,
-            "end_time": interview[6].isoformat() if interview[6] else None,
-            "questions": json.loads(interview[7]) if interview[7] else [],
-            "created_at": interview[8].isoformat() if interview[8] else None
-        }
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "status": "success", 
-            "interview": interview_data
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-@app.route('/add_interview_answers', methods=['POST'])
-def add_interview_answers():
-    try:
-        data = request.json
-        required_fields = ['interview_id', 'answers']
-        
-        # Validate required fields
-        if not all(field in data for field in required_fields):
-            return jsonify({"status": "error", "message": "Missing required fields"}), 400
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Check if interview exists
-        cursor.execute("""
-            SELECT id FROM interviews 
-            WHERE id = %s
-        """, (data['interview_id'],))
-        
-        if not cursor.fetchone():
-            return jsonify({"status": "error", "message": "Interview not found"}), 404
-
-        # Check if answers already exist for this interview
-        cursor.execute("""
-            SELECT id FROM interview_answers 
-            WHERE interview_id = %s
-        """, (data['interview_id'],))
-        
-        if cursor.fetchone():
-            return jsonify({"status": "error", "message": "Answers already exist for this interview"}), 400
-
-        # Insert the answers
-        cursor.execute("""
-            INSERT INTO interview_answers (
-                interview_id, answers
-            ) VALUES (%s, %s)
-            RETURNING id;
-        """, (
-            data['interview_id'],
-            json.dumps(data['answers'])
-        ))
-
-        answer_id = cursor.fetchone()[0]
-        conn.commit()
-
-        return jsonify({
-            "status": "success",
-            "message": "Interview answers saved successfully",
-            "answer_id": answer_id
-        }), 201
-
-    except Exception as e:
-        if 'conn' in locals():
-            conn.rollback()
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-@app.route('/get_interview_answers/<int:interview_id>', methods=['GET'])
-def get_interview_answers_by_id(interview_id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Get the interview answers
-        cursor.execute("""
-            SELECT 
-                id,
-                interview_id,
-                answers,
-                created_at
-            FROM interview_answers
-            WHERE interview_id = %s
-        """, (interview_id,))
-        
-        answer = cursor.fetchone()
-        
-        if not answer:
-            return jsonify({"status": "error", "message": "Interview answers not found"}), 404
-            
-        # Format the answer data
-        answer_data = {
-            "id": answer[0],
-            "interview_id": answer[1],
-            "answers": json.loads(answer[2]) if answer[2] else {},
-            "created_at": answer[3].isoformat() if answer[3] else None
-        }
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "status": "success", 
-            "answer": answer_data
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-@app.route('/get_interview/<int:applicant_id>/<int:job_id>', methods=['GET'])
-def get_interview_by_applicant_job(applicant_id, job_id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Get the interview
-        cursor.execute("""
-            SELECT 
-                id,
-                applicant_id,
-                job_id,
-                meeting_title,
-                date,
-                start_time,
-                end_time,
-                questions,
-                created_at
-            FROM interviews
-            WHERE applicant_id = %s AND job_id = %s
-        """, (applicant_id, job_id))
-        
-        interview = cursor.fetchone()
-        
-        if not interview:
-            return jsonify({"status": "error", "message": "Interview not found"}), 404
-            
-        # Format the interview data
-        interview_data = {
-            "id": interview[0],
-            "applicant_id": interview[1],
-            "job_id": interview[2],
-            "meeting_title": interview[3],
-            "meeting_date": interview[4].isoformat() if interview[4] else None,
-            "start_time": interview[5].isoformat() if interview[5] else None,
-            "end_time": interview[6].isoformat() if interview[6] else None,
-            "questions": json.loads(interview[7]) if interview[7] else [],
-            "created_at": interview[8].isoformat() if interview[8] else None
-        }
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "status": "success", 
-            "interview": interview_data
-        }), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
-
-@app.route('/get_answer_evaluation/<int:answer_id>', methods=['GET'])
-def get_answer_evaluation(answer_id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Get the answer evaluation
-        cursor.execute("""
-            SELECT 
-                id,
-                answer_id,
-                avg_score_requirements,
-                avg_score_responsibilities,
-                full_evaluation,
-                qualified_interview,
-                created_at
-            FROM answer_evaluations
-            WHERE answer_id = %s
-        """, (answer_id,))
-        
-        evaluation = cursor.fetchone()
-        
-        if not evaluation:
-            return jsonify({"status": "error", "message": "Answer evaluation not found"}), 404
-            
-        # Format the evaluation data
-        evaluation_data = {
-            "id": evaluation[0],
-            "answer_id": evaluation[1],
-            "average_score_requirements": evaluation[2],
-            "average_score_responsibility": evaluation[3],
-            "full_evaluation": evaluation[4],
-            "qualified_interview": evaluation[5],
-            "created_at": evaluation[6].isoformat() if evaluation[6] else None
-        }
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "status": "success", 
-            "evaluation": evaluation_data
         }), 200
 
     except Exception as e:
