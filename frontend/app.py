@@ -29,7 +29,8 @@ app.secret_key = 'dev-key-123-abc!@#'
 # EVALUATE_ANSWERS_URL = os.environ.get("EVALUATE_ANSWERS_URL", "http://localhost:5006/evaluate")
 # JOB_MATCHER_ALL_URL = os.environ.get("JOB_MATCHER_ALL_URL", "http://localhost:5007/evaluate-multi-job")
 # FINAL_DECISION_URL = os.environ.get("FINAL_DECISION_URL", "http://localhost:5008/final-decision")
-BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:5000")
+BACKEND_API_URL = "http://backend:5000"
+CV_EXTRACTION_URL="http://cv-extraction-api:3001"
 
 # ========================
 #  MAIN APPLICATION ENTRY
