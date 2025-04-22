@@ -1,27 +1,31 @@
--- Users table (combines both user types)
-CREATE TABLE users (
+-- Create and use the database
+CREATE DATABASE IF NOT EXISTS eece798;
+USE eece798;
+
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,  -- Store hashed passwords
+    password VARCHAR(255) NOT NULL,
     date_of_birth DATE NOT NULL,
     phone_number VARCHAR(20) NOT NULL,
     user_type VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Departments table (for companies/departments)
-CREATE TABLE departments (
+-- Departments table
+CREATE TABLE IF NOT EXISTS departments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,  -- Store hashed passwords
+    password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Applicant CV table with embeddings
-CREATE TABLE applicant_cv (
+-- Applicant CV table
+CREATE TABLE IF NOT EXISTS applicant_cv (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     education JSON,
@@ -35,8 +39,8 @@ CREATE TABLE applicant_cv (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Jobs table with embeddings
-CREATE TABLE jobs (
+-- Jobs table
+CREATE TABLE IF NOT EXISTS jobs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     department_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
@@ -53,7 +57,7 @@ CREATE TABLE jobs (
 );
 
 -- Applied jobs table
-CREATE TABLE applied_jobs (
+CREATE TABLE IF NOT EXISTS applied_jobs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     applicant_id INT NOT NULL,
     job_id INT NOT NULL,
@@ -71,7 +75,7 @@ CREATE TABLE applied_jobs (
 );
 
 -- Interviews table
-CREATE TABLE interviews (
+CREATE TABLE IF NOT EXISTS interviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
     applicant_id INT NOT NULL,
     job_id INT NOT NULL,
@@ -86,8 +90,8 @@ CREATE TABLE interviews (
     UNIQUE (applicant_id, job_id, date, start_time)
 );
 
--- Interview answers table
-CREATE TABLE interview_answers (
+-- Interview answers
+CREATE TABLE IF NOT EXISTS interview_answers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     interview_id INT NOT NULL,
     answers JSON NOT NULL,
@@ -95,8 +99,8 @@ CREATE TABLE interview_answers (
     FOREIGN KEY (interview_id) REFERENCES interviews(id) ON DELETE CASCADE
 );
 
--- Answer evaluations table
-CREATE TABLE answer_evaluations (
+-- Answer evaluations
+CREATE TABLE IF NOT EXISTS answer_evaluations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     answer_id INT NOT NULL,
     avg_score_requirements FLOAT,
@@ -107,8 +111,8 @@ CREATE TABLE answer_evaluations (
     FOREIGN KEY (answer_id) REFERENCES interview_answers(id) ON DELETE CASCADE
 );
 
--- Technical interviews table
-CREATE TABLE technical_interviews (
+-- Technical interviews
+CREATE TABLE IF NOT EXISTS technical_interviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
     applicant_id INT NOT NULL,
     job_id INT NOT NULL,
@@ -122,8 +126,8 @@ CREATE TABLE technical_interviews (
     UNIQUE (applicant_id, job_id, date, start_time)
 );
 
--- Best matches table
-CREATE TABLE best_matches (
+-- Best matches
+CREATE TABLE IF NOT EXISTS best_matches (
     id INT AUTO_INCREMENT PRIMARY KEY,
     applicant_id INT NOT NULL,
     job_id INT NOT NULL,
@@ -134,8 +138,8 @@ CREATE TABLE best_matches (
     FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
 );
 
--- Pending decisions table
-CREATE TABLE pending_decisions (
+-- Pending decisions
+CREATE TABLE IF NOT EXISTS pending_decisions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     applicant_id INT NOT NULL,
     job_id INT NOT NULL,
