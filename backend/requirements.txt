@@ -1,6 +1,0 @@
-Flask
-psycopg2-binary
-flask-cors
-requests
-numpy
-mysql-connector-python
