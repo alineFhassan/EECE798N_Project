@@ -18,22 +18,26 @@ services:
   backend:
     build: ./backend
     container_name: flask-backend
-    restart: always
-    ports:
-      - "5000:5000"
     depends_on:
       - db
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=eece798
+      - DB_USER=root
+      - DB_PASSWORD=password
     networks:
       - eece-network
 
   frontend:
     build: ./frontend
-    container_name: frontend-app
-    restart: always
-    ports:
-      - "3000:3000"
+    container_name: flask-frontend
     depends_on:
       - backend
+    ports:
+      - "3000:3000"
     networks:
       - eece-network
 
