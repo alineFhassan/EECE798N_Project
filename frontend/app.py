@@ -213,15 +213,16 @@ def upload_cv():
     if 'user_id' not in session:
         flash('Please login first', 'error')
         return redirect(url_for('jobseeker_dashboard'))
-    
+   
     if request.method == 'POST':
+
         # Validate file presence
-        if 'file' not in request.files:
+        if 'pdfFile' not in request.files:  # change 'file' to 'pdfFile'
             flash('No file selected', 'error')
             return redirect(url_for('jobseeker_dashboard'))
-        
-        file = request.files['file']
-        print(file)
+
+        file = request.files['pdfFile'] 
+ 
         # Validate filename
         if file.filename == '':
             flash('No file selected', 'error')
@@ -238,12 +239,12 @@ def upload_cv():
         try:
             # Extract content of cv file 
             files = {'file': (file.filename, file.stream, file.mimetype)}
-            response = requests.post(f"{CV_EXTRACTION_URL}'/extract-cv"
+            response = requests.post(f"{CV_EXTRACTION_URL}/extract-cv"
                     ,
                     files=files
                 )
             response.raise_for_status()
-            print("file",files)
+         
 
             cv_data = response.json().get('cv_data', {})
             print("cv",cv_data)
