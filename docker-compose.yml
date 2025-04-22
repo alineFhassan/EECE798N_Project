@@ -49,7 +49,7 @@ services:
       build:
         context: ./CV-Format
         dockerfile: Dockerfile
-      command: python app.py
+      command: python cv_format.py
       ports:
         - "3001:3001"
       networks:
