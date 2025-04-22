@@ -239,7 +239,7 @@ def upload_cv():
         try:
             # Extract content of cv file 
             files = {'file': (file.filename, file.stream, file.mimetype)}
-            response = requests.post({CV_EXTRACTION_URL}
+            response = requests.post(f"{CV_EXTRACTION_URL}'/extract-cv"
                     ,
                     files=files,
                     timeout=30
