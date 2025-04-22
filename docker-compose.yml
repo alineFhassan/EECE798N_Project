@@ -1,85 +1,42 @@
 version: '3.8'
 
 services:
-  # Frontend Service
-  frontend:
-    build: ./frontend
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./frontend:/app
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
     environment:
-      - FLASK_ENV=development
-      - DATABASE_URL=http://backend:5003
-      - JOB_GENERATOR_URL=http://job-generator:5002
-      - CV_EXTRACTION_URL=http://cv-extraction:5001
-    depends_on:
-      - backend
-      - job-generator
-      - cv-extraction
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: eece798
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
-      - jobmatch-network
+      - eece-network
 
-  # Backend/API Service
   backend:
     build: ./backend
+    container_name: flask-backend
+    restart: always
     ports:
-      - "5003:5003"
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=jobmatch
-      - DB_USER=postgres
-      - DB_PASSWORD=password
-      - JOB_GENERATOR_URL=http://job-generator:5002
+      - "5000:5000"
     depends_on:
       - db
     networks:
-      - jobmatch-network
+      - eece-network
 
-  # PostgreSQL Database
-  db:
-    image: postgres:13
-    environment:
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=jobmatch
+  frontend:
+    build: ./frontend
+    container_name: frontend-app
+    restart: always
     ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - "3000:3000"
+    depends_on:
+      - backend
     networks:
-      - jobmatch-network
-
-  # Job Generator Service
-  job-generator:
-    build: ./job-generator
-    ports:
-      - "5002:5002"
-    environment:
-      - OPENAI_API_KEY=your-actual-openai-key
-      - FLASK_ENV=development
-    networks:
-      - jobmatch-network
-
-  # CV Extraction Service
-  cv-extraction:
-    build: ./CV-Extraction
-    ports:
-      - "5001:5001"
-    environment:
-      - OPENAI_API_KEY=your-actual-openai-key
-      - DATABASE_API_URL=http://backend:5003/add_application
-    networks:
-      - jobmatch-network
-
-volumes:
-  postgres_data:
+      - eece-network
 
 networks:
-  jobmatch-network:
+  eece-network:
     driver: bridge
