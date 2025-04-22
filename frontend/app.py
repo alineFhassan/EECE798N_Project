@@ -282,39 +282,39 @@ def upload_cv():
 # -------- APPLICANT PROFILE PAGE  --------
 @app.route('/profile')
 def jobseeker_profile():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
-    # try:
-    #    # Get user info
-    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{session['user_id']}")
-    #     user_response.raise_for_status()
+    try:
+       # Get user info
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{session['user_id']}")
+        user_response.raise_for_status()
 
-    #     user_data = user_response.json().get('user', {})
+        user_data = user_response.json().get('user', {})
         
-    #     # Get application info
-    #     app_response = requests.get(
-    #         f"{BACKEND_API_URL}/get_applicant/{session['user_id']}"
-    #     )
-    #     application_data = {}
-    #     if app_response.status_code == 200:
-    #         application_data = app_response.json().get('cv_data', {})
-    #     elif app_response.status_code != 404:
-    #         app_response.raise_for_status()
+        # Get application info
+        app_response = requests.get(
+            f"{BACKEND_API_URL}/get_applicant/{session['user_id']}"
+        )
+        application_data = {}
+        if app_response.status_code == 200:
+            application_data = app_response.json().get('cv_data', {})
+        elif app_response.status_code != 404:
+            app_response.raise_for_status()
  
-    #     return render_template(
-    #         'profile.html', 
-    #         user=user_data, 
-    #         application=application_data
-    #     )
+        return render_template(
+            'profile.html', 
+            user=user_data, 
+            application=application_data
+        )
     
-    # except requests.exceptions.HTTPError as e:
-    #     flash('Error fetching profile data from server', 'error')
-    #     app.logger.error(f"Profile data fetch error: {str(e)}")
-    # except Exception as e:
-    #     flash('Failed to load profile', 'error')
-    #     app.logger.exception("Profile load error")
+    except requests.exceptions.HTTPError as e:
+        flash('Error fetching profile data from server', 'error')
+        app.logger.error(f"Profile data fetch error: {str(e)}")
+    except Exception as e:
+        flash('Failed to load profile', 'error')
+        app.logger.exception("Profile load error")
     
     return redirect(url_for('jobseeker_dashboard'))
 
