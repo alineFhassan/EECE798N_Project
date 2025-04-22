@@ -21,14 +21,14 @@ mail = Mail(app)
 app.secret_key = 'dev-key-123-abc!@#'
 
 # Service Endpoints Configuration
-PORT = int(os.environ.get("PORT", 5000))
-CV_EXTRACTION_URL = os.environ.get("CV_EXTRACTION_URL", "http://localhost:5002/extract-cv")
-JOB_DESCRIPTION_URL = os.environ.get("JOB_DESCRIPTION_URL", "http://localhost:5003/generate-job-description")
-CV_JOB_MATCHING_URL = os.environ.get("CV_JOB_MATCHING_URL", "http://localhost:5004/cv-job-match")
-INTERVIEW_QUESTIONS_URL = os.environ.get("INTERVIEW_QUESTIONS_URL", "http://localhost:5005/generate-questions")
-EVALUATE_ANSWERS_URL = os.environ.get("EVALUATE_ANSWERS_URL", "http://localhost:5006/evaluate")
-JOB_MATCHER_ALL_URL = os.environ.get("JOB_MATCHER_ALL_URL", "http://localhost:5007/evaluate-multi-job")
-FINAL_DECISION_URL = os.environ.get("FINAL_DECISION_URL", "http://localhost:5008/final-decision")
+# PORT = int(os.environ.get("PORT", 5000))
+# CV_EXTRACTION_URL = os.environ.get("CV_EXTRACTION_URL", "http://localhost:5002/extract-cv")
+# JOB_DESCRIPTION_URL = os.environ.get("JOB_DESCRIPTION_URL", "http://localhost:5003/generate-job-description")
+# CV_JOB_MATCHING_URL = os.environ.get("CV_JOB_MATCHING_URL", "http://localhost:5004/cv-job-match")
+# INTERVIEW_QUESTIONS_URL = os.environ.get("INTERVIEW_QUESTIONS_URL", "http://localhost:5005/generate-questions")
+# EVALUATE_ANSWERS_URL = os.environ.get("EVALUATE_ANSWERS_URL", "http://localhost:5006/evaluate")
+# JOB_MATCHER_ALL_URL = os.environ.get("JOB_MATCHER_ALL_URL", "http://localhost:5007/evaluate-multi-job")
+# FINAL_DECISION_URL = os.environ.get("FINAL_DECISION_URL", "http://localhost:5008/final-decision")
 BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:5001")
 
 # ========================
@@ -208,208 +208,208 @@ def allowed_file(filename):
 # -------- UPLOAD CV  --------
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
     
-    if request.method == 'POST':
-        # Validate file presence
-        if 'file' not in request.files:
-            flash('No file selected', 'error')
-            return redirect(request.url)
+    # if request.method == 'POST':
+    #     # Validate file presence
+    #     if 'file' not in request.files:
+    #         flash('No file selected', 'error')
+    #         return redirect(request.url)
         
-        file = request.files['file']
-        # Validate filename
-        if file.filename == '':
-            flash('No file selected', 'error')
-            return redirect(request.url)
+    #     file = request.files['file']
+    #     # Validate filename
+    #     if file.filename == '':
+    #         flash('No file selected', 'error')
+    #         return redirect(request.url)
         
-        # Validate file type and size
-        if not (file and allowed_file(file.filename)):
-            flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
-            return redirect(request.url)
+    #     # Validate file type and size
+    #     if not (file and allowed_file(file.filename)):
+    #         flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
+    #         return redirect(request.url)
         
-        if file.content_length > MAX_CONTENT_LENGTH :  # 5MB limit
-            flash('File too large (max 5MB)', 'error')
-            return redirect(request.url)
+    #     if file.content_length > MAX_CONTENT_LENGTH :  # 5MB limit
+    #         flash('File too large (max 5MB)', 'error')
+    #         return redirect(request.url)
         
         
-        try:
-            # Extract content of cv file 
-            files = {'file': (file.filename, file.stream, file.mimetype)}
-            response = requests.post({CV_EXTRACTION_URL}
-                    ,
-                    files=files,
-                    timeout=30
-                )
-            response.raise_for_status()
+    #     try:
+    #         # Extract content of cv file 
+    #         files = {'file': (file.filename, file.stream, file.mimetype)}
+    #         response = requests.post({CV_EXTRACTION_URL}
+    #                 ,
+    #                 files=files,
+    #                 timeout=30
+    #             )
+    #         response.raise_for_status()
 
-            cv_data = response.json().get('cv_data', {})
+    #         cv_data = response.json().get('cv_data', {})
                                   
-            # Validate extracted data
-            if not cv_data.get('skills') or not cv_data.get('experience'):
-                flash('CV processed but missing critical data (skills/experience)', 'warning')
+    #         # Validate extracted data
+    #         if not cv_data.get('skills') or not cv_data.get('experience'):
+    #             flash('CV processed but missing critical data (skills/experience)', 'warning')
             
-            # Save CV data
-            save_response = requests.post(
-                        f"{BACKEND_API_URL}/add_applicant",
-                        json={
-                            'cv_data': cv_data,
-                            'user_id': session['user_id']
-                        },
-                        timeout=10
-                         )
+    #         # Save CV data
+    #         save_response = requests.post(
+    #                     f"{BACKEND_API_URL}/add_applicant",
+    #                     json={
+    #                         'cv_data': cv_data,
+    #                         'user_id': session['user_id']
+    #                     },
+    #                     timeout=10
+    #                      )
                     
-            if save_response.status_code == 201:
-                flash('CV uploaded and processed successfully!', 'success')
-                return redirect(url_for('jobseeker_dashboard'))
+    #         if save_response.status_code == 201:
+    #             flash('CV uploaded and processed successfully!', 'success')
+    #             return redirect(url_for('jobseeker_dashboard'))
             
-            flash(save_response.json().get('message', 'Error saving CV data'), 'error')
+    #         flash(save_response.json().get('message', 'Error saving CV data'), 'error')
 
-        except requests.exceptions.RequestException as e:
-            flash('CV processing service unavailable. Please try later.', 'error')
-            app.logger.error(f"CV processing error: {str(e)}")
-        except Exception as e:
-            flash('An unexpected error occurred', 'error')
-            app.logger.exception("CV upload error")
+    #     except requests.exceptions.RequestException as e:
+    #         flash('CV processing service unavailable. Please try later.', 'error')
+    #         app.logger.error(f"CV processing error: {str(e)}")
+    #     except Exception as e:
+    #         flash('An unexpected error occurred', 'error')
+    #         app.logger.exception("CV upload error")
         
         return redirect(request.url)
     
-    return render_template('upload_cv.html')     
+    # return render_template('upload_cv.html')     
 
 # -------- APPLICANT PROFILE PAGE  --------
 @app.route('/profile')
 def jobseeker_profile():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
     
-    try:
-       # Get user info
-        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{session['user_id']}", timeout=5)
-        user_response.raise_for_status()
+    # try:
+    #    # Get user info
+    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{session['user_id']}", timeout=5)
+    #     user_response.raise_for_status()
 
-        user_data = user_response.json().get('user', {})
+    #     user_data = user_response.json().get('user', {})
         
-        # Get application info
-        app_response = requests.get(
-            f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=5
-        )
-        application_data = {}
-        if app_response.status_code == 200:
-            application_data = app_response.json().get('cv_data', {})
-        elif app_response.status_code != 404:
-            app_response.raise_for_status()
+    #     # Get application info
+    #     app_response = requests.get(
+    #         f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=5
+    #     )
+    #     application_data = {}
+    #     if app_response.status_code == 200:
+    #         application_data = app_response.json().get('cv_data', {})
+    #     elif app_response.status_code != 404:
+    #         app_response.raise_for_status()
  
-        return render_template(
-            'profile.html', 
-            user=user_data, 
-            application=application_data
-        )
+    #     return render_template(
+    #         'profile.html', 
+    #         user=user_data, 
+    #         application=application_data
+    #     )
     
-    except requests.exceptions.HTTPError as e:
-        flash('Error fetching profile data from server', 'error')
-        app.logger.error(f"Profile data fetch error: {str(e)}")
-    except Exception as e:
-        flash('Failed to load profile', 'error')
-        app.logger.exception("Profile load error")
+    # except requests.exceptions.HTTPError as e:
+    #     flash('Error fetching profile data from server', 'error')
+    #     app.logger.error(f"Profile data fetch error: {str(e)}")
+    # except Exception as e:
+    #     flash('Failed to load profile', 'error')
+    #     app.logger.exception("Profile load error")
     
     return redirect(url_for('jobseeker_dashboard'))
 
 # -------- APPLICANT DASHBOARD --------
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('login'))
     
-    try:
-        # Get all jobs from database
-        response = requests.get(f"{BACKEND_API_URL}/get_offered_job",timeout=10)
-        if response.status_code != 200:
-            flash('Error fetching jobs', 'error')
-            return render_template('jobseeker_dashboard.html', jobs=[])
+    # try:
+    #     # Get all jobs from database
+    #     response = requests.get(f"{BACKEND_API_URL}/get_offered_job",timeout=10)
+    #     if response.status_code != 200:
+    #         flash('Error fetching jobs', 'error')
+    #         return render_template('jobseeker_dashboard.html', jobs=[])
         
-        jobs = response.json().get('jobs', [])
+    #     jobs = response.json().get('jobs', [])
 
-        # Filter only open jobs
-        open_jobs = [job for job in jobs if job.get('status', '').lower() == 'open']
+    #     # Filter only open jobs
+    #     open_jobs = [job for job in jobs if job.get('status', '').lower() == 'open']
 
-        # Get department names for open jobs
-        for job in open_jobs:
-            dept_id = job['dept_id']
-            dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}",timeout=10)
-            if dept_response.status_code == 200:
-                department = dept_response.json().get('department', {})
-                job['department_name'] = department.get('department_name', 'N/A')
-            else:
-                job['department_name'] = 'N/A'
+    #     # Get department names for open jobs
+    #     for job in open_jobs:
+    #         dept_id = job['dept_id']
+    #         dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}",timeout=10)
+    #         if dept_response.status_code == 200:
+    #             department = dept_response.json().get('department', {})
+    #             job['department_name'] = department.get('department_name', 'N/A')
+    #         else:
+    #             job['department_name'] = 'N/A'
         
-        # Check if user has uploaded CV
-        cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=10)
-        has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
+    #     # Check if user has uploaded CV
+    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=10)
+    #     has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
-        # Handle job application
-        if request.method == 'POST':
-            job_id = request.form.get('job_id')
+    #     # Handle job application
+    #     if request.method == 'POST':
+    #         job_id = request.form.get('job_id')
 
-            if not has_cv:
-                flash('Please upload your CV before applying for jobs', 'error')
-                return redirect(url_for('upload_cv'))  # Redirect to CV upload page
+    #         if not has_cv:
+    #             flash('Please upload your CV before applying for jobs', 'error')
+    #             return redirect(url_for('upload_cv'))  # Redirect to CV upload page
 
-            if not job_id:
-                flash('No job selected', 'error')
-                return redirect(url_for('jobseeker_dashboard'))
+    #         if not job_id:
+    #             flash('No job selected', 'error')
+    #             return redirect(url_for('jobseeker_dashboard'))
 
-            # Get job details
-            job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}",timeout=10)
-            if job_response.status_code != 200:
-                flash('Error fetching job details', 'error')
-                return redirect(url_for('jobseeker_dashboard'))
+    #         # Get job details
+    #         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}",timeout=10)
+    #         if job_response.status_code != 200:
+    #             flash('Error fetching job details', 'error')
+    #             return redirect(url_for('jobseeker_dashboard'))
             
-            job_data = job_response.json().get('job', {})
+    #         job_data = job_response.json().get('job', {})
             
-            if job_data.get('status', '').lower() != 'open':
-                flash('This job is no longer available', 'error')
-                return redirect(url_for('jobseeker_dashboard'))
+    #         if job_data.get('status', '').lower() != 'open':
+    #             flash('This job is no longer available', 'error')
+    #             return redirect(url_for('jobseeker_dashboard'))
 
-            # Get CV data
-            cv_data = cv_response.json().get('cv_data', {})
+    #         # Get CV data
+    #         cv_data = cv_response.json().get('cv_data', {})
 
-            # Match CV with job
-            match_response = requests.post(
-                f"{CV_JOB_MATCHING_URL}/cv-job-match",
-                json={'cv': cv_data, 'job': job_data}
-            )
+    #         # Match CV with job
+    #         match_response = requests.post(
+    #             f"{CV_JOB_MATCHING_URL}/cv-job-match",
+    #             json={'cv': cv_data, 'job': job_data}
+    #         )
 
-            match_result = {}
-            if match_response.status_code == 200:
-                match_result = match_response.json().get('result', {})
-            else:
-                flash('Could not evaluate your CV against the job requirements', 'warning')
+    #         match_result = {}
+    #         if match_response.status_code == 200:
+    #             match_result = match_response.json().get('result', {})
+    #         else:
+    #             flash('Could not evaluate your CV against the job requirements', 'warning')
 
-            # Save application
-            application_response = requests.post(
-                f"{BACKEND_API_URL}/add_applied_job",
-                json={
-                    'applicant_id': session['user_id'],
-                    'job_id': job_id,
-                    'status': 'scheduling_interview',
-                    "result": match_result
-                }
-            )
+    #         # Save application
+    #         application_response = requests.post(
+    #             f"{BACKEND_API_URL}/add_applied_job",
+    #             json={
+    #                 'applicant_id': session['user_id'],
+    #                 'job_id': job_id,
+    #                 'status': 'scheduling_interview',
+    #                 "result": match_result
+    #             }
+    #         )
             
-            if application_response.status_code == 201:
-                flash('Application submitted successfully!', 'success')
-            else:
-                flash('Error submitting application', 'error')
+    #         if application_response.status_code == 201:
+    #             flash('Application submitted successfully!', 'success')
+    #         else:
+    #             flash('Error submitting application', 'error')
             
-            return redirect(url_for('jobseeker_dashboard'))
+    #         return redirect(url_for('jobseeker_dashboard'))
         
-        return render_template('jobseeker_dashboard.html', jobs=open_jobs, has_cv=has_cv)
+    #     return render_template('jobseeker_dashboard.html', jobs=open_jobs, has_cv=has_cv)
     
-    except Exception as e:
-        flash(f'Error loading dashboard: {str(e)}', 'error')
+    # except Exception as e:
+    #     flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('jobseeker_dashboard.html', jobs=[])
 
 
@@ -420,50 +420,50 @@ def jobseeker_dashboard():
 # -------- DEPARTMENT DASHBOARD --------
 @app.route('/company_dashboard')
 def company_dashboard():
-    if 'user_id' not in session:
-        flash('Please login', 'error')
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash('Please login', 'error')
+    #     return redirect(url_for('login'))
     
-    try:
-        dept_id = session['user_id']
-        job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{dept_id}",timeout=10)
+    # try:
+    #     dept_id = session['user_id']
+    #     job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{dept_id}",timeout=10)
         
-        if job_offer_response.status_code != 200:
-            flash('Error fetching your company jobs', 'error')
-            return render_template('company_dashboard.html', jobs=[], stats={})
+    #     if job_offer_response.status_code != 200:
+    #         flash('Error fetching your company jobs', 'error')
+    #         return render_template('company_dashboard.html', jobs=[], stats={})
         
-        jobs = job_offer_response.json().get('jobs', [])
+    #     jobs = job_offer_response.json().get('jobs', [])
         
-        # Transform job data to match template expectations
-        processed_jobs = []
-        for job in jobs:
-            processed_job = {
-                'id': job.get('ID', job.get('id', 0)),
-                'job_title': job.get('job_title', ''),
-                'job_level': job.get('job_level', ''),
-                'years_experience': job.get('years_experience', ''),
-                'date_offering': job.get('created_at', ''),
-                'status': job.get('status', ''),
+    #     # Transform job data to match template expectations
+    #     processed_jobs = []
+    #     for job in jobs:
+    #         processed_job = {
+    #             'id': job.get('ID', job.get('id', 0)),
+    #             'job_title': job.get('job_title', ''),
+    #             'job_level': job.get('job_level', ''),
+    #             'years_experience': job.get('years_experience', ''),
+    #             'date_offering': job.get('created_at', ''),
+    #             'status': job.get('status', ''),
               
-            }
-            processed_jobs.append(processed_job)
+    #         }
+    #         processed_jobs.append(processed_job)
 
-        # Calculate Some Statics To Display
-        stats = {
-            'total_jobs': len(processed_jobs),
-            'open_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'open'),
-            'closed_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'closed'),
-            'total_applicants': sum(job.get('applicant_count', 0) for job in processed_jobs)
-        }
+    #     # Calculate Some Statics To Display
+    #     stats = {
+    #         'total_jobs': len(processed_jobs),
+    #         'open_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'open'),
+    #         'closed_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'closed'),
+    #         'total_applicants': sum(job.get('applicant_count', 0) for job in processed_jobs)
+    #     }
         
-        return render_template(
-            'company_dashboard.html',
-            jobs=processed_jobs,
-            stats=stats
-        )
+    #     return render_template(
+    #         'company_dashboard.html',
+    #         jobs=processed_jobs,
+    #         stats=stats
+    #     )
 
-    except Exception as e:
-        flash(f'Error loading dashboard: {str(e)}', 'error')
+    # except Exception as e:
+    #     flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('company_dashboard.html', jobs=[], stats={})
       
 # -------- OFFER NEW JOB --------
@@ -473,59 +473,52 @@ def post_job():
     #     flash('Please login first', 'error')
     #     return redirect(url_for('login'))
     
-    if request.method == 'POST':
-        try:
-            # Validate required fields first
-            required_fields = ['jobTitle', 'jobLevel', 'yearsExperience','jobDescription']
-            if not all(request.form.get(field) for field in required_fields):
-                flash('Please fill all required fields', 'error')
-                return redirect(url_for('post_job'))
+    # if request.method == 'POST':
+    #     try:
+    #         # Validate required fields first
+    #         required_fields = ['jobTitle', 'jobLevel', 'yearsExperience','jobDescription']
+    #         if not all(request.form.get(field) for field in required_fields):
+    #             flash('Please fill all required fields', 'error')
+    #             return redirect(url_for('post_job'))
                 
-            job_data = {
-                'job_title': request.form.get('jobTitle'),   
-                'department_id': session['user_id'],
-                'job_level': request.form.get('jobLevel'),
-                'years_experience': request.form.get('yearsExperience'),
-                'additional_info': request.form.get('jobDescription'),     
+    #         job_data = {
+    #             'job_title': request.form.get('jobTitle'),   
+    #             'department_id': session['user_id'],
+    #             'job_level': request.form.get('jobLevel'),
+    #             'years_experience': request.form.get('yearsExperience'),
+    #             'additional_info': request.form.get('jobDescription'),     
               
-            }
+    #         }
               
-        except KeyError as e:
-            flash(f'Missing key in session or form data: {str(e)}', 'error')
-            return redirect(url_for('post_job'))
-        except Exception as e:
-            flash(f'An unexpected error occurred: {str(e)}', 'error')
-            app.logger.error(f"Error creating job posting: {str(e)}")
-            return redirect(url_for('post_job'))
-        get_job_description_responce = requests.post(f"{JOB_DESCRIPTION_URL}/generate-job-description",
-                                            json={
-                                            'job_title' : job_data['job_title'],
-                                            'job_level' : job_data['job_level'],
-                                            'years_experience' : job_data['years_experience'],
-                                            'additional_info' : job_data['additional_info']   
-                                         })
-        job_description_responce = get_job_description_responce.json().get('job_description','')
+    #     except KeyError as e:
+    #         flash(f'Missing key in session or form data: {str(e)}', 'error')
+    #         return redirect(url_for('post_job'))
+    #     except Exception as e:
+    #         flash(f'An unexpected error occurred: {str(e)}', 'error')
+    #         app.logger.error(f"Error creating job posting: {str(e)}")
+    #         return redirect(url_for('post_job'))
+    #     get_job_description_responce = requests.post(f"{JOB_DESCRIPTION_URL}/generate-job-description",
+    #                                         json={
+    #                                         'job_title' : job_data['job_title'],
+    #                                         'job_level' : job_data['job_level'],
+    #                                         'years_experience' : job_data['years_experience'],
+    #                                         'additional_info' : job_data['additional_info']   
+    #                                      })
+    #     job_description_responce = get_job_description_responce.json().get('job_description','')
 
        
-        if job_description_responce.status_code != 200:
-                    flash('Error saving job description', 'error')
-                    return redirect(url_for('post_job'))
+    #     if job_description_responce.status_code != 200:
+    #                 flash('Error saving job description', 'error')
+    #                 return redirect(url_for('post_job'))
  
-        job_description = job_description_responce.json().get('job_description', {})
+    #     job_description = job_description_responce.json().get('job_description', {})
 
-        add_offer_job_response = requests.post(f"{BACKEND_API_URL}/add_offer_job", json={
-                    'job_title' : job_data['job_title'],
-                    'department_id' : job_data['department_id'],
-                    'job_level' : job_data['job_level'],
-                    'years_experience' : job_data['years_experience'],
-                    'additional_info' : job_data['additional_info'],
-                    'date_offering': datetime.now(),
-                    'status': "open",
-                    "job_description": job_description
-                })
-        if add_offer_job_response.status_code != 200:
-                    flash('Error In Saving job Offere', 'error')
-                    return redirect(url_for('post_job'))
+    #     add_offer_job_response = requests.post(f"{BACKEND_API_URL}/add_offer_job", json={
+    #                "job_description" : job_description
+    #             })
+    #     if add_offer_job_response.status_code != 200:
+    #                 flash('Error In Saving job Offere', 'error')
+    #                 return redirect(url_for('post_job'))
         
     return render_template('post_job.html')
 
