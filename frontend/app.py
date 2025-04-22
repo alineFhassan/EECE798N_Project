@@ -65,7 +65,7 @@ def login():
                     'email': email,
                     'password': password,
                     'register_option': register_option
-                }, timeout=5 ) # ADD TIMEOUT
+                } ) 
                 
             if auth_response.status_code == 200:
                     data = auth_response.json()
@@ -170,7 +170,7 @@ def signup():
                 'date':date_str,
                 'phone_number': phone,
                 'password': password
-            }, timeout=10)
+            }, )
             
             if response.status_code == 201:
                 flash('Registration successful! Please login.', 'success')
@@ -212,28 +212,27 @@ def allowed_file(filename):
 def upload_cv():
     if 'user_id' not in session:
         flash('Please login first', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('jobseeker_dashboard'))
     
     if request.method == 'POST':
         # Validate file presence
         if 'file' not in request.files:
             flash('No file selected', 'error')
-            return redirect(request.url)
+            return redirect(url_for('jobseeker_dashboard'))
         
         file = request.files['file']
+        print(file)
         # Validate filename
         if file.filename == '':
             flash('No file selected', 'error')
-            return redirect(request.url)
+            return redirect(url_for('jobseeker_dashboard'))
         
         # Validate file type and size
         if not (file and allowed_file(file.filename)):
             flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
             return redirect(request.url)
         
-        if file.content_length > MAX_CONTENT_LENGTH :  # 5MB limit
-            flash('File too large (max 5MB)', 'error')
-            return redirect(request.url)
+    
         
         
         try:
@@ -241,12 +240,13 @@ def upload_cv():
             files = {'file': (file.filename, file.stream, file.mimetype)}
             response = requests.post(f"{CV_EXTRACTION_URL}'/extract-cv"
                     ,
-                    files=files,
-                    timeout=30
+                    files=files
                 )
             response.raise_for_status()
+            print("file",files)
 
             cv_data = response.json().get('cv_data', {})
+            print("cv",cv_data)
                                   
             # Validate extracted data
             if not cv_data.get('skills') or not cv_data.get('experience'):
@@ -258,10 +258,9 @@ def upload_cv():
                         json={
                             'cv_data': cv_data,
                             'user_id': session['user_id']
-                        },
-                        timeout=10
+                        }
                          )
-                    
+            print("save",save_response)
             if save_response.status_code == 201:
                 flash('CV uploaded and processed successfully!', 'success')
                 return redirect(url_for('jobseeker_dashboard'))
@@ -275,9 +274,9 @@ def upload_cv():
             flash('An unexpected error occurred', 'error')
             app.logger.exception("CV upload error")
         
-        return redirect(request.url)
+        return redirect(url_for('jobseeker_dashboard'))
     
-    # return render_template('upload_cv.html')     
+    return render_template('upload_cv.html')     
 
 # -------- APPLICANT PROFILE PAGE  --------
 @app.route('/profile')
@@ -288,14 +287,14 @@ def jobseeker_profile():
     
     # try:
     #    # Get user info
-    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{session['user_id']}", timeout=5)
+    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{session['user_id']}")
     #     user_response.raise_for_status()
 
     #     user_data = user_response.json().get('user', {})
         
     #     # Get application info
     #     app_response = requests.get(
-    #         f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=5
+    #         f"{BACKEND_API_URL}/get_applicant/{session['user_id']}"
     #     )
     #     application_data = {}
     #     if app_response.status_code == 200:
@@ -327,7 +326,7 @@ def jobseeker_dashboard():
     
     # try:
     #     # Get all jobs from database
-    #     response = requests.get(f"{BACKEND_API_URL}/get_offered_job",timeout=10)
+    #     response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
     #     if response.status_code != 200:
     #         flash('Error fetching jobs', 'error')
     #         return render_template('jobseeker_dashboard.html', jobs=[])
@@ -340,7 +339,7 @@ def jobseeker_dashboard():
     #     # Get department names for open jobs
     #     for job in open_jobs:
     #         dept_id = job['dept_id']
-    #         dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}",timeout=10)
+    #         dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
     #         if dept_response.status_code == 200:
     #             department = dept_response.json().get('department', {})
     #             job['department_name'] = department.get('department_name', 'N/A')
@@ -348,7 +347,7 @@ def jobseeker_dashboard():
     #             job['department_name'] = 'N/A'
         
     #     # Check if user has uploaded CV
-    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}",timeout=10)
+    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}")
     #     has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
     #     # Handle job application
@@ -364,7 +363,7 @@ def jobseeker_dashboard():
     #             return redirect(url_for('jobseeker_dashboard'))
 
     #         # Get job details
-    #         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}",timeout=10)
+    #         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
     #         if job_response.status_code != 200:
     #             flash('Error fetching job details', 'error')
     #             return redirect(url_for('jobseeker_dashboard'))
@@ -428,7 +427,7 @@ def company_dashboard():
     
     # try:
     #     dept_id = session['user_id']
-    #     job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{dept_id}",timeout=10)
+    #     job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{dept_id}")
         
     #     if job_offer_response.status_code != 200:
     #         flash('Error fetching your company jobs', 'error')
