@@ -1,4 +1,5 @@
 -- Create and use the database
+
 CREATE DATABASE IF NOT EXISTS eece798;
 USE eece798;
 

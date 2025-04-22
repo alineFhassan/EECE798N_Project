@@ -32,6 +32,7 @@ app.secret_key = 'dev-key-123-abc!@#'
 
 BACKEND_API_URL = "http://backend:5000"
 CV_EXTRACTION_URL="http://cv-extraction-api:3001"
+JOB_DESCRIPTION_URL="http://job-description-api:3002" 
 
 # ========================
 #  MAIN APPLICATION ENTRY
@@ -471,56 +472,55 @@ def company_dashboard():
 # -------- OFFER NEW JOB --------
 @app.route('/post_job', methods=['POST','GET'])
 def post_job():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
-    # if request.method == 'POST':
-    #     try:
-    #         # Validate required fields first
-    #         required_fields = ['jobTitle', 'jobLevel', 'yearsExperience','jobDescription']
-    #         if not all(request.form.get(field) for field in required_fields):
-    #             flash('Please fill all required fields', 'error')
-    #             return redirect(url_for('post_job'))
+    if request.method == 'POST':
+        try:
+            # Validate required fields first
+            required_fields = ['jobTitle', 'jobLevel', 'yearsExperience','jobDescription']
+            if not all(request.form.get(field) for field in required_fields):
+                flash('Please fill all required fields', 'error')
+                return redirect(url_for('post_job'))
                 
-    #         job_data = {
-    #             'job_title': request.form.get('jobTitle'),   
-    #             'department_id': session['user_id'],
-    #             'job_level': request.form.get('jobLevel'),
-    #             'years_experience': request.form.get('yearsExperience'),
-    #             'additional_info': request.form.get('jobDescription'),     
+            job_data = {
+                'job_title': request.form.get('jobTitle'),   
+                'department_id': session['user_id'],
+                'job_level': request.form.get('jobLevel'),
+                'years_experience': request.form.get('yearsExperience'),
+                'additional_info': request.form.get('jobDescription'),     
               
-    #         }
+            }
               
-    #     except KeyError as e:
-    #         flash(f'Missing key in session or form data: {str(e)}', 'error')
-    #         return redirect(url_for('post_job'))
-    #     except Exception as e:
-    #         flash(f'An unexpected error occurred: {str(e)}', 'error')
-    #         app.logger.error(f"Error creating job posting: {str(e)}")
-    #         return redirect(url_for('post_job'))
-    #     get_job_description_responce = requests.post(f"{JOB_DESCRIPTION_URL}/generate-job-description",
-    #                                         json={
-    #                                         'job_title' : job_data['job_title'],
-    #                                         'job_level' : job_data['job_level'],
-    #                                         'years_experience' : job_data['years_experience'],
-    #                                         'additional_info' : job_data['additional_info']   
-    #                                      })
-    #     job_description_responce = get_job_description_responce.json().get('job_description','')
+        except KeyError as e:
+            flash(f'Missing key in session or form data: {str(e)}', 'error')
+            return redirect(url_for('post_job'))
+        except Exception as e:
+            flash(f'An unexpected error occurred: {str(e)}', 'error')
+            app.logger.error(f"Error creating job posting: {str(e)}")
+            return redirect(url_for('post_job'))
+        get_job_description_responce = requests.post(f"{JOB_DESCRIPTION_URL}/generate-job-description",
+                                            json={
+                                            'job_title' : job_data['job_title'],
+                                            'job_level' : job_data['job_level'],
+                                            'years_experience' : job_data['years_experience'],
+                                            'additional_info' : job_data['additional_info']   
+                                         })
 
        
-    #     if job_description_responce.status_code != 200:
-    #                 flash('Error saving job description', 'error')
-    #                 return redirect(url_for('post_job'))
+        if get_job_description_responce.status_code != 200:
+                    flash('Error saving job description', 'error')
+                    return redirect(url_for('post_job'))
  
-    #     job_description = job_description_responce.json().get('job_description', {})
+        job_description = get_job_description_responce.json().get('job_description', {})
 
-    #     add_offer_job_response = requests.post(f"{BACKEND_API_URL}/add_offer_job", json={
-    #                "job_description" : job_description
-    #             })
-    #     if add_offer_job_response.status_code != 200:
-    #                 flash('Error In Saving job Offere', 'error')
-    #                 return redirect(url_for('post_job'))
+        add_offer_job_response = requests.post(f"{BACKEND_API_URL}/add_offer_job", json={
+                   "job_description" : job_description
+                })
+        if add_offer_job_response.status_code != 200:
+                    flash('Error In Saving job Offere', 'error')
+                    return redirect(url_for('post_job'))
         
     return render_template('post_job.html')
 
