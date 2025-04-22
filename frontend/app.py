@@ -29,6 +29,7 @@ app.secret_key = 'dev-key-123-abc!@#'
 # EVALUATE_ANSWERS_URL = os.environ.get("EVALUATE_ANSWERS_URL", "http://localhost:5006/evaluate")
 # JOB_MATCHER_ALL_URL = os.environ.get("JOB_MATCHER_ALL_URL", "http://localhost:5007/evaluate-multi-job")
 # FINAL_DECISION_URL = os.environ.get("FINAL_DECISION_URL", "http://localhost:5008/final-decision")
+
 BACKEND_API_URL = "http://backend:5000"
 CV_EXTRACTION_URL="http://cv-extraction-api:3001"
 
@@ -132,28 +133,28 @@ def signup():
             flash('Invalid phone number', 'error')
             return redirect(url_for('signup'))
         
-        # 5. Date Validation
-        try:
-            # Parse the date in DD/MM/YYYY format
-            dob = datetime.strptime(date_str, '%d/%m/%Y')
+        # # 5. Date Validation
+        # try:
+        #     # Parse the date in DD/MM/YYYY format
+        #     dob = datetime.strptime(date_str, '%m/%d/%Y')
             
-            # Additional validation (e.g., not future date, reasonable age)
-            if dob > datetime.now():
-                flash('Date of birth cannot be in the future', 'error')
-                return redirect(url_for('signup'))
+        #     # Additional validation (e.g., not future date, reasonable age)
+        #     if dob > datetime.now():
+        #         flash('Date of birth cannot be in the future', 'error')
+        #         return redirect(url_for('signup'))
                 
-            # Calculate age
-            age = (datetime.now() - dob).days // 365
-            if age < 13:  # Minimum age requirement
-                flash('You must be at least 13 years old to register', 'error')
-                return redirect(url_for('signup'))
+        #     # Calculate age
+        #     age = (datetime.now() - dob).days // 365
+        #     if age < 13:  # Minimum age requirement
+        #         flash('You must be at least 13 years old to register', 'error')
+        #         return redirect(url_for('signup'))
                 
-            # Convert to standard format for storage (YYYY-MM-DD)
-            date_for_storage = dob.strftime('%Y-%m-%d')
+        #     # Convert to standard format for storage (YYYY-MM-DD)
+        #     date_for_storage = dob.strftime('%Y-%m-%d')
             
-        except ValueError:
-            flash('Invalid date format. Please use DD/MM/YYYY', 'error')
-            return redirect(url_for('signup'))
+        # except ValueError:
+        #     flash('Invalid date format. Please use DD/MM/YYYY', 'error')
+        #     return redirect(url_for('signup'))
         
         # 6. Check for empty fields after cleaning
         if not all([first_name, last_name, email, phone, date_str, password]):
