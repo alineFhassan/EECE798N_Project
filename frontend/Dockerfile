@@ -1,13 +1,16 @@
-# Frontend/Dockerfile
-FROM python:3.9-slim
+# Use an official lightweight Python image
+FROM python:3.11-slim
 
+# Set the working directory in the container
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
+# Copy project files into the container
 COPY . .
 
+RUN pip install -r requirements.txt
+
+# Expose the port your app runs on
 EXPOSE 5000
 
+# Start the Flask app
 CMD ["python", "app.py"]
