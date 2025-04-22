@@ -29,7 +29,7 @@ app.secret_key = 'dev-key-123-abc!@#'
 # EVALUATE_ANSWERS_URL = os.environ.get("EVALUATE_ANSWERS_URL", "http://localhost:5006/evaluate")
 # JOB_MATCHER_ALL_URL = os.environ.get("JOB_MATCHER_ALL_URL", "http://localhost:5007/evaluate-multi-job")
 # FINAL_DECISION_URL = os.environ.get("FINAL_DECISION_URL", "http://localhost:5008/final-decision")
-BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:5001")
+BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:5000")
 
 # ========================
 #  MAIN APPLICATION ENTRY
@@ -2021,4 +2021,4 @@ def hr_view_technical_interview_applicant(job_id):
                          job=job, 
                          applicants=applicants)
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)  
+    app.run(debug=True, host='0.0.0.0', port=3000)  
