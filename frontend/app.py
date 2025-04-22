@@ -210,70 +210,70 @@ def allowed_file(filename):
 # -------- UPLOAD CV  --------
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
-    # if request.method == 'POST':
-    #     # Validate file presence
-    #     if 'file' not in request.files:
-    #         flash('No file selected', 'error')
-    #         return redirect(request.url)
+    if request.method == 'POST':
+        # Validate file presence
+        if 'file' not in request.files:
+            flash('No file selected', 'error')
+            return redirect(request.url)
         
-    #     file = request.files['file']
-    #     # Validate filename
-    #     if file.filename == '':
-    #         flash('No file selected', 'error')
-    #         return redirect(request.url)
+        file = request.files['file']
+        # Validate filename
+        if file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(request.url)
         
-    #     # Validate file type and size
-    #     if not (file and allowed_file(file.filename)):
-    #         flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
-    #         return redirect(request.url)
+        # Validate file type and size
+        if not (file and allowed_file(file.filename)):
+            flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
+            return redirect(request.url)
         
-    #     if file.content_length > MAX_CONTENT_LENGTH :  # 5MB limit
-    #         flash('File too large (max 5MB)', 'error')
-    #         return redirect(request.url)
+        if file.content_length > MAX_CONTENT_LENGTH :  # 5MB limit
+            flash('File too large (max 5MB)', 'error')
+            return redirect(request.url)
         
         
-    #     try:
-    #         # Extract content of cv file 
-    #         files = {'file': (file.filename, file.stream, file.mimetype)}
-    #         response = requests.post({CV_EXTRACTION_URL}
-    #                 ,
-    #                 files=files,
-    #                 timeout=30
-    #             )
-    #         response.raise_for_status()
+        try:
+            # Extract content of cv file 
+            files = {'file': (file.filename, file.stream, file.mimetype)}
+            response = requests.post({CV_EXTRACTION_URL}
+                    ,
+                    files=files,
+                    timeout=30
+                )
+            response.raise_for_status()
 
-    #         cv_data = response.json().get('cv_data', {})
+            cv_data = response.json().get('cv_data', {})
                                   
-    #         # Validate extracted data
-    #         if not cv_data.get('skills') or not cv_data.get('experience'):
-    #             flash('CV processed but missing critical data (skills/experience)', 'warning')
+            # Validate extracted data
+            if not cv_data.get('skills') or not cv_data.get('experience'):
+                flash('CV processed but missing critical data (skills/experience)', 'warning')
             
-    #         # Save CV data
-    #         save_response = requests.post(
-    #                     f"{BACKEND_API_URL}/add_applicant",
-    #                     json={
-    #                         'cv_data': cv_data,
-    #                         'user_id': session['user_id']
-    #                     },
-    #                     timeout=10
-    #                      )
+            # Save CV data
+            save_response = requests.post(
+                        f"{BACKEND_API_URL}/add_applicant",
+                        json={
+                            'cv_data': cv_data,
+                            'user_id': session['user_id']
+                        },
+                        timeout=10
+                         )
                     
-    #         if save_response.status_code == 201:
-    #             flash('CV uploaded and processed successfully!', 'success')
-    #             return redirect(url_for('jobseeker_dashboard'))
+            if save_response.status_code == 201:
+                flash('CV uploaded and processed successfully!', 'success')
+                return redirect(url_for('jobseeker_dashboard'))
             
-    #         flash(save_response.json().get('message', 'Error saving CV data'), 'error')
+            flash(save_response.json().get('message', 'Error saving CV data'), 'error')
 
-    #     except requests.exceptions.RequestException as e:
-    #         flash('CV processing service unavailable. Please try later.', 'error')
-    #         app.logger.error(f"CV processing error: {str(e)}")
-    #     except Exception as e:
-    #         flash('An unexpected error occurred', 'error')
-    #         app.logger.exception("CV upload error")
+        except requests.exceptions.RequestException as e:
+            flash('CV processing service unavailable. Please try later.', 'error')
+            app.logger.error(f"CV processing error: {str(e)}")
+        except Exception as e:
+            flash('An unexpected error occurred', 'error')
+            app.logger.exception("CV upload error")
         
         return redirect(request.url)
     
