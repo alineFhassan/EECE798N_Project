@@ -43,19 +43,19 @@ services:
     networks:
       - eece-network
 
-cv-extraction-api:
-    stdin_open: true
-    tty: true
-    build:
-      context: ./CV-Format
-      dockerfile: Dockerfile
-    command: python app.py
-    ports:
-      - "3001:3001"
-    networks:
-      - eece-network  
-    environment:
-      - PORT=3001
+  cv-extraction-api:
+      stdin_open: true
+      tty: true
+      build:
+        context: ./CV-Format
+        dockerfile: Dockerfile
+      command: python app.py
+      ports:
+        - "3001:3001"
+      networks:
+        - eece-network  
+      environment:
+        - PORT=3001
 
 networks:
   eece-network:
