@@ -5,6 +5,16 @@ from datetime import datetime
 from flask_mail import Mail, Message
 import re
 import logging
+from prometheus_client import Counter, Histogram, generate_latest
+import time
+
+# ========================
+#   Prometheus metrics
+# ========================
+UPLOAD_CV_COUNT = Counter('upload_cv_requests_total', 'Total /upload_cv requests')
+UPLOAD_CV_SUCCESS = Counter('upload_cv_success_total', 'Total successful CV uploads')
+UPLOAD_CV_FAILURE = Counter('upload_cv_failure_total', 'Total failed CV uploads')
+UPLOAD_CV_TIME = Histogram('upload_cv_processing_seconds', 'Time spent in upload_cv')
 
 
 app = Flask(__name__)
@@ -210,76 +220,144 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # -------- UPLOAD CV  --------
+# @app.route('/upload_cv', methods=['GET', 'POST'])
+# def upload_cv():
+#     if 'user_id' not in session:
+#         flash('Please login first', 'error')
+#         return redirect(url_for('jobseeker_dashboard'))
+   
+#     if request.method == 'POST':
+
+#         # Validate file presence
+#         if 'pdfFile' not in request.files:  # change 'file' to 'pdfFile'
+#             flash('No file selected', 'error')
+#             return redirect(url_for('jobseeker_dashboard'))
+
+#         file = request.files['pdfFile'] 
+ 
+#         # Validate filename
+#         if file.filename == '':
+#             flash('No file selected', 'error')
+#             return redirect(url_for('jobseeker_dashboard'))
+        
+#         # Validate file type and size
+#         if not (file and allowed_file(file.filename)):
+#             flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
+#             return redirect(request.url)
+        
+    
+        
+        
+#         try:
+#             # Extract content of cv file 
+#             files = {'file': (file.filename, file.stream, file.mimetype)}
+#             response = requests.post(f"{CV_EXTRACTION_URL}/extract-cv"
+#                     ,
+#                     files=files
+#                 )
+#             response.raise_for_status()
+         
+
+#             cv_data = response.json().get('cv_data', {})
+#             print("cv",cv_data)
+                                  
+#             # Validate extracted data
+#             if not cv_data.get('skills') or not cv_data.get('experience'):
+#                 flash('CV processed but missing critical data (skills/experience)', 'warning')
+            
+#             # Save CV data
+#             save_response = requests.post(
+#                         f"{BACKEND_API_URL}/add_applicant",
+#                         json={
+#                             'cv_data': cv_data,
+#                             'user_id': session['user_id']
+#                         }
+#                          )
+#             print("save",save_response)
+#             if save_response.status_code == 201:
+#                 flash('CV uploaded and processed successfully!', 'success')
+#                 return redirect(url_for('jobseeker_dashboard'))
+            
+#             flash(save_response.json().get('message', 'Error saving CV data'), 'error')
+
+#         except requests.exceptions.RequestException as e:
+#             flash('CV processing service unavailable. Please try later.', 'error')
+#             app.logger.error(f"CV processing error: {str(e)}")
+#         except Exception as e:
+#             flash('An unexpected error occurred', 'error')
+#             app.logger.exception("CV upload error")
+        
+#         return redirect(url_for('jobseeker_dashboard'))
+    
+#     return render_template('upload_cv.html')     
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
+    UPLOAD_CV_COUNT.inc()  # Increment total request count
+
     if 'user_id' not in session:
         flash('Please login first', 'error')
         return redirect(url_for('jobseeker_dashboard'))
    
     if request.method == 'POST':
-
-        # Validate file presence
-        if 'pdfFile' not in request.files:  # change 'file' to 'pdfFile'
-            flash('No file selected', 'error')
-            return redirect(url_for('jobseeker_dashboard'))
-
-        file = request.files['pdfFile'] 
- 
-        # Validate filename
-        if file.filename == '':
-            flash('No file selected', 'error')
-            return redirect(url_for('jobseeker_dashboard'))
-        
-        # Validate file type and size
-        if not (file and allowed_file(file.filename)):
-            flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
-            return redirect(request.url)
-        
-    
-        
-        
+        start_time = time.time()
         try:
-            # Extract content of cv file 
+            if 'pdfFile' not in request.files:
+                flash('No file selected', 'error')
+                return redirect(url_for('jobseeker_dashboard'))
+
+            file = request.files['pdfFile'] 
+
+            if file.filename == '':
+                flash('No file selected', 'error')
+                return redirect(url_for('jobseeker_dashboard'))
+            
+            if not (file and allowed_file(file.filename)):
+                flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
+                return redirect(request.url)
+            
             files = {'file': (file.filename, file.stream, file.mimetype)}
-            response = requests.post(f"{CV_EXTRACTION_URL}/extract-cv"
-                    ,
-                    files=files
-                )
+            response = requests.post(f"{CV_EXTRACTION_URL}/extract-cv", files=files)
             response.raise_for_status()
-         
 
             cv_data = response.json().get('cv_data', {})
-            print("cv",cv_data)
                                   
-            # Validate extracted data
             if not cv_data.get('skills') or not cv_data.get('experience'):
                 flash('CV processed but missing critical data (skills/experience)', 'warning')
             
-            # Save CV data
             save_response = requests.post(
-                        f"{BACKEND_API_URL}/add_applicant",
-                        json={
-                            'cv_data': cv_data,
-                            'user_id': session['user_id']
-                        }
-                         )
-            print("save",save_response)
+                f"{BACKEND_API_URL}/add_applicant",
+                json={'cv_data': cv_data, 'user_id': session['user_id']}
+            )
+            
             if save_response.status_code == 201:
                 flash('CV uploaded and processed successfully!', 'success')
+                UPLOAD_CV_SUCCESS.inc()
                 return redirect(url_for('jobseeker_dashboard'))
             
             flash(save_response.json().get('message', 'Error saving CV data'), 'error')
+            UPLOAD_CV_FAILURE.inc()
 
         except requests.exceptions.RequestException as e:
             flash('CV processing service unavailable. Please try later.', 'error')
             app.logger.error(f"CV processing error: {str(e)}")
+            UPLOAD_CV_FAILURE.inc()
         except Exception as e:
             flash('An unexpected error occurred', 'error')
             app.logger.exception("CV upload error")
-        
+            UPLOAD_CV_FAILURE.inc()
+        finally:
+            elapsed = time.time() - start_time
+            UPLOAD_CV_TIME.observe(elapsed)
+
         return redirect(url_for('jobseeker_dashboard'))
     
-    return render_template('upload_cv.html')     
+    return render_template('upload_cv.html')
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+@app.route('/cv_stats')
+def cv_stats():
+    return render_template('cv_stats.html')
 
 # -------- APPLICANT PROFILE PAGE  --------
 @app.route('/profile')

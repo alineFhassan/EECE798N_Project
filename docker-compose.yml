@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # MySQL Database
   db:
     image: mysql:8.0
     container_name: mysql-db
@@ -15,6 +16,7 @@ services:
     networks:
       - eece-network
 
+  # Backend Service (Flask)
   backend:
     build: ./backend
     container_name: flask-backend
@@ -31,6 +33,7 @@ services:
     networks:
       - eece-network
 
+  # Frontend Service (Highcharts Visualization)
   frontend:
     build: ./frontend
     container_name: flask-frontend
@@ -39,51 +42,68 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - CV_EXTRACTION_URL=http://cv-extraction-api:3001 
-      - JOB_DESCRIPTION_URL=http://job-description-api:3002 
+      - CV_EXTRACTION_URL=http://cv-extraction-api:3001
+      - JOB_DESCRIPTION_URL=http://job-description-api:3002
       - CV_JOB_MATCHING_URL=http://cv-job-matching-api:3003
     networks:
       - eece-network
 
+  # CV Extraction API
   cv-extraction-api:
-      stdin_open: true
-      tty: true
-      build:
-        context: ./CV-Format
-        dockerfile: Dockerfile
-      command: python cv_format.py
-      ports:
-        - "3001:3001"
-      networks:
-        - eece-network  
-      environment:
-        - PORT=3001
+    stdin_open: true
+    tty: true
+    build:
+      context: ./CV-Format
+      dockerfile: Dockerfile
+    command: python cv_format.py
+    ports:
+      - "3001:3001"
+    networks:
+      - eece-network
+    environment:
+      - PORT=3001
+
+  # Job Description API
   job-description-api:
-        stdin_open: true
-        tty: true
-        build:
-          context: ./job-description
-          dockerfile: Dockerfile
-        command: python job.py
-        ports:
-          - "3002:3002"
-        networks:
-          - eece-network  
-        environment:
-          - PORT=3002
+    stdin_open: true
+    tty: true
+    build:
+      context: ./job-description
+      dockerfile: Dockerfile
+    command: python job.py
+    ports:
+      - "3002:3002"
+    networks:
+      - eece-network
+    environment:
+      - PORT=3002
+
+  # CV Job Matching API
   cv-job-matching-api:
-        stdin_open: true
-        tty: true
-        build:
-          context: ./cv-job-matching
-          dockerfile: Dockerfile
-        command: python cv_job.py
-        ports:
-          - "3003:3003"
-        networks:
-          - eece-network  
-        environment:
-          - PORT=3003
+    stdin_open: true
+    tty: true
+    build:
+      context: ./cv-job-matching
+      dockerfile: Dockerfile
+    command: python cv_job.py
+    ports:
+      - "3003:3003"
+    networks:
+      - eece-network
+    environment:
+      - PORT=3003
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - eece-network
+
 networks:
   eece-network:
     driver: bridge
