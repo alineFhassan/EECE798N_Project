@@ -342,6 +342,16 @@ def jobseeker_dashboard():
         # Filter only open jobs
         open_jobs = [job for job in jobs if job.get('status', '').lower() == 'open']
 
+        # Add this loop after fetching open_jobs
+        for job in open_jobs:
+            job_id = job.get('id')
+            applied_response = requests.get(f"{BACKEND_API_URL}/check_if_applied/{session['user_id']}/{job_id}")
+            if applied_response.status_code == 200:
+                job['already_applied'] = applied_response.json().get('already_applied', False)
+            else:
+                job['already_applied'] = False  # Assume not applied on error
+
+
         # Handle job application
         if request.method == 'POST':
             # Check if user has uploaded CV
