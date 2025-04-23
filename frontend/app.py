@@ -45,6 +45,7 @@ BACKEND_API_URL = "http://backend:5000"
 CV_EXTRACTION_URL="http://cv-extraction-api:3001"
 JOB_DESCRIPTION_URL="http://job-description-api:3002" 
 CV_JOB_MATCHING_URL="http://cv-job-matching-api:3003"
+INTERVIEW_QUESTIONS_URL= "http://interview-questions-api:3004"
 
 # ========================
 #  MAIN APPLICATION ENTRY
@@ -680,7 +681,7 @@ def hr_view_applied_applicant(job_id):
     applicants_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
     if applicants_response.status_code != 200:
         flash('Error fetching your applicant', 'error')
-        return render_template('hr_view_applied_applicant.html', jobs=[])
+        return render_template('hr_view_applied_applicant.html', job=[])
     
     applicants_data = []
     for application in applicants_response.json().get("applications", []):
@@ -738,17 +739,17 @@ def hr_view_applied_applicant(job_id):
 # -------- SCHEDULE A MEETING IF MATCH THE BEST SCORE --------
 @app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>', methods=['GET', 'POST'])
 def schedule_meeting(applicant_id, job_id):
-    # if 'user_id' not in session:
-    #     flash('Please login', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login', 'error')
+        return redirect(url_for('login'))
 
     if request.method == 'POST':
         meeting_id = request.form.get('meeting_id', '')
         meeting_title = request.form['title']
-        # meeting_date = request.form['date']
-        # start_time = request.form['start_time']
-        # end_time = request.form['end_time']
-        # Get applicant_id and job_id from form
+        meeting_date = request.form['date']
+        start_time = request.form['start_time']
+        end_time = request.form['end_time']
+        #Get applicant_id and job_id from form
         form_applicant_id = request.form.get('applicant_id', '')
         form_job_id = request.form.get('job_id', '')
         print(meeting_title)
@@ -757,124 +758,124 @@ def schedule_meeting(applicant_id, job_id):
         if meeting_id:
             print(meeting_id)
              
-            # updated_meeting = {
-            # 'meeting_id': meeting_id,
-            # 'meeting_title': request.form.get('title', ''),
-            # 'meeting_date': request.form.get('date', ''),
-            # 'start_time': request.form.get('start_time', ''),
-            # 'end_time': request.form.get('end_time', ''),
-            # 'applicant_id': request.form.get('applicant_id', ''),
-            # 'job_id': request.form.get('job_id', '')
-            # }
-            # if meeting_title == "HR Interview":
-            #     # Make the API call to update the meeting in your database
-            #     update_response = requests.put(f"{BACKEND_API_URL}/update_interview/{meeting_id}", json=updated_meeting)
-            #     if update_response.status_code == 200:
-            #         print('Meeting updated successfully!')
-            #         flash('Meeting updated successfully!', 'success')
-            # else:
-            #       update_response = requests.put(f"{BACKEND_API_URL}/update_technical_interview/{meeting_id}", json=updated_meeting)
+            updated_meeting = {
+            'meeting_id': meeting_id,
+            'meeting_title': request.form.get('title', ''),
+            'meeting_date': request.form.get('date', ''),
+            'start_time': request.form.get('start_time', ''),
+            'end_time': request.form.get('end_time', ''),
+            'applicant_id': request.form.get('applicant_id', ''),
+            'job_id': request.form.get('job_id', '')
+            }
+            if meeting_title == "HR Interview":
+                # Make the API call to update the meeting in your database
+                update_response = requests.put(f"{BACKEND_API_URL}/update_interview/{meeting_id}", json=updated_meeting)
+                if update_response.status_code == 200:
+                    print('Meeting updated successfully!')
+                    flash('Meeting updated successfully!', 'success')
+            else:
+                  update_response = requests.put(f"{BACKEND_API_URL}/update_technical_interview/{meeting_id}", json=updated_meeting)
             # Update existing meeting
             # In a real app, you would update the meeting in your database
             print('Meeting updated successfully!')
             flash('Meeting updated successfully!', 'success')
         else:
             if meeting_title == "HR Interview":
-            #     print("schedule is submitted")
-            #    # Create new meeting
+                print("schedule is submitted")
+               # Create new meeting
             
-            #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-            #     if user_response.status_code != 200:
-            #         flash('Error fetching user data', 'error')
-            #         return redirect(url_for('schedule_meeting'))
-            #     user_data = user_response.json().get('user', {})
+                user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
+                if user_response.status_code != 200:
+                    flash('Error fetching user data', 'error')
+                    return redirect(url_for('schedule_meeting'))
+                user_data = user_response.json().get('user', {})
 
-            #     offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-            #     if  offered_job_response.status_code != 200:
-            #         flash('Error fetching job data', 'error')
-            #         return redirect(url_for('schedule_meeting'))
-            #     offered_job_response = user_response.json().get('', {})
+                offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+                if  offered_job_response.status_code != 200:
+                    flash('Error fetching job data', 'error')
+                    return redirect(url_for('schedule_meeting'))
+                offered_job_response = user_response.json().get('', {})
 
                 
-            #     # Assume you've extracted this data:
-            #     first_name = user_data.get('first_name', '')
-            #     last_name = user_data.get('last_name', '')
-            #     email = user_data.get('email', '')
-            #     job_title =  offered_job_response.get('job_title', '')  
-            #     job_level = offered_job_response.get('job_level', '')  
+                # Assume you've extracted this data:
+                first_name = user_data.get('first_name', '')
+                last_name = user_data.get('last_name', '')
+                email = user_data.get('email', '')
+                job_title =  offered_job_response.get('job_title', '')  
+                job_level = offered_job_response.get('job_level', '')  
         
         
-            #     # Construct a professional message body
-            # # Construct email body for in-person interview
-            #     email_body = f"""
-            #     Dear {first_name} {last_name},
+                # Construct a professional message body
+            # Construct email body for in-person interview
+                email_body = f"""
+                Dear {first_name} {last_name},
 
-            #     We are pleased to inform you that you have successfully passed the first stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
+                We are pleased to inform you that you have successfully passed the first stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
 
-            #     🎉 **Congratulations!**
+                🎉 **Congratulations!**
 
-            #     We would like to invite you to the next step — an **in-person interview** with our hiring team.
+                We would like to invite you to the next step — an **in-person interview** with our hiring team.
 
-            #     **Interview Details**
-            #     - **Title:** {meeting_title}
-            #     - **Date:** {meeting_date}
-            #     - **Time:** {start_time} - {end_time}
-            #     - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
+                **Interview Details**
+                - **Title:** {meeting_title}
+                - **Date:** {meeting_date}
+                - **Time:** {start_time} - {end_time}
+                - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
 
-            #     Please make sure to arrive at least 10 minutes early and bring:
-            #     - A copy of your resume
-            #     - A valid ID for entry
+                Please make sure to arrive at least 10 minutes early and bring:
+                - A copy of your resume
+                - A valid ID for entry
 
-            #     If you have any questions or need to reschedule, please reply to this email or contact us directly.
+                If you have any questions or need to reschedule, please reply to this email or contact us directly.
 
-            #     We look forward to meeting you in person!
+                We look forward to meeting you in person!
 
-            #     Warm regards,  
-            #     **Hirevo HR Team**  
-            #     hr@hirevo.com
-            #     """
-            #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-            #     if job_response.status_code != 200:
-            #         flash('Error fetching job details', 'error')
-            #         return redirect(url_for('jobseeker_dashboard'))
+                Warm regards,  
+                **Hirevo HR Team**  
+                hr@hirevo.com
+                """
+                job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+                if job_response.status_code != 200:
+                    flash('Error fetching job details', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
                         
-            #     job_data = job_response.json().get('job', {})
+                job_data = job_response.json().get('job', {})
                         
-            #             # check if the status of job is open
-            #     if job_data.get('status', '').lower() != 'open':
-            #         flash('This job is no longer available', 'error')
-            #         return redirect(url_for('jobseeker_dashboard'))
+                        # check if the status of job is open
+                if job_data.get('status', '').lower() != 'open':
+                    flash('This job is no longer available', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
                     
-            #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
-            #     cv_data = cv_response.json().get('cv_data', {})
-            #     generate_question_response = requests.post(
-            #                 f"{INTERVIEW_QUESTIONS_URL}/handle_question_generation",
-            #                 json={
-            #                     'cv': cv_data,
-            #                     'job': job_data
-            #                 }
-            #             )
+                cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
+                cv_data = cv_response.json().get('cv_data', {})
+                generate_question_response = requests.post(
+                            f"{INTERVIEW_QUESTIONS_URL}/handle_question_generation",
+                            json={
+                                'cv': cv_data,
+                                'job': job_data
+                            }
+                        )
                 
 
-            #     msg = Message(
-            #         subject="You're Invited: Next Step in Your Hirevo Application 🎯",
-            #         recipients=[email],
-            #         body=email_body
-            #     )
+                msg = Message(
+                    subject="You're Invited: Next Step in Your Hirevo Application 🎯",
+                    recipients=[email],
+                    body=email_body
+                )
 
-            #     save_interview = requests.post(f"{BACKEND_API_URL}/add_interview", json={
-            #         'interview': {
-            #             "applicant_id": applicant_id,
-            #             "job_id": job_id,
-            #             'meeting_title': request.form['title'],
-            #             'meeting_date': request.form['date'],
-            #             'start_time': request.form['start_time'],
-            #             'end_time': request.form['end_time']
-            #         },
-            #         'questions': generate_question_response
-            #     })
+                save_interview = requests.post(f"{BACKEND_API_URL}/add_interview", json={
+                    'interview': {
+                        "applicant_id": applicant_id,
+                        "job_id": job_id,
+                        'meeting_title': request.form['title'],
+                        'meeting_date': request.form['date'],
+                        'start_time': request.form['start_time'],
+                        'end_time': request.form['end_time']
+                    },
+                    'questions': generate_question_response
+                })
 
-            #     mail.send(msg)
+                mail.send(msg)
                 # Redirect to prevent form resubmission
                 return redirect(url_for('schedule_meeting', 
                                     applicant_id=applicant_id, 
@@ -882,169 +883,138 @@ def schedule_meeting(applicant_id, job_id):
             else:
                    # Create new meeting
             
-            #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-            #     if user_response.status_code != 200:
-            #         flash('Error fetching user data', 'error')
-            #         return redirect(url_for('schedule_meeting'))
-            #     user_data = user_response.json().get('user', {})
+                user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
+                if user_response.status_code != 200:
+                    flash('Error fetching user data', 'error')
+                    return redirect(url_for('schedule_meeting'))
+                user_data = user_response.json().get('user', {})
 
-            #     offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-            #     if  offered_job_response.status_code != 200:
-            #         flash('Error fetching job data', 'error')
-            #         return redirect(url_for('schedule_meeting'))
-            #     offered_job_response = user_response.json().get('', {})
+                offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+                if  offered_job_response.status_code != 200:
+                    flash('Error fetching job data', 'error')
+                    return redirect(url_for('schedule_meeting'))
+                offered_job_response = user_response.json().get('', {})
 
                 
-            #     # Assume you've extracted this data:
-            #     first_name = user_data.get('first_name', '')
-            #     last_name = user_data.get('last_name', '')
-            #     email = user_data.get('email', '')
-            #     job_title =  offered_job_response.get('job_title', '')  
-            #     job_level = offered_job_response.get('job_level', '')  
+                # Assume you've extracted this data:
+                first_name = user_data.get('first_name', '')
+                last_name = user_data.get('last_name', '')
+                email = user_data.get('email', '')
+                job_title =  offered_job_response.get('job_title', '')  
+                job_level = offered_job_response.get('job_level', '')  
         
         
-            # # Construct a professional message body
-            # # Construct email body for in-person interview
-            #     email_body = f"""
-            #     Dear {first_name} {last_name},
+            # Construct a professional message body
+            # Construct email body for in-person interview
+                email_body = f"""
+                Dear {first_name} {last_name},
 
-            #     We are pleased to inform you that you have successfully passed the initial stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
+                We are pleased to inform you that you have successfully passed the initial stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
 
-            #     🧠 **Great work so far!**
+                🧠 **Great work so far!**
 
-            #     We would like to invite you to the next stage — a **technical interview** with our engineering team.
+                We would like to invite you to the next stage — a **technical interview** with our engineering team.
 
-            #     **Interview Details**
-            #     - **Title:** {meeting_title}
-            #     - **Date:** {meeting_date}
-            #     - **Time:** {start_time} - {end_time}
-            #     - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
+                **Interview Details**
+                - **Title:** {meeting_title}
+                - **Date:** {meeting_date}
+                - **Time:** {start_time} - {end_time}
+                - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
 
-            #     This session will focus on assessing your technical knowledge, problem-solving skills, and familiarity with tools and concepts relevant to the role.
+                This session will focus on assessing your technical knowledge, problem-solving skills, and familiarity with tools and concepts relevant to the role.
 
-            #     Please bring:
-            #     - A copy of your updated resume
-            #     - A valid ID for entry
-            #     - A laptop (if applicable or requested)
-            #     - Any supporting materials or portfolios you wish to share
+                Please bring:
+                - A copy of your updated resume
+                - A valid ID for entry
+                - A laptop (if applicable or requested)
+                - Any supporting materials or portfolios you wish to share
 
-            #     Make sure to arrive at least 10 minutes early. If you have any questions or need to reschedule, feel free to reply to this email or contact us directly.
+                Make sure to arrive at least 10 minutes early. If you have any questions or need to reschedule, feel free to reply to this email or contact us directly.
 
-            #     We’re excited to dive deeper into your skills and experience!
+                We’re excited to dive deeper into your skills and experience!
 
-            #     Best regards,  
-            #     **Hirevo HR Team**  
-            #     hr@hirevo.com
-            #     """
-            #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-            #     if job_response.status_code != 200:
-            #         flash('Error fetching job details', 'error')
-            #         return redirect(url_for('jobseeker_dashboard'))
+                Best regards,  
+                **Hirevo HR Team**  
+                hr@hirevo.com
+                """
+                job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+                if job_response.status_code != 200:
+                    flash('Error fetching job details', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
                         
-            #     job_data = job_response.json().get('job', {})
+                job_data = job_response.json().get('job', {})
                         
-            #             # check if the status of job is open
-            #     if job_data.get('status', '').lower() != 'open':
-            #         flash('This job is no longer available', 'error')
-            #         return redirect(url_for('jobseeker_dashboard'))
+                        # check if the status of job is open
+                if job_data.get('status', '').lower() != 'open':
+                    flash('This job is no longer available', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
                 
 
-            #     msg = Message(
-            #         subject="You're Invited: Technical Interview at Hirevo 🧠",
-            #         recipients=[email],
-            #         body=email_body
-            #     )
+                msg = Message(
+                    subject="You're Invited: Technical Interview at Hirevo 🧠",
+                    recipients=[email],
+                    body=email_body
+                )
 
-            #     save_interview = requests.post(f"{BACKEND_API_URL}/add_technical_interview", json={
-            #         'interview': {
-            #             "applicant_id": applicant_id,
-            #             "job_id": job_id,
-            #             'meeting_title': request.form['title'],
-            #             'meeting_date': request.form['date'],
-            #             'start_time': request.form['start_time'],
-            #             'end_time': request.form['end_time']
-            #         }
-            #     })
+                save_interview = requests.post(f"{BACKEND_API_URL}/add_technical_interview", json={
+                    'interview': {
+                        "applicant_id": applicant_id,
+                        "job_id": job_id,
+                        'meeting_title': request.form['title'],
+                        'meeting_date': request.form['date'],
+                        'start_time': request.form['start_time'],
+                        'end_time': request.form['end_time']
+                    }
+                })
 
-            #     mail.send(msg)
+                mail.send(msg)
                 return redirect(url_for('schedule_meeting', 
                                     applicant_id=applicant_id, 
                                 job_id=job_id))  
     
 
-    # get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
+    get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
 
-    # if get_interview_response.status_code != 200:
-    #         flash('Error fetching interviews', 'error')
-    #         return render_template('company_dashboard.html', jobs=[])
+    if get_interview_response.status_code != 200:
+            flash('Error fetching interviews', 'error')
+            return render_template('company_dashboard.html', jobs=[])
 
-    # interviews = get_interview_response.json().get('interviews', [])
+    interviews = get_interview_response.json().get('interviews', [])
 
-    # meeting_data = []
+    meeting_data = []
 
-    # for interview in interviews:
-    #         applicant_id = interview.get('applicant_id')
-    #         job_id = interview.get('job_id')
+    for interview in interviews:
+            applicant_id = interview.get('applicant_id')
+            job_id = interview.get('job_id')
 
-    #         # Skip if missing data
-    #         if not applicant_id or not job_id:
-    #             continue
+            # Skip if missing data
+            if not applicant_id or not job_id:
+                continue
 
-    #         # Get applicant info
-    #         user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-    #         if user_response.status_code != 200:
-    #             continue
-    #         user_data = user_response.json()
-    #         full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
+            # Get applicant info
+            user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
+            if user_response.status_code != 200:
+                continue
+            user_data = user_response.json()
+            full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
 
-    #         # Get job info
-    #         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-    #         if job_response.status_code != 200:
-    #             continue
-    #         job_data = job_response.json()
-    #         job_title = job_data.get('job_title', 'Unknown Job')
+            # Get job info
+            job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+            if job_response.status_code != 200:
+                continue
+            job_data = job_response.json()
+            job_title = job_data.get('job_title', 'Unknown Job')
 
-    #         # Append full info per interview
-    #         meeting_data.append({
-    #             "applicant_name": full_name,
-    #             "job_title": job_title,
-    #             "meeting_title": interview.get('meeting_title', 'Untitled'),
-    #             "meeting_date": interview.get('meeting_date', ''),
-    #             "start_time": interview.get('start_time', ''),
-    #             "end_time": interview.get('end_time', '')
-    #         })
-    meeting_data = [
-        {
-            "applicant_name": "Alice Johnson",
-            "job_title": "Frontend Developer",
-            "meeting_title": "Frontend Developer Interview",
-            "meeting_date": "2025-04-22",
-            "start_time": "10:00",
-            "end_time": "11:00",
-            "applicant_id": "1",  # Make sure to include these IDs
-            "job_id": "101"
-        },
-        {
-            "applicant_name": "Bob Smith",
-            "job_title": "Backend Developer",
-            "meeting_title": "Backend Developer Interview",
-            "meeting_date": "2025-04-22",
-            "start_time": "12:00",
-            "end_time": "13:00",
-            "applicant_id": "2",
-            "job_id": "102"
-        },
-        {
-            "applicant_name": "Carol Lee",
-            "job_title": "UI/UX Designer",
-            "meeting_title": "Design Interview",
-            "meeting_date": "2025-04-23",
-            "start_time": "09:00",
-            "end_time": "10:00",
-            "applicant_id": "3",
-            "job_id": "103"
-        }
-    ]
+            # Append full info per interview
+            meeting_data.append({
+                "applicant_name": full_name,
+                "job_title": job_title,
+                "meeting_title": interview.get('meeting_title', 'Untitled'),
+                "meeting_date": interview.get('meeting_date', ''),
+                "start_time": interview.get('start_time', ''),
+                "end_time": interview.get('end_time', '')
+            })
+
 
     # Send all interview data to the template
     return render_template('schedule_interview.html', meetings=meeting_data, applicant_id=applicant_id,job_id =job_id)
@@ -1218,230 +1188,230 @@ def offered_job():
 #         flash(f'Error loading jobs: {str(e)}', 'error')
 #         return render_template('offered_job.html', jobs=[])
 # -------- DISPLAY QUESTION FOR INTERVIEW AND FILTER BY DAY --------
-# @app.route('/weekly_questions')
-# def weekly_questions():    
-#     try:
-#         selected_date = request.args.get('date', None)
-#         if not selected_date:
-#             today = datetime.now()
-#             selected_date = today.strftime('%Y-%m-%d')
-
-#         date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
-
-#         # Fetch interviews
-#         get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
-#         if get_interview_response.status_code != 200:
-#             flash('Error fetching interviews', 'error')
-#             return redirect(url_for('company_dashboard'))
-
-#         interviews = get_interview_response.json().get('interviews', [])
-
-#         # Fetch answered interviews
-#         answers_response = requests.get(f"{BACKEND_API_URL}/get_interview_answers")
-#         answered_ids = set()
-#         if answers_response.status_code == 200:
-#             answers = answers_response.json().get('answers', [])
-#             answered_ids = {answer['id_interview'] for answer in answers}
-
-#         questions = []
-
-#         for interview in interviews:
-#             applicant_id = interview.get('applicant_id')
-#             job_id = interview.get('job_id')
-#             interview_id = interview.get('id')
-#             raw_date = interview.get('meeting_date', '')
-
-#             try:
-#                 interview_date = datetime.strptime(raw_date, '%Y-%m-%d').strftime('%Y-%m-%d')
-#             except ValueError:
-#                 interview_date = raw_date
-
-#             if interview_date != selected_date:
-#                 continue
-
-#             # Get user info
-#             user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-#             if user_response.status_code != 200:
-#                 continue
-#             user_data = user_response.json()
-#             full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
-
-#             # Get job info
-#             job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-#             if job_response.status_code != 200:
-#                 continue
-#             job_data = job_response.json()
-#             job_title = job_data.get('job_title', 'Unknown Job')
-
-#             # Format time
-#             time_range = f"{interview.get('start_time', '')} - {interview.get('end_time', '')}"
-
-#             # Parse questions
-#             raw_questions = interview.get('questions')
-#             if isinstance(raw_questions, str):
-#                 try:
-#                     questions_list = eval(raw_questions) if raw_questions.strip().startswith('[') else [raw_questions]
-#                 except:
-#                     questions_list = [raw_questions]
-#             elif isinstance(raw_questions, list):
-#                 questions_list = raw_questions
-#             else:
-#                 questions_list = [str(raw_questions)]
-
-#             # Add to final list
-#             date_obj = datetime.strptime(interview_date, '%Y-%m-%d')
-#             questions.append({
-#                 "id": interview_id,
-#                 "applicant_name": full_name,
-#                 "job_title": job_title,
-#                 "questions": questions_list,
-#                 "interview_date": interview_date,
-#                 "interview_time": time_range,
-#                 "status": interview_id in answered_ids,
-#                 "day_of_week": date_obj.strftime('%A')
-#             })
-
-#         # Calculate progress
-#         total_questions = len(questions)
-#         answered_questions = len([q for q in questions if q['status']])
-#         progress_percent = (answered_questions / total_questions * 100) if total_questions > 0 else 0
-
-#         # Format selected date
-#         selected_date_display = date_obj.strftime('%A, %b %d, %Y')
-#         day_of_week = date_obj.strftime('%A')
-
-#         return render_template('weekly_questions.html', 
-#                                questions=questions,
-#                                progress_percent=progress_percent,
-#                                total_questions=total_questions,
-#                                answered_questions=answered_questions,
-#                                selected_date=selected_date,
-#                                selected_date_display=selected_date_display,
-#                                day_of_week=day_of_week)
-
-#     except Exception as e:
-#         flash(f'Error loading questions: {str(e)}', 'error')
-#         today = datetime.now()
-#         return render_template('weekly_questions.html', 
-#                                questions=[], 
-#                                selected_date=today.strftime('%Y-%m-%d'),
-#                                selected_date_display=today.strftime('%A, %b %d, %Y'),
-#                                day_of_week=today.strftime('%A'))
-
-# -------- USE FOR TEST --------
 @app.route('/weekly_questions')
 def weekly_questions():    
     try:
-        # Get filter parameters from URL
         selected_date = request.args.get('date', None)
-        
-        # Sample data provided by user
-        questions = [
-            {
-                "id": 1,
-                "applicant_name": "Alice Johnson",
-                "job_title": "Data Analyst",
-                "questions": [
-                    "What tools do you use for data cleaning?",
-                    "Explain a project where you used data visualization.",
-                    "How do you handle missing data?"
-                ],
-                "interview_date": "2018-09-01", 
-                "interview_time": "09:30 - 10:15",
-                "status": True
-            },
-            {
-                "id": 2,
-                "applicant_name": "Brian Smith",
-                "job_title": "Frontend Developer",
-                "questions": [
-                    "What are the main differences between React and Vue?",
-                    "How do you handle state management in large applications?",
-                    "Describe your approach to responsive design."
-                ],
-                "interview_date": "2025-04-02",
-                "interview_time": "14:00 - 15:00",
-                "status": False
-            },
-            {
-                "id": 3,
-                "applicant_name": "Carol Williams",
-                "job_title": "Backend Developer",
-                "questions": [
-                    "Explain RESTful API design principles",
-                    "How do you handle database migrations?",
-                    "Describe your experience with microservices"
-                ],
-                "interview_date": "2025-04-19",
-                "interview_time": "11:00 - 12:00",
-                "status": True
-            }
-        ]
-      
-        # Add day_of_week to each question
-        for question in questions:
-            date_obj = datetime.strptime(question['interview_date'], '%Y-%m-%d')
-            question['day_of_week'] = date_obj.strftime('%A')  # Monday, Tuesday, etc.
-        
-        # If no date is specified, use today
         if not selected_date:
             today = datetime.now()
             selected_date = today.strftime('%Y-%m-%d')
-        
-        # Parse the selected date
-        date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
-        
-        # Filter questions for the selected day only
-        filtered_questions = [q for q in questions if q['interview_date'] == selected_date]
 
-        # Calculate progress for the filtered questions
-        total_questions = len(filtered_questions)
-        answered_questions = len([q for q in filtered_questions if q['status']])
+        date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
+
+        # Fetch interviews
+        get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
+        if get_interview_response.status_code != 200:
+            flash('Error fetching interviews', 'error')
+            return redirect(url_for('company_dashboard'))
+
+        interviews = get_interview_response.json().get('interviews', [])
+
+        # Fetch answered interviews
+        answers_response = requests.get(f"{BACKEND_API_URL}/get_interview_answers")
+        answered_ids = set()
+        if answers_response.status_code == 200:
+            answers = answers_response.json().get('answers', [])
+            answered_ids = {answer['id_interview'] for answer in answers}
+
+        questions = []
+
+        for interview in interviews:
+            applicant_id = interview.get('applicant_id')
+            job_id = interview.get('job_id')
+            interview_id = interview.get('id')
+            raw_date = interview.get('meeting_date', '')
+
+            try:
+                interview_date = datetime.strptime(raw_date, '%Y-%m-%d').strftime('%Y-%m-%d')
+            except ValueError:
+                interview_date = raw_date
+
+            if interview_date != selected_date:
+                continue
+
+            # Get user info
+            user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
+            if user_response.status_code != 200:
+                continue
+            user_data = user_response.json()
+            full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
+
+            # Get job info
+            job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+            if job_response.status_code != 200:
+                continue
+            job_data = job_response.json()
+            job_title = job_data.get('job_title', 'Unknown Job')
+
+            # Format time
+            time_range = f"{interview.get('start_time', '')} - {interview.get('end_time', '')}"
+
+            # Parse questions
+            raw_questions = interview.get('questions')
+            if isinstance(raw_questions, str):
+                try:
+                    questions_list = eval(raw_questions) if raw_questions.strip().startswith('[') else [raw_questions]
+                except:
+                    questions_list = [raw_questions]
+            elif isinstance(raw_questions, list):
+                questions_list = raw_questions
+            else:
+                questions_list = [str(raw_questions)]
+
+            # Add to final list
+            date_obj = datetime.strptime(interview_date, '%Y-%m-%d')
+            questions.append({
+                "id": interview_id,
+                "applicant_name": full_name,
+                "job_title": job_title,
+                "questions": questions_list,
+                "interview_date": interview_date,
+                "interview_time": time_range,
+                "status": interview_id in answered_ids,
+                "day_of_week": date_obj.strftime('%A')
+            })
+
+        # Calculate progress
+        total_questions = len(questions)
+        answered_questions = len([q for q in questions if q['status']])
         progress_percent = (answered_questions / total_questions * 100) if total_questions > 0 else 0
 
-        # Format the selected date for display
-        selected_date_display = date_obj.strftime('%A, %b %d, %Y')  # e.g., "Monday, Apr 19, 2025"
-        
-        # Get day of week for display
+        # Format selected date
+        selected_date_display = date_obj.strftime('%A, %b %d, %Y')
         day_of_week = date_obj.strftime('%A')
 
         return render_template('weekly_questions.html', 
-                            questions=filtered_questions,
-                            progress_percent=progress_percent,
-                            total_questions=total_questions,
-                            answered_questions=answered_questions,
-                            selected_date=selected_date,
-                            selected_date_display=selected_date_display,
-                            day_of_week=day_of_week)
-    
+                               questions=questions,
+                               progress_percent=progress_percent,
+                               total_questions=total_questions,
+                               answered_questions=answered_questions,
+                               selected_date=selected_date,
+                               selected_date_display=selected_date_display,
+                               day_of_week=day_of_week)
+
     except Exception as e:
         flash(f'Error loading questions: {str(e)}', 'error')
         today = datetime.now()
         return render_template('weekly_questions.html', 
-                              questions=[], 
-                              selected_date=today.strftime('%Y-%m-%d'),
-                              selected_date_display=today.strftime('%A, %b %d, %Y'),
-                              day_of_week=today.strftime('%A'))
+                               questions=[], 
+                               selected_date=today.strftime('%Y-%m-%d'),
+                               selected_date_display=today.strftime('%A, %b %d, %Y'),
+                               day_of_week=today.strftime('%A'))
+
+# -------- USE FOR TEST --------
+# @app.route('/weekly_questions')
+# def weekly_questions():    
+#     try:
+#         # Get filter parameters from URL
+#         selected_date = request.args.get('date', None)
+        
+#         # Sample data provided by user
+#         questions = [
+#             {
+#                 "id": 1,
+#                 "applicant_name": "Alice Johnson",
+#                 "job_title": "Data Analyst",
+#                 "questions": [
+#                     "What tools do you use for data cleaning?",
+#                     "Explain a project where you used data visualization.",
+#                     "How do you handle missing data?"
+#                 ],
+#                 "interview_date": "2018-09-01", 
+#                 "interview_time": "09:30 - 10:15",
+#                 "status": True
+#             },
+#             {
+#                 "id": 2,
+#                 "applicant_name": "Brian Smith",
+#                 "job_title": "Frontend Developer",
+#                 "questions": [
+#                     "What are the main differences between React and Vue?",
+#                     "How do you handle state management in large applications?",
+#                     "Describe your approach to responsive design."
+#                 ],
+#                 "interview_date": "2025-04-02",
+#                 "interview_time": "14:00 - 15:00",
+#                 "status": False
+#             },
+#             {
+#                 "id": 3,
+#                 "applicant_name": "Carol Williams",
+#                 "job_title": "Backend Developer",
+#                 "questions": [
+#                     "Explain RESTful API design principles",
+#                     "How do you handle database migrations?",
+#                     "Describe your experience with microservices"
+#                 ],
+#                 "interview_date": "2025-04-19",
+#                 "interview_time": "11:00 - 12:00",
+#                 "status": True
+#             }
+#         ]
+      
+#         # Add day_of_week to each question
+#         for question in questions:
+#             date_obj = datetime.strptime(question['interview_date'], '%Y-%m-%d')
+#             question['day_of_week'] = date_obj.strftime('%A')  # Monday, Tuesday, etc.
+        
+#         # If no date is specified, use today
+#         if not selected_date:
+#             today = datetime.now()
+#             selected_date = today.strftime('%Y-%m-%d')
+        
+#         # Parse the selected date
+#         date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
+        
+#         # Filter questions for the selected day only
+#         filtered_questions = [q for q in questions if q['interview_date'] == selected_date]
+
+#         # Calculate progress for the filtered questions
+#         total_questions = len(filtered_questions)
+#         answered_questions = len([q for q in filtered_questions if q['status']])
+#         progress_percent = (answered_questions / total_questions * 100) if total_questions > 0 else 0
+
+#         # Format the selected date for display
+#         selected_date_display = date_obj.strftime('%A, %b %d, %Y')  # e.g., "Monday, Apr 19, 2025"
+        
+#         # Get day of week for display
+#         day_of_week = date_obj.strftime('%A')
+
+#         return render_template('weekly_questions.html', 
+#                             questions=filtered_questions,
+#                             progress_percent=progress_percent,
+#                             total_questions=total_questions,
+#                             answered_questions=answered_questions,
+#                             selected_date=selected_date,
+#                             selected_date_display=selected_date_display,
+#                             day_of_week=day_of_week)
+    
+#     except Exception as e:
+#         flash(f'Error loading questions: {str(e)}', 'error')
+#         today = datetime.now()
+#         return render_template('weekly_questions.html', 
+#                               questions=[], 
+#                               selected_date=today.strftime('%Y-%m-%d'),
+#                               selected_date_display=today.strftime('%A, %b %d, %Y'),
+#                               day_of_week=today.strftime('%A'))
 
 # -------- DISPLAY INTERVIEW QUESTIONS AND THEIR ANSWERS  --------
 @app.route('/answer_question/<int:question_id>')
 def answer_question(question_id):
     print("submit", question_id)
-    # """Display a form with a list of questions to answer."""
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    """Display a form with a list of questions to answer."""
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
   
     try:
-        # database 
-        # get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")
-        # if get_interview_response.status_code != 200:
-        #     flash('Error fetching interviews', 'error')
-        #     return redirect(url_for('company_dashboard'))
+        #database 
+        get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")
+        if get_interview_response.status_code != 200:
+            flash('Error fetching interviews', 'error')
+            return redirect(url_for('company_dashboard'))
 
      
        
-        # questions = get_interview_response.json().get('questions')
+        questions = get_interview_response.json().get('questions')
 
         questions = [
         "What are the main differences between React and Vue?",

@@ -88,14 +88,14 @@ services:
       dockerfile: Dockerfile
     command: python interview.py
     ports:
-      - "3004:3004"
+      - "3003:3003"
     networks:
       - eece-network
     environment:
-      - PORT=3004
+      - PORT=3003
 
   # Interview Questions API
-  cv-job-matching-api:
+  interview-questions-api:
     stdin_open: true
     tty: true
     build:
@@ -103,11 +103,11 @@ services:
       dockerfile: Dockerfile
     command: python cv_job.py
     ports:
-      - "3003:3003"
+      - "3004:3004"
     networks:
       - eece-network
     environment:
-      - PORT=3003
+      - PORT=3004
   # Prometheus for monitoring
   prometheus:
     image: prom/prometheus:latest
