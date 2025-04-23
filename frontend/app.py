@@ -33,6 +33,7 @@ app.secret_key = 'dev-key-123-abc!@#'
 BACKEND_API_URL = "http://backend:5000"
 CV_EXTRACTION_URL="http://cv-extraction-api:3001"
 JOB_DESCRIPTION_URL="http://job-description-api:3002" 
+CV_JOB_MATCHING_URL="http://cv-job-matching-api:3003"
 
 # ========================
 #  MAIN APPLICATION ENTRY
@@ -322,97 +323,97 @@ def jobseeker_profile():
 # -------- APPLICANT DASHBOARD --------
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
-    # try:
-    #     # Get all jobs from database
-    #     response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
-    #     if response.status_code != 200:
-    #         flash('Error fetching jobs', 'error')
-    #         return render_template('jobseeker_dashboard.html', jobs=[])
+    try:
+        # Get all jobs from database
+        response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
+        if response.status_code != 200:
+            flash('Error fetching jobs', 'error')
+            return render_template('jobseeker_dashboard.html', jobs=[])
         
-    #     jobs = response.json().get('jobs', [])
+        jobs = response.json().get('jobs', [])
 
-    #     # Filter only open jobs
-    #     open_jobs = [job for job in jobs if job.get('status', '').lower() == 'open']
+        # Filter only open jobs
+        open_jobs = [job for job in jobs if job.get('status', '').lower() == 'open']
 
-    #     # Get department names for open jobs
-    #     for job in open_jobs:
-    #         dept_id = job['dept_id']
-    #         dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
-    #         if dept_response.status_code == 200:
-    #             department = dept_response.json().get('department', {})
-    #             job['department_name'] = department.get('department_name', 'N/A')
-    #         else:
-    #             job['department_name'] = 'N/A'
+        # Get department names for open jobs
+        for job in open_jobs:
+            dept_id = job['dept_id']
+            dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
+            if dept_response.status_code == 200:
+                department = dept_response.json().get('department', {})
+                job['department_name'] = department.get('department_name', 'N/A')
+            else:
+                job['department_name'] = 'N/A'
         
-    #     # Check if user has uploaded CV
-    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}")
-    #     has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
+        # Check if user has uploaded CV
+        cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}")
+        has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
 
-    #     # Handle job application
-    #     if request.method == 'POST':
-    #         job_id = request.form.get('job_id')
+        # Handle job application
+        if request.method == 'POST':
+            job_id = request.form.get('job_id')
 
-    #         if not has_cv:
-    #             flash('Please upload your CV before applying for jobs', 'error')
-    #             return redirect(url_for('upload_cv'))  # Redirect to CV upload page
+            if not has_cv:
+                flash('Please upload your CV before applying for jobs', 'error')
+                return redirect(url_for('upload_cv'))  # Redirect to CV upload page
 
-    #         if not job_id:
-    #             flash('No job selected', 'error')
-    #             return redirect(url_for('jobseeker_dashboard'))
+            if not job_id:
+                flash('No job selected', 'error')
+                return redirect(url_for('jobseeker_dashboard'))
 
-    #         # Get job details
-    #         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-    #         if job_response.status_code != 200:
-    #             flash('Error fetching job details', 'error')
-    #             return redirect(url_for('jobseeker_dashboard'))
+            # Get job details
+            job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+            if job_response.status_code != 200:
+                flash('Error fetching job details', 'error')
+                return redirect(url_for('jobseeker_dashboard'))
             
-    #         job_data = job_response.json().get('job', {})
+            job_data = job_response.json().get('job', {})
             
-    #         if job_data.get('status', '').lower() != 'open':
-    #             flash('This job is no longer available', 'error')
-    #             return redirect(url_for('jobseeker_dashboard'))
+            if job_data.get('status', '').lower() != 'open':
+                flash('This job is no longer available', 'error')
+                return redirect(url_for('jobseeker_dashboard'))
 
-    #         # Get CV data
-    #         cv_data = cv_response.json().get('cv_data', {})
+            # Get CV data
+            cv_data = cv_response.json().get('cv_data', {})
 
-    #         # Match CV with job
-    #         match_response = requests.post(
-    #             f"{CV_JOB_MATCHING_URL}/cv-job-match",
-    #             json={'cv': cv_data, 'job': job_data}
-    #         )
+            # Match CV with job
+            match_response = requests.post(
+                f"{CV_JOB_MATCHING_URL}/cv-job-match",
+                json={'cv': cv_data, 'job': job_data}
+            )
 
-    #         match_result = {}
-    #         if match_response.status_code == 200:
-    #             match_result = match_response.json().get('result', {})
-    #         else:
-    #             flash('Could not evaluate your CV against the job requirements', 'warning')
+            match_result = {}
+            if match_response.status_code == 200:
+                match_result = match_response.json().get('result', {})
+            else:
+                flash('Could not evaluate your CV against the job requirements', 'warning')
 
-    #         # Save application
-    #         application_response = requests.post(
-    #             f"{BACKEND_API_URL}/add_applied_job",
-    #             json={
-    #                 'applicant_id': session['user_id'],
-    #                 'job_id': job_id,
-    #                 'status': 'scheduling_interview',
-    #                 "result": match_result
-    #             }
-    #         )
+            # Save application
+            application_response = requests.post(
+                f"{BACKEND_API_URL}/add_applied_job",
+                json={
+                    'applicant_id': session['user_id'],
+                    'job_id': job_id,
+                    'status': 'scheduling_interview',
+                    "result": match_result
+                }
+            )
             
-    #         if application_response.status_code == 201:
-    #             flash('Application submitted successfully!', 'success')
-    #         else:
-    #             flash('Error submitting application', 'error')
+            if application_response.status_code == 201:
+                flash('Application submitted successfully!', 'success')
+            else:
+                flash('Error submitting application', 'error')
             
-    #         return redirect(url_for('jobseeker_dashboard'))
+            return redirect(url_for('jobseeker_dashboard'))
         
-    #     return render_template('jobseeker_dashboard.html', jobs=open_jobs, has_cv=has_cv)
+        return render_template('jobseeker_dashboard.html', jobs=open_jobs, has_cv=has_cv)
     
-    # except Exception as e:
-    #     flash(f'Error loading dashboard: {str(e)}', 'error')
+    except Exception as e:
+        flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('jobseeker_dashboard.html', jobs=[])
 
 
