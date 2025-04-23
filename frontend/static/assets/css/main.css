@@ -9,7 +9,7 @@
   --background-color: #ffffff; /* Background color for the entire website, including individual sections */
   --default-color: #444444; /* Default color used for the majority of the text content across the entire website */
   --heading-color: #222222; /* Color for headings, subheadings and title throughout the website */
-  --accent-color:  #3a6470; /* Accent color that represents your brand on the website. It's used for buttons, links, and other elements that need to stand out */
+  --accent-color:  #13acd8; /* Accent color that represents your brand on the website. It's used for buttons, links, and other elements that need to stand out */
   --surface-color: #ffffff; /* The surface color is used as a background of boxed elements within sections, such as cards, icon boxes, or other elements that require a visual separation from the global background. */
   --contrast-color: #ffffff; /* Contrast color for text, ensuring readability against backgrounds of accent, heading, or default colors. */
 }
@@ -146,7 +146,7 @@ h6 {
 }
 
 .header .logo h1 {
-  font-size: 30px;
+  font-size: 40px;
   margin: 0;
   font-weight: 700;
   color: var(--heading-color);
@@ -156,11 +156,11 @@ h6 {
 .header .btn-getstarted:focus {
   color: var(--contrast-color);
   background: var(--accent-color);
-  font-size: 14px;
+  font-size: 18px;
   padding: 8px 25px;
   margin: 0 0 0 30px;
   border-radius: 50px;
-  transition: 0.3s;
+  transition: background color 0.3s;
 }
 
 .header .btn-getstarted:hover,
@@ -214,7 +214,7 @@ h6 {
   .navmenu a:focus {
     color: var(--nav-color);
     padding: 18px 15px;
-    font-size: 16px;
+    font-size: 20px;
     font-family: var(--nav-font);
     font-weight: 400;
     display: flex;
@@ -760,7 +760,7 @@ section,
 }
 
 .about .icon-box h4 {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 700;
   margin: 0 0 10px 0;
 }
@@ -771,10 +771,11 @@ section,
 }
 
 .about .icon-box p {
-  font-size: 15px;
+  font-size: 18px;
   color: color-mix(in srgb, var(--default-color), transparent 40%);
   margin-bottom: 0;
 }
+
 
 .about .icon-box:hover h4 a {
   color: var(--accent-color);
@@ -817,7 +818,7 @@ section,
   background-color: var(--surface-color);
   box-shadow: 0px 0 30px 0 rgba(0, 0, 0, 0.1);
   padding: 50px 30px;
-  transition: all ease-in-out 0.4s;
+  /* transition: all ease-in-out 0.4s; */
   height: 100%;
   overflow: hidden;
   z-index: 1;

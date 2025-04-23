@@ -7,11 +7,11 @@
   --background-color: #f4fafd;
   --default-color: #444444;
   --heading-color: #222222;
-  --accent-color: #3a6470;
+  --accent-color:  #13acd8;
   --surface-color: #ffffff;
   --contrast-color: #ffffff;
   
-  --primary-color: #3a6470;
+  --primary-color: #0aaec2;
   --primary-light: rgba(58, 100, 112, 0.1);
   --primary-dark: #2a4b55;
   --secondary-color: #5a8a96;
@@ -35,7 +35,7 @@
   --gray-800: #424242;
   --gray-900: #212121;
   
-  --border-radius: 8px;
+  --border-radius: 1.5rem;
   --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   --transition: all 0.3s ease;
 }
@@ -157,7 +157,7 @@ a:hover {
 
 .btn-outline:hover {
   border-color: var(--primary-color);
-  color: var(--primary-color);
+  color: white;
 }
 
 .btn-icon {
