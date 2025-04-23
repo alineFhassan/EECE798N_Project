@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from flask_mail import Mail, Message
 import re
-
+import logging
 
 
 app = Flask(__name__)
@@ -304,7 +304,9 @@ def jobseeker_profile():
             application_data = app_response.json().get('cv_data', {})
         elif app_response.status_code != 404:
             app_response.raise_for_status()
- 
+        logging.basicConfig(level=logging.DEBUG)
+        logger = logging.getLogger(__name__)
+        logger.debug(f"app: {application_data}")
         return render_template(
             'profile.html', 
             user=user_data, 
@@ -523,158 +525,42 @@ def post_job():
 # -------- DISPLAY JOB OFFERED BY DEPARTMENT --------
 @app.route('/job_applicants/<int:job_id>')
 def job_applicants(job_id):
-    # try:
-    #     # First get the job details
-    #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-    #     if job_response.status_code != 200:
-    #         flash('Job not found', 'error')
-    #         return redirect(url_for('company_dashboard'))
+    try:
+         # First get the job details
+         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+         if job_response.status_code != 200:
+             flash('Job not found', 'error')
+             return redirect(url_for('company_dashboard'))
             
-    #     job = job_response.json().get('job')
+         job = job_response.json().get('job')
+
+         logging.basicConfig(level=logging.DEBUG)
+         logger = logging.getLogger(__name__)
+         # Verify this company owns the job
+         if job['dept_id'] != session.get('user_id'):
+             flash('You can only view applicants for your own jobs', 'error')
+             return redirect(url_for('company_dashboard'))
         
-    #     # Verify this company owns the job
-    #     if job['company']['id'] != session.get('user_id'):
-    #         flash('You can only view applicants for your own jobs', 'error')
-    #         return redirect(url_for('company_dashboard'))
-        
-    #     # Get all applications from the database
-    #     applications_response = requests.get(f"{BACKEND_API_URL}/get_applicat")
-    #     if applications_response.status_code != 200:
-    #         flash('Error fetching applications', 'error')
-    #         return render_template('job_applicants.html', job=job, applicants=[])
+         # Get all applications from the database
+         applications_response = requests.get(f"{BACKEND_API_URL}/get_applicants/{job_id}")
+         print(applications_response)
+         if applications_response.status_code != 200:
+             flash('Error fetching applications', 'error')
+             return render_template('job_applicants.html', job=job, applicants=[])
             
-    #     all_applications = applications_response.json().get('applications', [])
+         all_applications = applications_response.json().get('applications', [])
+         logger.debug(f"app: {all_applications}")
+         # For demo purposes, we'll just return all applications
+         # In a real app, you'd want to filter applications that actually applied to this job
+         # You would need an "applications" table that links users to jobs they applied for
         
-    #     # For demo purposes, we'll just return all applications
-    #     # In a real app, you'd want to filter applications that actually applied to this job
-    #     # You would need an "applications" table that links users to jobs they applied for
-        
-    #     return render_template('job_applicants.html', 
-    #                          job=job, 
-    #                          applicants=all_applications)
+         return render_template('job_applicants.html', 
+                              job=job, 
+                              applicants=all_applications)
     
-    # except Exception as e:
-    #     flash(f'Error: {str(e)}', 'error')
-    #     return redirect(url_for('company_dashboard'))
-    
-    # test
-    job= [
-    {
-        "id": 42,
-        "title": "Senior Python Developer",
-        "description": "We're looking for an experienced Python developer to join our team...",
-        "company": {
-        "id": 15,
-        "name": "Tech Innovations Inc."
-        },
-        "job_level": "Senior",
-        "years_experience": "5+ years",
-        "requirements": [
-        "5+ years of Python experience",
-        "Strong knowledge of Flask/Django",
-        "Experience with PostgreSQL",
-        "Understanding of RESTful API design"
-        ],
-        "responsibilities": [
-        "Design and implement backend services",
-        "Mentor junior developers",
-        "Optimize application performance",
-        "Write clean, maintainable code"
-        ],
-        "created_at": "2023-11-15T14:30:22.123456",
-        "applicant_count": 3
-    }]
-    all_applications =[
-        {
-        "id": 101,
-        "name": "John Smith",
-        "email": "john.smith@example.com",
-        "phone_number": "+1 (555) 123-4567",
-        "exp_years": 6,
-        "skills": [
-            "Python",
-            "Flask",
-            "Django",
-            "PostgreSQL",
-            "AWS"
-        ],
-        "experience": [
-            {
-            "role": "Senior Developer",
-            "company": "TechCorp",
-            "years": 3
-            },
-            {
-            "role": "Python Developer",
-            "company": "WebSolutions",
-            "years": 3
-            }
-        ],
-        "education": {
-            "degree": "B.Sc Computer Science",
-            "school": "State University"
-        },
-        "match_score": 0.92
-        },
-        {
-        "id": 102,
-        "name": "Maria Garcia",
-        "email": "maria.g@example.com",
-        "phone_number": "+1 (555) 987-6543",
-        "exp_years": 5,
-        "skills": [
-            "Python",
-            "Django",
-            "JavaScript",
-            "MySQL"
-        ],
-        "experience": [
-            {
-            "role": "Backend Developer",
-            "company": "DataSystems",
-            "years": 5
-            }
-        ],
-        "education": {
-            "degree": "M.Sc Software Engineering",
-            "school": "Tech Institute"
-        },
-        "match_score": 0.85
-        },
-        {
-        "id": 103,
-        "name": "David Kim",
-        "email": "david.kim@example.com",
-        "phone_number": "+1 (555) 456-7890",
-        "exp_years": 7,
-        "skills": [
-            "Python",
-            "FastAPI",
-            "MongoDB",
-            "Docker"
-        ],
-        "experience": [
-            {
-            "role": "Lead Developer",
-            "company": "InnovateCo",
-            "years": 4
-            },
-            {
-            "role": "Python Developer",
-            "company": "CodeMasters",
-            "years": 3
-            }
-        ],
-        "education": {
-            "degree": "B.Eng Computer Engineering",
-            "school": "Polytechnic University"
-        },
-        "match_score": 0.78
-        }
-    ]
-    return render_template('job_applicants.html', 
-                             job=job, 
-                             applicants=all_applications)
+    except Exception as e:
+         flash(f'Error: {str(e)}', 'error')
+         return redirect(url_for('company_dashboard'))
 
 @app.template_filter('format_date')
 def format_date_filter(date_str):

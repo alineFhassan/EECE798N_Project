@@ -196,6 +196,7 @@ def add_application():
             for exp in cv_data.get('experience', []) 
             if isinstance(exp.get('years', 0), (int, float))
         )
+        print("years", experience_years)
 
         # Database insertion
         conn = get_db_connection()
@@ -883,7 +884,8 @@ def get_applicants(job_id):
                 ac.skills,
                 ac.experience,
                 ac.education,
-                aj.scores
+                aj.scores,
+                aj.status
             FROM applied_jobs aj
             JOIN users u ON aj.applicant_id = u.id
             LEFT JOIN applicant_cv ac ON u.id = ac.user_id
@@ -898,7 +900,7 @@ def get_applicants(job_id):
             experience = json.loads(row[7]) if row[7] else []
             education = json.loads(row[8]) if row[8] else {}
             scores = json.loads(row[9]) if row[9] else {}
-            
+            status= row[10]
             applicant = {
                 "id": row[0],
                 "name": f"{row[1]} {row[2]}",
@@ -908,7 +910,8 @@ def get_applicants(job_id):
                 "skills": skills,
                 "experience": experience,
                 "education": education,
-                "match_score": scores
+                "match_score": scores,
+                "status": status
             }
             applicants.append(applicant)
 
