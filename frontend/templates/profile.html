@@ -34,7 +34,7 @@
               <div class="profile-detail">
                 <span class="detail-label">Experience:</span>
                 <span class="detail-value">
-                  {% set total_years = application.experience|sum(attribute='years') %}
+                  {% set total_years = application.experience|selectattr('years', 'defined')|map(attribute='years')|map('int')|sum %}
                   {{ total_years }} years total
                 </span>
               </div>
