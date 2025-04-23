@@ -189,14 +189,13 @@ def add_application():
         experience = json.dumps(cv_data.get('experience', []))
         projects = json.dumps(cv_data.get('projects', []))
         certifications = json.dumps(cv_data.get('certifications', []))
-        
-        # Calculate total experience years
         experience_years = sum(
-            exp.get('years', 0) 
+            float(exp['years']) 
             for exp in cv_data.get('experience', []) 
-            if isinstance(exp.get('years', 0), (int, float))
+            if isinstance(exp.get('years'), (int, float)) or (isinstance(exp.get('years'), str) and exp['years'].replace('.', '', 1).isdigit())
         )
         print("years", experience_years)
+
 
         # Database insertion
         conn = get_db_connection()
