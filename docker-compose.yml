@@ -84,9 +84,9 @@ services:
     stdin_open: true
     tty: true
     build:
-      context: ./Interview-Questions
+      context: ./cv-job-matching 
       dockerfile: Dockerfile
-    command: python interview.py
+    command: python cv_job.py
     ports:
       - "3003:3003"
     networks:
@@ -99,9 +99,9 @@ services:
     stdin_open: true
     tty: true
     build:
-      context: ./cv-job-matching
+      context: ./Interview-Questions
       dockerfile: Dockerfile
-    command: python cv_job.py
+    command: python interview.py
     ports:
       - "3004:3004"
     networks:
