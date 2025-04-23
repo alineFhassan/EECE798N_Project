@@ -655,7 +655,60 @@ def add_applied_job():
             cursor.close()
         if conn:
             conn.close()
-    
+
+
+@app.route('/update_application_status', methods=['PUT'])
+def update_application_status():
+    try:
+        # Get the JSON data from the request
+        data = request.json
+        required_fields = ['applicant_id', 'job_id', 'status']
+        
+        # Validate required fields
+        if not all(field in data for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if the application exists for the given applicant_id and job_id
+        cursor.execute(""" 
+            SELECT id, status FROM applied_jobs 
+            WHERE applicant_id = %s AND job_id = %s;
+        """, (data['applicant_id'], data['job_id']))
+        
+        application = cursor.fetchone()
+        if not application:
+            return jsonify({"status": "error", "message": "Application not found"}), 404
+
+        # Check if the current status is already the same as the one being updated
+        if application[1].lower() == data['status'].lower():
+            return jsonify({"status": "error", "message": "Status is already the same"}), 400
+
+        # Update the application status
+        cursor.execute("""
+            UPDATE applied_jobs
+            SET status = %s
+            WHERE id = %s;
+        """, (data['status'], application[0]))
+
+        conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": f"Application status updated to {data['status']}"
+        }), 200
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 @app.route('/get_all_applicants/<job_ids>', methods=['POST'])
 def get_all_applicants(job_ids):
     try:

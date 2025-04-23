@@ -104,7 +104,7 @@ def evaluate(cv_data, job_data):
     meets_threshold = {k: v >= thresholds[k] for k, v in scores.items()}
     passed = sum(meets_threshold.values())
     total = len(thresholds)
-    qualified = passed / total >= 0.6  # 60% criteria met
+    qualified = passed / total >= 0.5  # 50% criteria met
     
     return {
         "scores": {k: round(float(v), 2) for k, v in scores.items()},  # Ensure JSON serializable
@@ -112,7 +112,7 @@ def evaluate(cv_data, job_data):
         "meets_threshold": {k: bool(v) for k, v in meets_threshold.items()},  # Convert numpy bools
         "passed_criteria": f"{passed}/{total}",
         "qualified": bool(qualified),
-        "reason": "Qualified: ≥60% criteria met" if qualified 
+        "reason": "Qualified: ≥50% criteria met" if qualified 
                  else f"Disqualified: Only {passed}/{total} criteria met"
     }
 
