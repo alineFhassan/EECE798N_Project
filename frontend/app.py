@@ -424,50 +424,50 @@ def jobseeker_dashboard():
 # -------- DEPARTMENT DASHBOARD --------
 @app.route('/company_dashboard')
 def company_dashboard():
-    # if 'user_id' not in session:
-    #     flash('Please login', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login', 'error')
+        return redirect(url_for('login'))
     
-    # try:
-    #     dept_id = session['user_id']
-    #     job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{dept_id}")
+    try:
+        dept_id = session['user_id']
+        job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job_by_dept/{dept_id}")
         
-    #     if job_offer_response.status_code != 200:
-    #         flash('Error fetching your company jobs', 'error')
-    #         return render_template('company_dashboard.html', jobs=[], stats={})
+        if job_offer_response.status_code != 200:
+            flash('Error fetching your company jobs', 'error')
+            return render_template('company_dashboard.html', jobs=[], stats={})
         
-    #     jobs = job_offer_response.json().get('jobs', [])
+        jobs = job_offer_response.json().get('jobs', [])
         
-    #     # Transform job data to match template expectations
-    #     processed_jobs = []
-    #     for job in jobs:
-    #         processed_job = {
-    #             'id': job.get('ID', job.get('id', 0)),
-    #             'job_title': job.get('job_title', ''),
-    #             'job_level': job.get('job_level', ''),
-    #             'years_experience': job.get('years_experience', ''),
-    #             'date_offering': job.get('created_at', ''),
-    #             'status': job.get('status', ''),
-              
-    #         }
-    #         processed_jobs.append(processed_job)
+        # Transform job data to match template expectations
+        processed_jobs = []
+        for job in jobs:
+            processed_job = {
+                'id': job.get('id', 0),
+                'job_title': job.get('title', ''),
+                'job_level': job.get('job_level', ''),
+                'years_experience': job.get('years_experience', ''),
+                'date_offering': job.get('created_at', ''),
+                'status': job.get('status', ''),
+             
+            }
+            processed_jobs.append(processed_job)
 
-    #     # Calculate Some Statics To Display
-    #     stats = {
-    #         'total_jobs': len(processed_jobs),
-    #         'open_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'open'),
-    #         'closed_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'closed'),
-    #         'total_applicants': sum(job.get('applicant_count', 0) for job in processed_jobs)
-    #     }
+        # Calculate Some Statistics To Display
+        stats = {
+            'total_jobs': len(processed_jobs),
+            'open_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'open'),
+            'closed_jobs': sum(1 for job in processed_jobs if job.get('status', '').lower() == 'closed'),
+            'total_applicants': sum(job.get('applicant_count', 0) for job in processed_jobs)
+        }
         
-    #     return render_template(
-    #         'company_dashboard.html',
-    #         jobs=processed_jobs,
-    #         stats=stats
-    #     )
+        return render_template(
+            'company_dashboard.html',
+            jobs=processed_jobs,
+            stats=stats
+        )
 
-    # except Exception as e:
-    #     flash(f'Error loading dashboard: {str(e)}', 'error')
+    except Exception as e:
+        flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('company_dashboard.html', jobs=[], stats={})
       
 # -------- OFFER NEW JOB --------
@@ -515,7 +515,6 @@ def post_job():
                     return redirect(url_for('post_job'))
  
         job_description = get_job_description_responce.json().get('job_description', {})
-
         add_offer_job_response = requests.post(f"{BACKEND_API_URL}/add_offer_job", json={
                    "job_description" : job_description,
                    "department_id": job_data['department_id']

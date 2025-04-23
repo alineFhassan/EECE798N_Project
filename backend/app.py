@@ -396,6 +396,63 @@ def get_offered_job(job_id):
         return jsonify({"status": "success", "job": job_data}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route('/get_offered_job_by_dept/<int:dept_id>', methods=['GET'])
+def get_offered_job_by_dept(dept_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+            SELECT 
+                j.id, 
+                j.title, 
+                j.job_level, 
+                j.years_experience, 
+                j.requirements, 
+                j.responsibilities, 
+                j.required_certifications,
+                j.status, 
+                j.date_offered, 
+                j.created_at, 
+                j.department_id,
+                d.name as department_name
+            FROM jobs j
+            JOIN departments d ON j.department_id = d.id
+            WHERE j.department_id = %s
+            ORDER BY j.created_at DESC;
+        """
+        
+        cursor.execute(query, (dept_id,))
+        jobs = cursor.fetchall()
+        
+        if not jobs:
+            return jsonify({"status": "success", "jobs": [], "message": "No jobs found for this department"}), 200
+            
+        for job in jobs:
+            if 'date_offered' in job and job['date_offered']:
+                job['date_offered'] = job['date_offered'].isoformat()
+            if 'created_at' in job and job['created_at']:
+                job['created_at'] = job['created_at'].isoformat()
+            if 'requirements' in job:
+                job['requirements'] = json.loads(job['requirements']) if job['requirements'] else []
+            if 'responsibilities' in job:
+                job['responsibilities'] = json.loads(job['responsibilities']) if job['responsibilities'] else []
+            if 'required_certifications' in job:
+                job['required_certifications'] = json.loads(job['required_certifications']) if job['required_certifications'] else []
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({"status": "success", "jobs": jobs}), 200
+        
+    except Exception as e:
+        app.logger.error(f"Error in get_offered_job_by_dept: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "error", 
+            "message": "Internal server error",
+            "details": str(e)
+        }), 500
 
 @app.route('/get_department/<int:dept_id>', methods=['GET'])
 def get_department(dept_id):
