@@ -365,7 +365,7 @@ def jobseeker_dashboard():
                 return redirect(url_for('jobseeker_dashboard'))
 
             # Get CV data
-            cv_response = requests.get(f"{BACKEND_API_URL}/get_cv/{session['user_id']}")
+            cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}")
             if cv_response.status_code != 200:
                 flash('Error fetching your CV', 'error')
                 return redirect(url_for('jobseeker_dashboard'))

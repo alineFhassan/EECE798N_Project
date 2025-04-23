@@ -26,10 +26,14 @@ def cosine_similarity(a, b):
 
 def evaluate(cv_data, job_data):
     # Prepare all texts for embedding
+    cv_responsibilities_texts = [
+    resp for exp in cv_data.get("experience", []) for resp in exp.get("responsibilities", [])
+]
+
     texts = (
         cv_data["skills"] + 
-        [cv_data["education"]] + 
-        cv_data["responsibilities"] + 
+        [", ".join(edu["degree"] for edu in cv_data.get("education", []))] +  # join degrees as education text
+        cv_responsibilities_texts +
         [job_data["title"]] + 
         job_data["requirements"] + 
         job_data["responsibilities"] +
@@ -45,8 +49,8 @@ def evaluate(cv_data, job_data):
     ptr += len(cv_data["skills"])
     cv_education = embeddings[ptr]
     ptr += 1
-    cv_responsibilities = embeddings[ptr:ptr+len(cv_data["responsibilities"])]
-    ptr += len(cv_data["responsibilities"])
+    cv_responsibilities = embeddings[ptr:ptr+len(cv_responsibilities_texts)]
+    ptr += len(cv_responsibilities_texts)
     job_title = embeddings[ptr]
     ptr += 1
     job_reqs = embeddings[ptr:ptr+len(job_data["requirements"])]
@@ -116,6 +120,7 @@ def evaluate(cv_data, job_data):
 def evaluate_endpoint():
     try:
         data = request.json
+        print(data)
         required_fields = ['cv', 'job']
         if not all(field in data for field in required_fields):
             return jsonify({
@@ -125,6 +130,7 @@ def evaluate_endpoint():
             }), 400
             
         result = evaluate(data['cv'], data['job'])
+
         return jsonify({
             "status": "success",
             "result": result,

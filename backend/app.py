@@ -264,7 +264,7 @@ def get_applicant_cv(user_id):
             "education": json.loads(cv[1]) if cv[1] else [],
             "skills": json.loads(cv[2]) if cv[2] else [],
             "experience": json.loads(cv[3]) if cv[3] else [],
-            "experience_years": json.loads(cv[4] if cv[4] else None),
+            "experience_years":cv[4],
             "projects": json.loads(cv[5]) if cv[5] else [],
             "certifications": json.loads(cv[6]) if cv[6] else []
         }
@@ -570,13 +570,12 @@ def add_applied_job():
             return jsonify({"status": "error", "message": "You have already applied for this job"}), 400
 
         # Insert the application
-        cursor.execute("""
+        cursor.execute(""" 
             INSERT INTO applied_jobs (
                 applicant_id, job_id, status, scores, 
                 thresholds, meets_threshold, passed_criteria, 
                 qualified_cv, reason
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id;
         """, (
             data['applicant_id'],
             data['job_id'],
@@ -589,7 +588,7 @@ def add_applied_job():
             data['result'].get('reason', '')
         ))
 
-        application_id = cursor.fetchone()[0]
+        application_id = cursor.lastrowid
         conn.commit()
 
         return jsonify({
