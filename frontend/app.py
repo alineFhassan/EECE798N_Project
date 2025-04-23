@@ -731,9 +731,6 @@ def hr_view_applied_applicant(job_id):
             'meets_threshold': application.get('meets_threshold'),
             'qualified_cv': application.get('qualified_cv')
         })
-
-    logger.debug(f"applicant: {applicants_data}")
-    logger.debug(f"job: {job}")
     return render_template('hr_view_applied_applicant.html', 
                          job=job, 
                          applicants=applicants_data)
@@ -1178,7 +1175,8 @@ def offered_job():
         # Get jobs posted by department
         hr_id = session['user_id']
         job_offere_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
-        
+        stats_response = requests.get(f"{BACKEND_API_URL}/get_dashboard_stats")
+        stats = stats_response.json().get('stats', {}) if stats_response.status_code == 200 else {}
         if job_offere_response.status_code != 200:
             flash('Error fetching your department jobs', 'error')
             return render_template('offered_job.html', jobs=[])
@@ -1194,11 +1192,11 @@ def offered_job():
             dept_response.raise_for_status()
             department = dept_response.json().get('department', [])
             job['department_name'] = department['department_name']
-        return render_template('offered_job.html', jobs=jobs)
+        return render_template('offered_job.html', jobs=jobs, stats=stats)
     
     except Exception as e:
         flash(f'Error loading dashboard: {str(e)}', 'error')
-        return render_template('offered_job.html', jobs=[])
+        return render_template('offered_job.html', jobs=[], stats={})
     
 # @app.route('/offered_job')
 # def offered_job():

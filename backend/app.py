@@ -583,6 +583,50 @@ def get_department(dept_id):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/get_dashboard_stats', methods=['GET'])
+def get_dashboard_stats():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Count all jobs
+        cursor.execute("SELECT COUNT(*) FROM jobs")
+        total_jobs = cursor.fetchone()[0]
+
+        # Count active jobs
+        cursor.execute("SELECT COUNT(*) FROM jobs WHERE status = 'open'")
+        active_jobs = cursor.fetchone()[0]
+
+        # Count closed jobs
+        cursor.execute("SELECT COUNT(*) FROM jobs WHERE status != 'open'")
+        closed_jobs = cursor.fetchone()[0]
+
+        # Count total applications
+        cursor.execute("SELECT COUNT(*) FROM applied_jobs")
+        total_applications = cursor.fetchone()[0]
+
+        # Count unique applicants
+        cursor.execute("SELECT COUNT(DISTINCT applicant_id) FROM applied_jobs")
+        unique_applicants = cursor.fetchone()[0]
+
+        return jsonify({
+            "status": "success",
+            "stats": {
+                "total_jobs": total_jobs,
+                "active_jobs": active_jobs,
+                "closed_jobs": closed_jobs,
+                "total_applications": total_applications,
+                "unique_applicants": unique_applicants
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 @app.route('/add_applied_job', methods=['POST'])
 def add_applied_job():
     try:
