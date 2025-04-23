@@ -517,7 +517,8 @@ def post_job():
         job_description = get_job_description_responce.json().get('job_description', {})
 
         add_offer_job_response = requests.post(f"{BACKEND_API_URL}/add_offer_job", json={
-                   "job_description" : job_description
+                   "job_description" : job_description,
+                   "department_id": job_data['department_id']
                 })
         if add_offer_job_response.status_code != 200:
                     flash('Error In Saving job Offere', 'error')
