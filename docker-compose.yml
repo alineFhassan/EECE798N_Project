@@ -45,6 +45,7 @@ services:
       - CV_EXTRACTION_URL=http://cv-extraction-api:3001
       - JOB_DESCRIPTION_URL=http://job-description-api:3002
       - CV_JOB_MATCHING_URL=http://cv-job-matching-api:3003
+      - INTERVIEW_QUESTIONS_URL= http://interview-questions-api:3004
     networks:
       - eece-network
 
@@ -83,6 +84,21 @@ services:
     stdin_open: true
     tty: true
     build:
+      context: ./Interview-Questions
+      dockerfile: Dockerfile
+    command: python interview.py
+    ports:
+      - "3004:3004"
+    networks:
+      - eece-network
+    environment:
+      - PORT=3004
+
+  # Interview Questions API
+  cv-job-matching-api:
+    stdin_open: true
+    tty: true
+    build:
       context: ./cv-job-matching
       dockerfile: Dockerfile
     command: python cv_job.py
@@ -92,7 +108,6 @@ services:
       - eece-network
     environment:
       - PORT=3003
-
   # Prometheus for monitoring
   prometheus:
     image: prom/prometheus:latest

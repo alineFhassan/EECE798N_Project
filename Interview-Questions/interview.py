@@ -5,7 +5,7 @@ from mistralai import Mistral
 app = Flask(__name__)
 
 # Configuration
-MISTRAL_API_KEY = ""
+MISTRAL_API_KEY = "DgPbZl3NaH3ai9xd8ruJBy4qCfqLQSxE"
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 MODEL_NAME = "ft:open-mistral-7b:c099368a:20250414:4d9d311e"
 
@@ -65,4 +65,4 @@ def handle_question_generation():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(port=5002, debug=True)  # Running on different port
+    app.run(host='0.0.0.0', port=3004, debug=True)  # Running on different port
