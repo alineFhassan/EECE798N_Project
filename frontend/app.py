@@ -24,6 +24,7 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'zynab.ahmad.saad@gmail.com'  # Replace with your Gmail
+app.config['MAIL_DEFAULT_SENDER'] = 'zynab.ahmad.saad@gmail.com' 
 app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'    # ← Your App Password
 mail = Mail(app)
 
@@ -667,97 +668,75 @@ def hr_dashboard():
 # -------- LIST OF APPLICANT APPLIED TO A JOB--------
 @app.route('/hr_applied_applicant/<int:job_id>')
 def hr_view_applied_applicant(job_id): 
-    # # Fetch job details --> requirements 
-    # job_response = requests.get(f"{BACKEND_API_URL}/get_offered_jobs/{job_id}")
-    # if job_response.status_code != 200:
-    #     flash('Error fetching your offeredt jobs', 'error')
-    #     return render_template('hr_view_applied_applicant.html', jobs=[])
+    # Fetch job details --> requirements 
+    job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+    if job_response.status_code != 200:
+        flash('Error fetching your offeredt jobs', 'error')
+        return render_template('hr_view_applied_applicant.html', jobs=[])
         
-    # job = job_response.json()
+    job = job_response.json()
     
-    # # Fetch applicants for this job --> with his match result
-    # applicants_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
-    # if applicants_response.status_code != 200:
-    #     flash('Error fetching your applicant', 'error')
-    #     return render_template('hr_view_applied_applicant.html', jobs=[])
+    # Fetch applicants for this job --> with his match result
+    applicants_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
+    if applicants_response.status_code != 200:
+        flash('Error fetching your applicant', 'error')
+        return render_template('hr_view_applied_applicant.html', jobs=[])
     
-    # applicants_data = []
-    # for application in applicants_response.json():
-    #     # Get applicant details
-    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{application['applicant_id']}")
-    #     if user_response.status_code != 200:
-    #         continue
+    applicants_data = []
+    for application in applicants_response.json().get("applications", []):
+        # Get applicant details
+        logging.basicConfig(level=logging.DEBUG)
+        logger = logging.getLogger(__name__)
+        logger.debug(f"app: {application}")
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{application['applicant_id']}")
+        if user_response.status_code != 200:
+            continue
             
-    #     user = user_response.json()
-        
-    #     # Get applicant CV
-    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{application['applicant_id']}")
-    #     cv = cv_response.json()[0] if cv_response.status_code == 200 and cv_response.json() else None
-        
-    #    # Use the score from applied_job table
-    #     match_score = application.get('scores', 0)
-        
-    #     applicants_data.append({
-    #         'id': user['ID'],
-    #         'name': f"{user['first_name']} {user['last_name']}",
-    #         'similarity_score': match_score,
-    #         'exp_years': cv['experience_years'] if cv else 0,
-    #         'email': user['email'],
-    #         'phone_number': user['phone_number'],
-    #         'skills': cv['skills'].split(',') if cv and cv['skills'] else [],
-    #         'status': application['status'],
-    #         'meets_threshold': application['meets_threshold'],
-    #         'qualified_cv': application['qualified_cv']
-    #     })
+        user = user_response.json()
+        user_data = user.get('user', {})
+        # Get applicant CV
+        cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{application['applicant_id']}")
+        logger.debug(f"Raw CV response: {cv_response}")
+        logger.debug(f"cv_response.json(): {cv_response.json()}")
+        cv_json = cv_response.json()
+        cv = cv_json.get('cv_data') if cv_response.status_code == 200 and cv_json.get('status') == 'success' else None
 
-    job = {
-        "id": 101,
-        "job_title": "Senior Backend Engineer",
-        "job_level": "Mid-Senior",
-        "years_experience": 5,
-        "date_offering": "2024-12-01",
-        "status": "open"
-    }
+        # Get passed_criteria as a string like '1/6'
+        match_score_str = application.get("passed_criteria", "0/0")  # Default to '0/0' if key is missing
+        logger.debug(f"match_score without percent: {match_score_str}")
 
-    applicants = [
-        {
-            "id": 202,
-            "name": "Michael Chen",
-            "similarity_score": 62,
-            "exp_years": 5,
-            "email": "michael.c@example.com",
-            "phone_number": "+12345550102",
-            "skills": ["Java", "Spring", "SQL"],
-            "qualified_cv": True,
-            "status": "under_review"
-        },
-        {
-            "id": 203,
-            "name": "Sara Ibrahim",
-            "similarity_score": 45,
-            "exp_years": 2,
-            "email": "zynab.ahamd.saad@gmail.com",
-            "phone_number": "+12345550103",
-            "skills": ["HTML", "CSS", "Bootstrap", "JavaScript", "Vue.js"],
-            "qualified_cv": False,
-            "status": "rejected"
-        },
-        {
-            "id": 204,
-            "name": "David O'Connor",
-            "similarity_score": 88,
-            "exp_years": 7,
-            "email": "zynab.ahamd.saad@gmail.com",
-            "phone_number": "+12345550104",
-            "skills": ["Python", "Django", "PostgreSQL", "Docker"],
-            "qualified_cv": True,
-            "status": "interview_scheduled"
+        # Split the string into passed and total
+        passed, total = map(int, match_score_str.split("/"))
+
+        # Calculate the passed_criteria_percent
+        passed_criteria_percent = (passed / total) * 100 if total != 0 else 0  # Avoid division by zero
+
+        # Create the dictionary to include the percentage
+        match_score = {
+            "passed_criteria_percent": round(passed_criteria_percent, 2),  # Rounded to 2 decimal places
+            "passed_criteria": match_score_str  # You can also store the original passed criteria string
         }
-    ]
-    
+
+        logger.debug(f"match_score with percent: {match_score['passed_criteria_percent']}")
+
+        applicants_data.append({
+            'id': user_data.get('id'),
+            'name': f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}",
+            'similarity_score': match_score["passed_criteria_percent"],
+            'exp_years': cv.get('experience_years', 0) if cv else 0,
+            'email': user_data.get('email'),
+            'phone_number': user_data.get('phone_number'),
+            'skills': cv.get('skills', []) if cv else [],
+            'status': application.get('status'),
+            'meets_threshold': application.get('meets_threshold'),
+            'qualified_cv': application.get('qualified_cv')
+        })
+
+    logger.debug(f"applicant: {applicants_data}")
+    logger.debug(f"job: {job}")
     return render_template('hr_view_applied_applicant.html', 
                          job=job, 
-                         applicants=applicants)
+                         applicants=applicants_data)
 
 # -------- SCHEDULE A MEETING IF MATCH THE BEST SCORE --------
 @app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>', methods=['GET', 'POST'])
@@ -1074,84 +1053,118 @@ def schedule_meeting(applicant_id, job_id):
     return render_template('schedule_interview.html', meetings=meeting_data, applicant_id=applicant_id,job_id =job_id)
 
 # -------- SEND REJECT EMAIL IF DOESN'T MATCH BEST SCORE --------
+
+logging.basicConfig(level=logging.DEBUG,  # Change to INFO or ERROR as needed
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger()
+
 @app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
 def reject_applicant(applicant_id, job_id):
-    # try:
-    #     # Get applicant details
-    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-    #     if user_response.status_code != 200:
-    #         flash('Error fetching applicant data', 'error')
-    #         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
+    try:
+        # Log the start of the process
+        logger.info(f"Rejecting applicant {applicant_id} for job {job_id}")
+
+        # Get applicant details
+        logger.debug(f"Fetching applicant details for applicant_id: {applicant_id}")
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
         
-    #     user_data = user_response.json()
-    #     first_name = user_data.get('first_name', '')
-    #     last_name = user_data.get('last_name', '')
-    #     email = user_data.get('email', '')
-
-    #     # Get job details
-    #     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-    #     if job_response.status_code != 200:
-    #         flash('Error fetching job data', 'error')
-    #         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
+        # Debugging: Check if the response status is OK
+        logger.debug(f"Applicant data response status: {user_response.status_code}")
+        if user_response.status_code != 200:
+            flash('Error fetching applicant data', 'error')
+            return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
         
-    #     job_data = job_response.json()
-    #     job_title = job_data.get('job_title', 'the position')
-    #     company_name = "Hirevo"  # You might want to fetch this from your database
+        user_data = user_response.json()
+        logger.debug(f"Applicant data fetched: {user_data}")
 
+        # Access the 'user' key in the response data
+        user_info = user_data.get('user', {})
 
+        first_name = user_info.get('first_name', '')
+        last_name = user_info.get('last_name', '')
+        email = user_info.get('email', '')
+
+        logger.info(f"Applicant Name: {first_name} {last_name}, Email: {email}")
+
+        # Get job details
+        logger.debug(f"Fetching job details for job_id: {job_id}")
+        job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
         
-    #     email_body = f"""
-    #     Dear {first_name} {last_name},
+        # Debugging: Check if the response status is OK
+        logger.debug(f"Job data response status: {job_response.status_code}")
+        if job_response.status_code != 200:
+            flash('Error fetching job data', 'error')
+            return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
+        
+        job_data = job_response.json()
+        logger.debug(f"Job data fetched: {job_data}")
+        
+        job_title = job_data.get('job_title', 'the position')
+        company_name = "Hirevo"  # You might want to fetch this from your database
+        logger.info(f"Job Title: {job_title}, Company Name: {company_name}")
 
-    #     Thank you for taking the time to apply for the {job_title} position at {company_name} 
-    #     and for sharing your qualifications with us.
+        email_body = f"""
+        Dear {first_name} {last_name},
 
-    #     After careful consideration, we regret to inform you that we have decided to move forward 
-    #     with other candidates whose qualifications more closely match our current needs.
+        Thank you for taking the time to apply for the {job_title} position at {company_name} 
+        and for sharing your qualifications with us.
 
-    #     We genuinely appreciate your interest in {company_name} and the effort you put into your 
-    #     application. This decision was not easy to make, as we were impressed with many aspects 
-    #     of your background.
+        After careful consideration, we regret to inform you that we have decided to move forward 
+        with other candidates whose qualifications more closely match our current needs.
 
-    #     We encourage you to apply for future openings that may be a better fit for your skills 
-    #     and experience. We'll keep your resume on file and will reach out if any suitable 
-    #     opportunities arise.
+        We genuinely appreciate your interest in {company_name} and the effort you put into your 
+        application. This decision was not easy to make, as we were impressed with many aspects 
+        of your background.
 
-    #     We wish you the best in your job search and future career endeavors.
+        We encourage you to apply for future openings that may be a better fit for your skills 
+        and experience. We'll keep your resume on file and will reach out if any suitable 
+        opportunities arise.
 
-    #     Sincerely,
-    #     The Hiring Team
-    #     {company_name}
-    #     hr@{company_name.lower()}.com
-    #     """
+        We wish you the best in your job search and future career endeavors.
 
-    #     # Send email (assuming you have Flask-Mail configured)
-    #     msg = Message(
-    #         subject= "You’re Selected! Next Step: Interview at Hirevo",
-    #         recipients=[email],
-    #         body=email_body
-    #     )
-    #     mail.send(msg)
+        Sincerely,
+        The Hiring Team
+        {company_name}
+        hr@{company_name.lower()}.com
+        """
 
-    #     # Update applicant status in database (optional)
-    #     # update_response = requests.put(f"{BACKEND_API_URL}/update_application_status", json={
-    #     #     'applicant_id': applicant_id,
-    #     #     'job_id': job_id,
-    #     #     'status': 'rejected'
-    #     # })
+        # Log email content for debugging
+        logger.debug(f"Sending rejection email: {email_body}")
 
-    #     print('Applicant has been rejected', 'success')
-    
-    #     return redirect(url_for('hr_view_applied_applicant', job_id=job_id, applicants=applicant_id))
-    # except Exception as e:
-    #     print(f"Error rejecting applicant: {str(e)}")
-    #     flash('An error occurred while processing the rejection', 'error')
-    #     return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
-    
-    # Just testing output
-    print('Applicant has been rejected', 'success')
-    
-    return redirect(url_for('hr_view_applied_applicant', job_id=job_id, applicants=applicant_id))
+        # Send email (assuming you have Flask-Mail configured)
+        msg = Message(
+            subject="Application Follow-up",
+            recipients=[email],
+            body=email_body
+        )
+        
+        # Attempt to send the email and catch any errors
+        try:
+            logger.info("Attempting to send the rejection email...")
+            mail.send(msg)
+            logger.info("Email sent successfully.")
+        except Exception as e:
+            logger.error(f"Error sending email: {str(e)}")
+
+        # Update applicant status in the database (optional)
+        # Uncomment the following lines if you want to update the status in the backend
+        update_response = requests.put(f"{BACKEND_API_URL}/update_application_status", json={
+            'applicant_id': applicant_id,
+            'job_id': job_id,
+            'status': 'rejected'
+        })
+
+        logger.info('Applicant has been rejected')
+
+        # Redirect to the HR view with the updated applicant status
+        return redirect(url_for('hr_view_applied_applicant', job_id=job_id, applicants=applicant_id))
+
+    except Exception as e:
+        # If there's any exception, log it
+        logger.error(f"Error rejecting applicant: {str(e)}")
+        flash('An error occurred while processing the rejection', 'error')
+        return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
 
 # -------- DISPLAY ALL JOB OFFERED  --------
 ### Offered Job List ###
