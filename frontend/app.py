@@ -320,7 +320,7 @@ def jobseeker_profile():
     
     return redirect(url_for('jobseeker_dashboard'))
 
-# -------- APPLICANT DASHBOARD --------
+
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
     if 'user_id' not in session:
@@ -339,28 +339,15 @@ def jobseeker_dashboard():
         # Filter only open jobs
         open_jobs = [job for job in jobs if job.get('status', '').lower() == 'open']
 
-        # Get department names for open jobs
-        for job in open_jobs:
-            dept_id = job['dept_id']
-            dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
-            if dept_response.status_code == 200:
-                department = dept_response.json().get('department', {})
-                job['department_name'] = department.get('department_name', 'N/A')
-            else:
-                job['department_name'] = 'N/A'
-        
-        # Check if user has uploaded CV
-        cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{session['user_id']}")
-        has_cv = cv_response.status_code == 200 and cv_response.json().get('cv_data') is not None
-
         # Handle job application
         if request.method == 'POST':
-            job_id = request.form.get('job_id')
-
-            if not has_cv:
+            # Check if user has uploaded CV
+            cv_check = requests.get(f"{BACKEND_API_URL}/check_cv_exists/{session['user_id']}")
+            if cv_check.status_code != 200 or not cv_check.json().get('cv_exists', False):
                 flash('Please upload your CV before applying for jobs', 'error')
-                return redirect(url_for('upload_cv'))  # Redirect to CV upload page
+                return redirect(url_for('upload_cv'))
 
+            job_id = request.form.get('job_id')
             if not job_id:
                 flash('No job selected', 'error')
                 return redirect(url_for('jobseeker_dashboard'))
@@ -378,19 +365,24 @@ def jobseeker_dashboard():
                 return redirect(url_for('jobseeker_dashboard'))
 
             # Get CV data
+            cv_response = requests.get(f"{BACKEND_API_URL}/get_cv/{session['user_id']}")
+            if cv_response.status_code != 200:
+                flash('Error fetching your CV', 'error')
+                return redirect(url_for('jobseeker_dashboard'))
+
             cv_data = cv_response.json().get('cv_data', {})
 
-            # Match CV with job
-            match_response = requests.post(
-                f"{CV_JOB_MATCHING_URL}/cv-job-match",
-                json={'cv': cv_data, 'job': job_data}
-            )
-
+            # Match CV with job (optional step)
             match_result = {}
-            if match_response.status_code == 200:
-                match_result = match_response.json().get('result', {})
-            else:
-                flash('Could not evaluate your CV against the job requirements', 'warning')
+            if CV_JOB_MATCHING_URL:
+                match_response = requests.post(
+                    f"{CV_JOB_MATCHING_URL}/cv-job-match",
+                    json={'cv': cv_data, 'job': job_data}
+                )
+                if match_response.status_code == 200:
+                    match_result = match_response.json().get('result', {})
+                else:
+                    flash('Could not evaluate your CV against the job requirements', 'warning')
 
             # Save application
             application_response = requests.post(
@@ -398,7 +390,7 @@ def jobseeker_dashboard():
                 json={
                     'applicant_id': session['user_id'],
                     'job_id': job_id,
-                    'status': 'scheduling_interview',
+                    'status': 'pending',
                     "result": match_result
                 }
             )
@@ -410,12 +402,15 @@ def jobseeker_dashboard():
             
             return redirect(url_for('jobseeker_dashboard'))
         
+        # Check if user has CV (for displaying upload prompt)
+        cv_exists = requests.get(f"{BACKEND_API_URL}/check_cv_exists/{session['user_id']}")
+        has_cv = cv_exists.status_code == 200 and cv_exists.json().get('cv_exists', False)
+        
         return render_template('jobseeker_dashboard.html', jobs=open_jobs, has_cv=has_cv)
     
     except Exception as e:
         flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('jobseeker_dashboard.html', jobs=[])
-
 
 # ========================
 #  APPLICANR DASHBOARD
@@ -1186,160 +1181,57 @@ def reject_applicant(applicant_id, job_id):
 
 # -------- DISPLAY ALL JOB OFFERED  --------
 ### Offered Job List ###
+# @app.route('/offered_job')
+# def offered_job():
+#     if 'user_id' not in session:
+#         flash('Please login', 'error')
+#         return redirect(url_for('login'))
+    
+#     try:
+#         # Get jobs posted by department
+#         hr_id = session['user_id']
+#         job_offere_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
+        
+#         if job_offere_response.status_code != 200:
+#             flash('Error fetching your department jobs', 'error')
+#             return render_template('offered_job.html', jobs=[])
+        
+#         jobs = job_offere_response.json().get('jobs', [])
+
+#         job_ids = [job['id'] for job in jobs]
+
+#       # get name of the department based on department id
+#         for job in jobs:
+#             dept_id = job['dept_id']
+#             dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
+#             dept_response.raise_for_status()
+#             department = dept_response.json().get('department', [])
+#             job['department_name'] = department['department_name']
+#         return render_template('offered_job.html', jobs=jobs)
+    
+#     except Exception as e:
+#         flash(f'Error loading dashboard: {str(e)}', 'error')
+#         return render_template('offered_job.html', jobs=[])
+    
 @app.route('/offered_job')
 def offered_job():
-    # if 'user_id' not in session:
-    #     flash('Please login', 'error')
-    #     return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please login', 'error')
+        return redirect(url_for('login'))
     
-    # try:
-    #     # Get jobs posted by department
-    #     hr_id = session['user_id']
-    #     job_offere_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
+    try:
+        job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
         
-    #     if job_offere_response.status_code != 200:
-    #         flash('Error fetching your department jobs', 'error')
-    #         return render_template('company_dashboard.html', jobs=[])
+        if job_offer_response.status_code != 200:
+            flash('Error fetching jobs', 'error')
+            return render_template('offered_job.html', jobs=[])
         
-    #     jobs = job_offere_response.json().get('jobs', [])
-
-    #     job_ids = [job['ID'] for job in jobs]
-
-    #   # get name of the department based on department id
-    #     for job in jobs:
-    #         dept_id = job['dept_id']
-    #         dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
-    #         dept_response.raise_for_status()
-    #         department = dept_response.json().get('department', [])
-    #         job['department_name'] = department['department_name']
-    #     return render_template('jobseeker_dashboard.html', jobs=jobs)
+        jobs = job_offer_response.json().get('jobs', [])
+        return render_template('offered_job.html', jobs=jobs)
     
-    # except Exception as e:
-    #     flash(f'Error loading dashboard: {str(e)}', 'error')
-    #     return render_template('jobseeker_dashboard.html', jobs=[])
-    
-    jobs = [
-    {
-        "id": 1,
-        "job_title": "Senior Software Engineer",
-        "job_id": "#JOB-001",
-        "department_name": "Engineering",
-        "job_level": "Senior Level",
-        "years_experience": "5+ years experience",
-        "status": "Open",
-        "date_offering": "May 15, 2024",
-        "requirements": [
-            "Bachelor's degree in Computer Science or related field",
-            "5+ years of experience in software development",
-            "Proficiency in JavaScript, TypeScript, and React",
-            "Experience with cloud platforms (AWS, Azure, GCP)",
-            "Strong problem-solving skills and attention to detail"
-        ],
-        "responsibilities": [
-            "Design and implement new features for our web applications",
-            "Collaborate with cross-functional teams to define requirements",
-            "Write clean, maintainable, and efficient code",
-            "Perform code reviews and mentor junior developers",
-            "Troubleshoot and debug issues in production environments"
-        ],
-        "required_certifications": [
-            "AWS Certified Developer (preferred)",
-            "Google Cloud Professional Developer (preferred)"
-        ],
-        "applicants": 12
-    },
-    {
-        "id": 2,
-        "job_title": "Marketing Specialist",
-        "job_id": "#JOB-002",
-        "department_name": "Marketing",
-        "job_level": "Mid Level",
-        "years_experience": "3-5 years experience",
-        "status": "Open",
-        "date_offering": "May 10, 2024",
-        "requirements": [
-            "Bachelor's degree in Marketing, Communications, or related field",
-            "3-5 years of experience in digital marketing",
-            "Proficiency in social media platforms and analytics tools",
-            "Experience with content creation and campaign management",
-            "Strong communication and analytical skills"
-        ],
-        "responsibilities": [
-            "Develop and implement marketing strategies",
-            "Create engaging content for various platforms",
-            "Manage social media accounts and campaigns",
-            "Analyze marketing metrics and prepare reports",
-            "Collaborate with design and sales teams"
-        ],
-        "required_certifications": [
-            "Google Analytics Certification",
-            "HubSpot Content Marketing Certification (preferred)"
-        ],
-        "applicants": 8
-    },
-    {
-        "id": 3,
-        "job_title": "Sales Representative",
-        "job_id": "#JOB-003",
-        "department_name": "Sales",
-        "job_level": "Entry Level",
-        "years_experience": "0-1 years experience",
-        "status": "Open",
-        "date_offering": "May 18, 2024",
-        "requirements": [
-            "Bachelor's degree in Business, Marketing, or related field",
-            "0-1 years of experience in sales (internships count)",
-            "Excellent communication and interpersonal skills",
-            "Self-motivated with a strong desire to succeed",
-            "Ability to work in a fast-paced environment"
-        ],
-        "responsibilities": [
-            "Generate leads and build relationships with potential clients",
-            "Conduct product demonstrations and presentations",
-            "Meet or exceed sales targets",
-            "Maintain accurate records in CRM system",
-            "Collaborate with marketing and product teams"
-        ],
-        "required_certifications": [
-            "No specific certifications required"
-        ],
-        "applicants": 15
-    },
-    {
-        "id": 4,
-        "job_title": "HR Specialist",
-        "job_id": "#JOB-004",
-        "department_name": "Human Resources",
-        "job_level": "Mid Level",
-        "years_experience": "3-5 years experience",
-        "status": "Closed",
-        "date_offering": "April 25, 2024",
-        "requirements": [
-            "Bachelor's degree in Human Resources, Business, or related field",
-            "3-5 years of experience in HR",
-            "Knowledge of HR practices, policies, and employment laws",
-            "Experience with HRIS systems",
-            "Strong interpersonal and communication skills"
-        ],
-        "responsibilities": [
-            "Develop and implement HR policies and procedures",
-            "Manage recruitment and onboarding processes",
-            "Handle employee relations and performance management",
-            "Maintain employee records and ensure legal compliance",
-            "Provide HR support to employees and managers"
-        ]
-        ,
-        "required_certifications": [
-            "PHR or SHRM-CP certification (preferred)"
-        ],
-        "applicants": 6
-    },
-    
-]
-
-    return render_template('offered_job.html', jobs=jobs)  
-
-
+    except Exception as e:
+        flash(f'Error loading jobs: {str(e)}', 'error')
+        return render_template('offered_job.html', jobs=[])
 # -------- DISPLAY QUESTION FOR INTERVIEW AND FILTER BY DAY --------
 # @app.route('/weekly_questions')
 # def weekly_questions():    

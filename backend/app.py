@@ -311,14 +311,13 @@ def get_user(user_id):
         return jsonify({"status": "success", "user": user_data}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-    
+
 @app.route('/get_offered_job', methods=['GET'])
 def get_offered_jobs():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get all jobs with department information
         cursor.execute("""
             SELECT j.id, j.title, j.job_level, j.years_experience, 
                    j.requirements, j.responsibilities, j.required_certifications,
@@ -332,8 +331,8 @@ def get_offered_jobs():
         jobs = []
         for job in cursor.fetchall():
             jobs.append({
-                "id": job[0],
-                "title": job[1],
+                "id": job[0],  # Changed to uppercase to match frontend
+                "job_title": job[1],
                 "job_level": job[2],
                 "years_experience": job[3],
                 "requirements": json.loads(job[4]) if job[4] else [],
@@ -343,7 +342,7 @@ def get_offered_jobs():
                 "date_offered": job[8].isoformat() if job[8] else None,
                 "created_at": job[9].isoformat() if job[9] else None,
                 "dept_id": job[10],
-                "department_name": job[11]
+                "department_name": job[11]  # Already included from the join
             })
 
         cursor.close()
@@ -352,7 +351,7 @@ def get_offered_jobs():
         return jsonify({"status": "success", "jobs": jobs}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-
+    
 @app.route('/get_offered_job/<int:job_id>', methods=['GET'])
 def get_offered_job(job_id):
     try:
@@ -453,7 +452,56 @@ def get_offered_job_by_dept(dept_id):
             "message": "Internal server error",
             "details": str(e)
         }), 500
-
+@app.route('/check_cv_exists/<int:user_id>', methods=['GET'])
+def check_cv_exists(user_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # First check if the table exists
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM information_schema.tables 
+            WHERE table_schema = DATABASE() 
+            AND table_name = 'applicant_cv'
+        """)
+        table_exists = cursor.fetchone()[0] > 0
+        
+        if not table_exists:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "status": "success",
+                "cv_exists": False,
+                "message": "CV table does not exist"
+            }), 200
+        
+        # Check if CV exists for this user
+        cursor.execute("SELECT 1 FROM applicant_cv WHERE user_id = %s", (user_id,))
+        cv_exists = cursor.fetchone() is not None
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "status": "success",
+            "cv_exists": cv_exists,
+            "message": "CV found" if cv_exists else "No CV found"
+        }), 200
+        
+    except Exception as e:
+        # Ensure connections are closed even if error occurs
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+            
+        return jsonify({
+            "status": "error",
+            "cv_exists": False,
+            "message": str(e)
+        }), 500
+    
 @app.route('/get_department/<int:dept_id>', methods=['GET'])
 def get_department(dept_id):
     try:
