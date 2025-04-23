@@ -677,22 +677,30 @@ def add_interview():
             cursor.close()
         if conn:
             conn.close()
+            
 @app.route('/add_offer_job', methods=['POST'])
 def add_offer_job():
     try:
         data = request.json
-        required_fields = ['job_title', 'department_id', 'job_level', 'years_experience']
         
-        if not all(field in data for field in required_fields):
+        # Ensure required top-level keys exist
+        if 'department_id' not in data or 'job_description' not in data:
             return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        job_desc = data['job_description']
+
+        # Ensure required fields inside job_description
+        required_fields = ['job_title', 'job_level', 'years_experience']
+        if not all(field in job_desc for field in required_fields):
+            return jsonify({"status": "error", "message": "Missing fields in job_description"}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get requirements, responsibilities, and certifications as separate fields
-        requirements = data.get('requirements', [])
-        responsibilities = data.get('responsibilities', [])
-        required_certifications = data.get('required_certifications', [])
+        # Extract optional fields safely
+        requirements = job_desc.get('requirements', [])
+        responsibilities = job_desc.get('responsibilities', [])
+        required_certifications = job_desc.get('required_certifications', [])
 
         # Insert the job into the database
         cursor.execute("""
@@ -704,25 +712,25 @@ def add_offer_job():
             RETURNING id
         """, (
             data['department_id'],
-            data['job_title'],
-            data['job_level'],
-            data['years_experience'],
+            job_desc['job_title'],
+            job_desc['job_level'],
+            job_desc['years_experience'],
             json.dumps(requirements),
             json.dumps(responsibilities),
             json.dumps(required_certifications),
-            data.get('status', 'open'),
-            data.get('date_offering', datetime.now())
+            job_desc.get('status', 'open'),
+            job_desc.get('date_offering', datetime.now())
         ))
-        
+
         job_id = cursor.fetchone()[0]
         conn.commit()
-        
+
         return jsonify({
             "status": "success",
             "job_id": job_id,
             "message": "Job posted successfully"
         }), 201
-        
+
     except Exception as e:
         if 'conn' in locals():
             conn.rollback()
@@ -732,6 +740,7 @@ def add_offer_job():
             cursor.close()
         if 'conn' in locals():
             conn.close()
+
 
 @app.route('/get_applicants/<int:job_id>', methods=['GET'])
 def get_applicants(job_id):

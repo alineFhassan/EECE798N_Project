@@ -76,7 +76,6 @@ def generate_job_description():
 
         # Log the raw response
         json_str = response.choices[0].message.content
-        logger.debug(f"Received response from OpenAI: {json_str}")
 
         # Clean the response by removing markdown code blocks
         json_str = json_str.strip()
@@ -87,8 +86,6 @@ def generate_job_description():
         if json_str.endswith("```"):
             json_str = json_str[:-3]  # Remove trailing ```
         json_str = json_str.strip()
-
-        logger.debug(f"Cleaned JSON string: {json_str}")
 
         # Try to parse JSON with error handling
         try:
