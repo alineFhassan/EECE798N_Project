@@ -26,7 +26,7 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
   z-index: 1000;
-  background: linear-gradient(to top, #0aaec2, #00EDB3);
+  background:linear-gradient(to top, #0C90C4 50%, #7EE3F5);
 }
 
 .sidebar-header {
@@ -84,7 +84,7 @@
 }
 
 .sidebar-menu-item.active .sidebar-menu-link {
-  background-color: #036f5a;
+  background-color: #386a73;
   color: white;
 }
 
