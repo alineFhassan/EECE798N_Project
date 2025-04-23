@@ -1181,38 +1181,6 @@ def reject_applicant(applicant_id, job_id):
 
 # -------- DISPLAY ALL JOB OFFERED  --------
 ### Offered Job List ###
-# @app.route('/offered_job')
-# def offered_job():
-#     if 'user_id' not in session:
-#         flash('Please login', 'error')
-#         return redirect(url_for('login'))
-    
-#     try:
-#         # Get jobs posted by department
-#         hr_id = session['user_id']
-#         job_offere_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
-        
-#         if job_offere_response.status_code != 200:
-#             flash('Error fetching your department jobs', 'error')
-#             return render_template('offered_job.html', jobs=[])
-        
-#         jobs = job_offere_response.json().get('jobs', [])
-
-#         job_ids = [job['id'] for job in jobs]
-
-#       # get name of the department based on department id
-#         for job in jobs:
-#             dept_id = job['dept_id']
-#             dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
-#             dept_response.raise_for_status()
-#             department = dept_response.json().get('department', [])
-#             job['department_name'] = department['department_name']
-#         return render_template('offered_job.html', jobs=jobs)
-    
-#     except Exception as e:
-#         flash(f'Error loading dashboard: {str(e)}', 'error')
-#         return render_template('offered_job.html', jobs=[])
-    
 @app.route('/offered_job')
 def offered_job():
     if 'user_id' not in session:
@@ -1220,18 +1188,50 @@ def offered_job():
         return redirect(url_for('login'))
     
     try:
-        job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
+        # Get jobs posted by department
+        hr_id = session['user_id']
+        job_offere_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
         
-        if job_offer_response.status_code != 200:
-            flash('Error fetching jobs', 'error')
+        if job_offere_response.status_code != 200:
+            flash('Error fetching your department jobs', 'error')
             return render_template('offered_job.html', jobs=[])
         
-        jobs = job_offer_response.json().get('jobs', [])
+        jobs = job_offere_response.json().get('jobs', [])
+
+        job_ids = [job['id'] for job in jobs]
+
+      # get name of the department based on department id
+        for job in jobs:
+            dept_id = job['dept_id']
+            dept_response = requests.get(f"{BACKEND_API_URL}/get_department/{dept_id}")
+            dept_response.raise_for_status()
+            department = dept_response.json().get('department', [])
+            job['department_name'] = department['department_name']
         return render_template('offered_job.html', jobs=jobs)
     
     except Exception as e:
-        flash(f'Error loading jobs: {str(e)}', 'error')
+        flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('offered_job.html', jobs=[])
+    
+# @app.route('/offered_job')
+# def offered_job():
+#     if 'user_id' not in session:
+#         flash('Please login', 'error')
+#         return redirect(url_for('login'))
+    
+#     try:
+#         job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
+        
+#         if job_offer_response.status_code != 200:
+#             flash('Error fetching jobs', 'error')
+#             return render_template('offered_job.html', jobs=[])
+        
+#         jobs = job_offer_response.json().get('jobs', [])
+#         return render_template('offered_job.html', jobs=jobs)
+    
+#     except Exception as e:
+#         flash(f'Error loading jobs: {str(e)}', 'error')
+#         return render_template('offered_job.html', jobs=[])
 # -------- DISPLAY QUESTION FOR INTERVIEW AND FILTER BY DAY --------
 # @app.route('/weekly_questions')
 # def weekly_questions():    
