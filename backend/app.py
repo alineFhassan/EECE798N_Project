@@ -189,13 +189,13 @@ def add_application():
         experience = json.dumps(cv_data.get('experience', []))
         projects = json.dumps(cv_data.get('projects', []))
         certifications = json.dumps(cv_data.get('certifications', []))
-        
-        # Calculate total experience years
         experience_years = sum(
-            exp.get('years', 0) 
+            float(exp['years']) 
             for exp in cv_data.get('experience', []) 
-            if isinstance(exp.get('years', 0), (int, float))
+            if isinstance(exp.get('years'), (int, float)) or (isinstance(exp.get('years'), str) and exp['years'].replace('.', '', 1).isdigit())
         )
+        print("years", experience_years)
+
 
         # Database insertion
         conn = get_db_connection()
@@ -502,6 +502,55 @@ def check_cv_exists(user_id):
             "message": str(e)
         }), 500
     
+@app.route('/check_if_applied/<int:user_id>/<int:job_id>', methods=['GET'])
+def check_if_applied(user_id, job_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if the applied_jobs table exists
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM information_schema.tables 
+            WHERE table_schema = DATABASE() 
+            AND table_name = 'applied_jobs'
+        """)
+        table_exists = cursor.fetchone()[0] > 0
+
+        if not table_exists:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "status": "success",
+                "already_applied": False,
+                "message": "Application table does not exist"
+            }), 200
+
+        # Check if the user already applied for the job
+        cursor.execute("SELECT 1 FROM applied_jobs WHERE applicant_id = %s AND job_id = %s", (user_id, job_id))
+        applied = cursor.fetchone() is not None
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "already_applied": applied,
+            "message": "Already applied" if applied else "Not yet applied"
+        }), 200
+
+    except Exception as e:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+        return jsonify({
+            "status": "error",
+            "already_applied": False,
+            "message": str(e)
+        }), 500
+
 @app.route('/get_department/<int:dept_id>', methods=['GET'])
 def get_department(dept_id):
     try:
@@ -883,7 +932,8 @@ def get_applicants(job_id):
                 ac.skills,
                 ac.experience,
                 ac.education,
-                aj.scores
+                aj.scores,
+                aj.status
             FROM applied_jobs aj
             JOIN users u ON aj.applicant_id = u.id
             LEFT JOIN applicant_cv ac ON u.id = ac.user_id
@@ -898,7 +948,7 @@ def get_applicants(job_id):
             experience = json.loads(row[7]) if row[7] else []
             education = json.loads(row[8]) if row[8] else {}
             scores = json.loads(row[9]) if row[9] else {}
-            
+            status= row[10]
             applicant = {
                 "id": row[0],
                 "name": f"{row[1]} {row[2]}",
@@ -908,7 +958,8 @@ def get_applicants(job_id):
                 "skills": skills,
                 "experience": experience,
                 "education": education,
-                "match_score": scores
+                "match_score": scores,
+                "status": status
             }
             applicants.append(applicant)
 
