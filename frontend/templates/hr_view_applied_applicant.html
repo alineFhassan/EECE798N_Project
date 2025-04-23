@@ -226,7 +226,7 @@
                 <td>
                   <div class="action-buttons">
                     {% if applicant.similarity_score < 60 %}
-                      <a href="{{ url_for('reject_applicant', applicant_id=applicant.id, job_id=job.id) }}" 
+                      <a href="{{ url_for('reject_applicant', applicant_id=applicant.id, job_id=job['job']['id']) }}" 
                          class="btn-reject" title="Reject Applicant"
                          onclick="return confirm('Are you sure you want to reject this applicant?');">
                         <i class="fas fa-times"></i>
