@@ -5,6 +5,9 @@ import requests
 import numpy as np
 from datetime import datetime
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 
@@ -677,52 +680,53 @@ def add_interview():
             cursor.close()
         if conn:
             conn.close()
-            
 @app.route('/add_offer_job', methods=['POST'])
 def add_offer_job():
     try:
         data = request.json
         
-        # Ensure required top-level keys exist
+        # Validation
         if 'department_id' not in data or 'job_description' not in data:
             return jsonify({"status": "error", "message": "Missing required fields"}), 400
 
         job_desc = data['job_description']
 
-        # Ensure required fields inside job_description
         required_fields = ['job_title', 'job_level', 'years_experience']
         if not all(field in job_desc for field in required_fields):
-            return jsonify({"status": "error", "message": "Missing fields in job_description"}), 400
+            missing = [f for f in required_fields if f not in job_desc]
+            return jsonify({"status": "error", "message": f"Missing fields in job_description: {missing}"}), 400
+
+        # Prepare data for insertion
+        insert_data = {
+            'department_id': data['department_id'],
+            'title': job_desc['job_title'],
+            'job_level': job_desc['job_level'],
+            'years_experience': job_desc['years_experience'],
+            'requirements': json.dumps(job_desc.get('requirements', [])),
+            'responsibilities': json.dumps(job_desc.get('responsibilities', [])),
+            'required_certifications': json.dumps(job_desc.get('required_certifications', [])),
+            'status': job_desc.get('status', 'open'),
+            'date_offered': datetime.now()
+        }
+        
+        logging.debug(f"💾 Prepared insert data: {insert_data}")
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Extract optional fields safely
-        requirements = job_desc.get('requirements', [])
-        responsibilities = job_desc.get('responsibilities', [])
-        required_certifications = job_desc.get('required_certifications', [])
-
-        # Insert the job into the database
+        # Modified INSERT query for MySQL
         cursor.execute("""
             INSERT INTO jobs (
                 department_id, title, job_level, years_experience,
                 requirements, responsibilities, required_certifications,
                 status, date_offered
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
-        """, (
-            data['department_id'],
-            job_desc['job_title'],
-            job_desc['job_level'],
-            job_desc['years_experience'],
-            json.dumps(requirements),
-            json.dumps(responsibilities),
-            json.dumps(required_certifications),
-            job_desc.get('status', 'open'),
-            job_desc.get('date_offering', datetime.now())
-        ))
+            ) VALUES (%(department_id)s, %(title)s, %(job_level)s, %(years_experience)s,
+                      %(requirements)s, %(responsibilities)s, %(required_certifications)s,
+                      %(status)s, %(date_offered)s)
+        """, insert_data)
 
-        job_id = cursor.fetchone()[0]
+        # Get the last inserted ID for MySQL
+        job_id = cursor.lastrowid
         conn.commit()
 
         return jsonify({
@@ -734,7 +738,11 @@ def add_offer_job():
     except Exception as e:
         if 'conn' in locals():
             conn.rollback()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "type": type(e).__name__
+        }), 500
     finally:
         if 'cursor' in locals():
             cursor.close()
