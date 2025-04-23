@@ -502,6 +502,55 @@ def check_cv_exists(user_id):
             "message": str(e)
         }), 500
     
+@app.route('/check_if_applied/<int:user_id>/<int:job_id>', methods=['GET'])
+def check_if_applied(user_id, job_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if the applied_jobs table exists
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM information_schema.tables 
+            WHERE table_schema = DATABASE() 
+            AND table_name = 'applied_jobs'
+        """)
+        table_exists = cursor.fetchone()[0] > 0
+
+        if not table_exists:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "status": "success",
+                "already_applied": False,
+                "message": "Application table does not exist"
+            }), 200
+
+        # Check if the user already applied for the job
+        cursor.execute("SELECT 1 FROM applied_jobs WHERE applicant_id = %s AND job_id = %s", (user_id, job_id))
+        applied = cursor.fetchone() is not None
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "already_applied": applied,
+            "message": "Already applied" if applied else "Not yet applied"
+        }), 200
+
+    except Exception as e:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+        return jsonify({
+            "status": "error",
+            "already_applied": False,
+            "message": str(e)
+        }), 500
+
 @app.route('/get_department/<int:dept_id>', methods=['GET'])
 def get_department(dept_id):
     try:

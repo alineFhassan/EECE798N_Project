@@ -54,10 +54,14 @@
                 <td>{{ job.created_at }}</td>
                 <td>
                   <div class="action-buttons">
+                    {% if job.already_applied %}
+                    <p class="text-success">You have already applied to this job.</p>
+                  {% else %}
                     <form method="POST" action="{{ url_for('jobseeker_dashboard') }}" style="display: inline;">
                       <input type="hidden" name="job_id" value="{{ job.id }}">
                       <button type="submit" class="btn btn-sm btn-success">Apply Now</button>
                     </form>
+                    {% endif %}
                   </div>
                 </td>
               </tr>
