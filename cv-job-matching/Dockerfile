@@ -10,7 +10,7 @@ COPY . .
 RUN pip install -r requirements.txt
 
 # Expose the port your app runs on
-EXPOSE 5007
+EXPOSE 3003
 
 # Start the Flask app
 CMD ["python", "cv_job.py"]

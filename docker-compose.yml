@@ -41,6 +41,7 @@ services:
     environment:
       - CV_EXTRACTION_URL=http://cv-extraction-api:3001 
       - JOB_DESCRIPTION_URL=http://job-description-api:3002 
+      - CV_JOB_MATCHING_URL=http://cv-job-matching-api:3003
     networks:
       - eece-network
 
@@ -70,6 +71,19 @@ services:
           - eece-network  
         environment:
           - PORT=3002
+  cv-job-matching-api:
+        stdin_open: true
+        tty: true
+        build:
+          context: ./cv-job-matching
+          dockerfile: Dockerfile
+        command: python cv_job.py
+        ports:
+          - "3003:3003"
+        networks:
+          - eece-network  
+        environment:
+          - PORT=3003
 networks:
   eece-network:
     driver: bridge
