@@ -52,7 +52,7 @@ INTERVIEW_QUESTIONS_URL= "http://interview-questions-api:3004"
 # ========================
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('base_jobseeker.html')
 
 # ========================
 #   LOGIN
@@ -296,9 +296,9 @@ def allowed_file(filename):
 def upload_cv():
     UPLOAD_CV_COUNT.inc()  # Increment total request count
 
-    if 'user_id' not in session:
-        flash('Please login first', 'error')
-        return redirect(url_for('jobseeker_dashboard'))
+    # if 'user_id' not in session:
+    #     flash('Please login first', 'error')
+    #     return redirect(url_for('jobseeker_dashboard'))
    
     if request.method == 'POST':
         start_time = time.time()

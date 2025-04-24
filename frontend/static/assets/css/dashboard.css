@@ -84,7 +84,7 @@
 }
 
 .sidebar-menu-item.active .sidebar-menu-link {
-  background-color: #386a73;
+  background-color: #007e95;
   color: white;
 }
 
@@ -482,8 +482,8 @@
 }
 
 .btn-primary:hover {
-  background-color: #2c4f5a;
-  border-color: #2c4f5a;
+  background-color: #007e95;
+  border-color: #007e95;
 }
 
 .btn-outline {
