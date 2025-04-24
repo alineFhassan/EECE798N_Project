@@ -357,9 +357,9 @@ def upload_cv():
 @app.route('/metrics')
 def metrics():
     return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
-@app.route('/cv_stats')
-def cv_stats():
-    return render_template('cv_stats.html')
+@app.route('/monitoring_dashboard')
+def monitoring_dashboard():
+    return render_template('monitoring_dashboard.html')
 
 # -------- APPLICANT PROFILE PAGE  --------
 @app.route('/profile')
