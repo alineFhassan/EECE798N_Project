@@ -18,6 +18,13 @@
         <!-- Alert container - changed classes for better visibility -->
         <div id="pdfAlert" class="alert hidden" role="alert"></div>
 
+
+        {% if has_cv %}
+        <div class="alert alert-info" role="alert">
+          <i class="fas fa-check-circle"></i> You have already uploaded a CV. 
+        </div>
+        {% endif %}
+
         <!-- Form - added proper enctype and action -->
         <form id="pdfForm" class="pdf-form" method="POST" enctype="multipart/form-data" action="{{ url_for('upload_cv') }}">
           <div class="form-group">
@@ -29,7 +36,7 @@
               <small id="fileHelp" class="form-text text-muted">
                 Maximum file size: 2MB. Only PDF files accepted.
               </small>
-              <button type="submit" class="btn btn-primary upload-btn">
+              <button type="submit" class="btn btn-primary upload-btn" {% if has_cv|default(False) %}disabled{% endif %}>
                 <i class="fas fa-upload"></i> Upload CV
               </button>
             </div>

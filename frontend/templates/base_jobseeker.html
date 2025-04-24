@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Profile - Dashboard</title>
+  <title>Applicant Profile - Dashboard</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main_dashboard.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/dashboard.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Raleway:wght@400;500;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
-        <h2 class="sidebar-title">User Dashboard</h2>
+        <h2 class="sidebar-title">Applicant Dashboard</h2>
       </div>
       <div class="sidebar-content">
         <ul class="sidebar-menu">
@@ -44,10 +44,12 @@
       <div class="sidebar-footer">
         <ul class="sidebar-menu">
           <li class="sidebar-menu-item">
-            <a href="#" class="sidebar-menu-link">
-              <i class="fas fa-sign-out-alt"></i>
-              <span>Logout</span>
-            </a>
+            <form action="{{ url_for('logout') }}" method="POST">
+              <button type="submit" class="sidebar-menu-link" style="background: none; border: none; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+              </button>
+            </form>
           </li>
         </ul>
       </div>
