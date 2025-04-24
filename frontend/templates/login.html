@@ -9,6 +9,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
   <body>
+    <div class="login-container">
+      <img src="../static/assets/img/desk_with_laptops_image_.png" class="login-image" alt="">
     <div class="container">
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -42,6 +44,6 @@
           <input type="submit" value="Continue" />
         </div>
       </form>
-
+    </div>
   </body>
 </html>
