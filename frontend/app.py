@@ -241,28 +241,36 @@ def upload_cv():
         flash('Please login first', 'error')
         return redirect(url_for('jobseeker_dashboard'))
     
+    # Initialize has_cv as False by default
+    has_cv = False
+    
     # Check if user has CV (for displaying upload prompt)
     cv_check = requests.get(f"{BACKEND_API_URL}/check_cv_exists/{session['user_id']}")
     if cv_check.status_code == 200:
-        cv_exists = cv_check.json().get('cv_exists', False)
-        return render_template('upload_cv.html', has_cv=cv_exists)  # Just render template
-    
+        has_cv = cv_check.json().get('cv_exists', False)
+
+    # Handle POST requests (file upload) regardless of whether CV exists
     if request.method == 'POST':
+        # If CV exists and user is trying to upload again, you might want to handle differently
+        if has_cv:
+            flash('You already have a CV uploaded. Contact support to replace it.', 'info')
+            return redirect(url_for('jobseeker_dashboard'))
+            
         start_time = time.time()
         try:
             if 'pdfFile' not in request.files:
                 flash('No file selected', 'error')
-                return redirect(url_for('jobseeker_dashboard'))
+                return redirect(url_for('upload_cv'))  # Redirect back to upload page
 
             file = request.files['pdfFile'] 
 
             if file.filename == '':
                 flash('No file selected', 'error')
-                return redirect(url_for('jobseeker_dashboard'))
+                return redirect(url_for('upload_cv'))
             
             if not (file and allowed_file(file.filename)):
                 flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
-                return redirect(request.url)
+                return redirect(url_for('upload_cv'))
             
             files = {'file': (file.filename, file.stream, file.mimetype)}
             response = requests.post(f"{CV_EXTRACTION_URL}/extract-cv", files=files)
@@ -298,10 +306,8 @@ def upload_cv():
             elapsed = time.time() - start_time
             UPLOAD_CV_TIME.observe(elapsed)
 
-        return redirect(url_for('jobseeker_dashboard'))
-    
-    return render_template('upload_cv.html')
-
+    # Always render the template with current has_cv status
+    return render_template('upload_cv.html', has_cv=has_cv)
 # ========================
 #   APPLICANR PROFILE
 # ========================  
