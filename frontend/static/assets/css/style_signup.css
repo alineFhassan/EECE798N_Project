@@ -135,7 +135,7 @@ form .button input {
   letter-spacing: 1px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #6fcde7 0%, #3a6470 100%);
+  background:linear-gradient(to top, #0C90C4, #6bcbdc 10%);
 }
 
 form .button input:hover {
