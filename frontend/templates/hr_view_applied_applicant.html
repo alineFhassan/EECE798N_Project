@@ -232,7 +232,7 @@
                         <i class="fas fa-times"></i>
                       </a>
                     {% else %}
-                      <a href="{{ url_for('schedule_meeting', applicant_id=applicant.id, job_id=job.id) }}" 
+                      <a href="{{ url_for('schedule_meeting', applicant_id=applicant.id, job_id=job['job']['id']) }}" 
                          class="btn-schedule" title="Schedule Interview">
                         <i class="fas fa-calendar-alt"></i>
                       </a>

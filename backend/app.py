@@ -901,7 +901,6 @@ def add_interview():
                 applicant_id, job_id, meeting_title, date, 
                 start_time, end_time, questions
             ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id;
         """, (
             interview_data['applicant_id'],
             interview_data['job_id'],
@@ -912,7 +911,7 @@ def add_interview():
             json.dumps(questions_data)
         ))
 
-        interview_id = cursor.fetchone()[0]
+        interview_id = cursor.lastrowid  
         conn.commit()
 
         return jsonify({
@@ -1334,7 +1333,14 @@ def add_technical_interview():
             cursor.close()
         if 'conn' in locals():
             conn.close()
-
+import traceback
+from datetime import timedelta
+def safe_serialize_time(val):
+    if isinstance(val, timedelta):
+        return str(val)
+    elif hasattr(val, 'isoformat'):
+        return val.isoformat()
+    return val
 @app.route('/get_interview', methods=['GET'])
 def get_interview():
     try:
@@ -1363,10 +1369,10 @@ def get_interview():
                 "applicant_id": row[1],
                 "job_id": row[2],
                 "meeting_title": row[3],
-                "meeting_date": row[4].isoformat() if row[4] else None,
-                "start_time": row[5].isoformat() if row[5] else None,
-                "end_time": row[6].isoformat() if row[6] else None,
-                "created_at": row[7].isoformat() if row[7] else None
+                "meeting_date": row[4].isoformat() if hasattr(row[4], 'isoformat') else row[4],
+                "start_time": safe_serialize_time(row[5]),
+                "end_time": safe_serialize_time(row[6]),
+                "created_at": safe_serialize_time(row[7]),
             }
             interviews.append(interview)
 
@@ -1377,12 +1383,12 @@ def get_interview():
                 applicant_id,
                 job_id,
                 meeting_title,
-                interview_date,
+                date,
                 start_time,
                 end_time,
                 created_at
             FROM technical_interviews
-            ORDER BY interview_date, start_time
+            ORDER BY date, start_time
         """)
         
         technical_interviews = []
@@ -1392,10 +1398,10 @@ def get_interview():
                 "applicant_id": row[1],
                 "job_id": row[2],
                 "meeting_title": row[3],
-                "meeting_date": row[4].isoformat() if row[4] else None,
-                "start_time": row[5].isoformat() if row[5] else None,
-                "end_time": row[6].isoformat() if row[6] else None,
-                "created_at": row[7].isoformat() if row[7] else None,
+                "meeting_date": row[4].isoformat() if hasattr(row[4], 'isoformat') else row[4],
+                "start_time": safe_serialize_time(row[5]),
+                "end_time": safe_serialize_time(row[6]),
+                "created_at": safe_serialize_time(row[7]),
                 "is_technical": True
             }
             technical_interviews.append(interview)
@@ -1409,7 +1415,9 @@ def get_interview():
         }), 200
 
     except Exception as e:
+        traceback.print_exc() 
         return jsonify({"status": "error", "message": str(e)}), 500
+    
     finally:
         if 'cursor' in locals():
             cursor.close()

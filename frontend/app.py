@@ -849,13 +849,19 @@ def schedule_meeting(applicant_id, job_id):
                 cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
                 cv_data = cv_response.json().get('cv_data', {})
                 generate_question_response = requests.post(
-                            f"{INTERVIEW_QUESTIONS_URL}/handle_question_generation",
+                            f"{INTERVIEW_QUESTIONS_URL}/generate-questions",
                             json={
                                 'cv': cv_data,
                                 'job': job_data
                             }
                         )
-                
+                try:
+                    questions_data = generate_question_response.json()
+                except ValueError as e:
+                    print("Failed to decode questions JSON:", e , flush=True)
+                    print("Raw response:", generate_question_response.text, flush=True)
+                    flash('Failed to parse questions', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
 
                 msg = Message(
                     subject="You're Invited: Next Step in Your Hirevo Application 🎯",
@@ -872,10 +878,16 @@ def schedule_meeting(applicant_id, job_id):
                         'start_time': request.form['start_time'],
                         'end_time': request.form['end_time']
                     },
-                    'questions': generate_question_response
+                    'questions': questions_data
                 })
+                if save_interview.status_code != 201:
+                    print("Add interview failed:", save_interview.status_code, save_interview.text , flush=True)
+                    flash('Failed to save interview', 'error')
+                    return redirect(url_for('jobseeker_dashboard'))
 
+                print("Sending email to", email, flush=True)
                 mail.send(msg)
+                print("Email sent!", flush=True)
                 # Redirect to prevent form resubmission
                 return redirect(url_for('schedule_meeting', 
                                     applicant_id=applicant_id, 
@@ -974,10 +986,11 @@ def schedule_meeting(applicant_id, job_id):
     
 
     get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
-
+    stats_response = requests.get(f"{BACKEND_API_URL}/get_dashboard_stats")
+    stats = stats_response.json().get('stats', {}) if stats_response.status_code == 200 else {}
     if get_interview_response.status_code != 200:
             flash('Error fetching interviews', 'error')
-            return render_template('company_dashboard.html', jobs=[])
+            return render_template('schedule_interview.html', applicant_id=applicant_id, job_id=job_id)
 
     interviews = get_interview_response.json().get('interviews', [])
 

@@ -92,12 +92,12 @@ def evaluate(cv_data, job_data):
     
     # Evaluation thresholds
     thresholds = {
-        "skills_vs_requirements": 0.6,
-        "education_vs_title": 0.5,
-        "responsibilities_vs_skills": 0.55,
-        "responsibilities_vs_experience": 0.5,
-        "experience_years_match": 0.8,  # Must have ≥80% of required years
-        "title_vs_experience": 0.5
+        "skills_vs_requirements": 0.3,
+        "education_vs_title": 0.4,
+        "responsibilities_vs_skills": 0.3,
+        "responsibilities_vs_experience": 0.3,
+        "experience_years_match": 0.5,  # Must have ≥80% of required years
+        "title_vs_experience": 0.2
     }
     
     # Convert scores to pass/fail

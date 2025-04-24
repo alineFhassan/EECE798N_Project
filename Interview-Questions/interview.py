@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 from mistralai import Mistral
-
+import json
 app = Flask(__name__)
 
 # Configuration
@@ -30,7 +30,7 @@ def generate_interview_questions(cv_data, job_data):
         "experience_needed": "{job_data.get('experience', '')}"
     }}
     
-   Based on the given candidate information encoded in the JSON above, create a structured response in JSON format. Here is the structure of the JSON:{{  \"general\": [\"2-3 questions about the candidate's background, motivation, and role interest.\"],  \"technical\": [\"4-5 questions focusing on the candidate's specific skills and job requirements.\"],  \"behavioral\": [\"2-3 questions to evaluate teamwork, problem-solving, and situational responses.\"].Each object should independently follow the structure above, and ensure the total number of interview questions across all categories does not exceed 10. Ensure each category (`general`, `technical`, `behavioral`) contains at least one question where applicable.Focus on tailoring the questions specifically to the candidate's CV and the job posting.Use professional and conversational language aligned with real-world interview scenarios. Ensure only to return the format mentioned above and nothing else."}}
+   Based on the given candidate information encoded in the JSON above, create a structured response in JSON format. Here is the structure of the JSON:{{  \"general\": [\"5 questions about the candidate's background, motivation, and role interest.\"],  \"technical\": [\"5 questions focusing on the candidate's specific skills and job requirements.\"],  \"behavioral\": [\"3 questions to evaluate teamwork, problem-solving, and situational responses.\"].Each object should independently follow the structure above, and ensure the total number of interview questions across all categories does not exceed 15. Ensure each category (`general`, `technical`, `behavioral`) contains at least one question where applicable.Focus on tailoring the questions specifically to the candidate's CV and the job posting.Use professional and conversational language aligned with real-world interview scenarios. Ensure only to return the format mentioned above and nothing else."}}
     """
     
     response = mistral_client.chat.complete(
@@ -38,10 +38,14 @@ def generate_interview_questions(cv_data, job_data):
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"}
     )
-    
+    print("res", response)
     try:
-        return json.loads(response.choices[0].message.content)
-    except json.JSONDecodeError:
+        raw_content = response.choices[0].message.content
+        print("Raw AI response:", repr(raw_content))  # Add this for debugging
+        questions = json.loads(raw_content)
+        return questions
+    except json.JSONDecodeError as e:
+        print("JSON decoding failed:", e)
         raise Exception("Failed to parse questions from AI response")
 
 @app.route('/generate-questions', methods=['POST'])
@@ -49,13 +53,14 @@ def handle_question_generation():
     try:
         # Validate input
         data = request.json
+        print("data", data)
         required_fields = ['cv', 'job']
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing candidate_id or job_id"}), 400
         
         # Generate questions
         questions = generate_interview_questions(data['cv'], data['job'])
-        
+        print("quest", questions)
         return jsonify({
             "status": "success",
             "questions": questions
