@@ -87,7 +87,7 @@ def login():
                      # Redirect based on user type (consider using a mapping)
                     if data.get('register_option') == 'company':
                         if session['user_id'] == 1:
-                            return redirect(url_for('hr_dashboard'))
+                            return redirect(url_for('offered_job'))
                         else:
                             return redirect(url_for('company_dashboard'))
                     
@@ -610,12 +610,6 @@ def format_date_filter(date_str):
         return date_obj.strftime('%b %d, %Y')
     except:
         return date_str
-# ========================
-#  HR DASHBOARD
-# ========================
-@app.route('/hr_dashboard')
-def hr_dashboard():
-    return render_template('hr_dashboard.html')
 
 # -------- LIST OF APPLICANT APPLIED TO A JOB--------
 @app.route('/hr_applied_applicant/<int:job_id>')
