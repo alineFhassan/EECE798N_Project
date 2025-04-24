@@ -10,7 +10,7 @@ HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/s
 HF_TOKEN = "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"  # Secure this token in production
 
 # Similarity threshold for considering a requirement/responsibility "covered"
-COVERAGE_THRESHOLD = 0.5  # Adjust this value based on your needs
+COVERAGE_THRESHOLD = 0.3  # Adjust this value based on your needs
 
 # --- UTILS ---
 
@@ -179,4 +179,4 @@ def handle_evaluation():
 # --- ENTRY POINT ---
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5004)
+    app.run(host='0.0.0.0', port=3005, , debug=True)
