@@ -781,7 +781,7 @@ def schedule_meeting(applicant_id, job_id):
             flash('Meeting updated successfully!', 'success')
         else:
             if meeting_title == "HR Interview":
-                print("schedule is submitted")
+                print("schedule is submitted", flush=True)
                # Create new meeting
             
                 user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
@@ -1247,37 +1247,35 @@ def weekly_questions():
             if user_response.status_code != 200:
                 continue
             user_data = user_response.json()
-            full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
-
+            user_info = user_data.get('user', {})
+            full_name = f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}"
             # Get job info
             job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
             if job_response.status_code != 200:
                 continue
             job_data = job_response.json()
-            job_title = job_data.get('job_title', 'Unknown Job')
-
+            job_info = job_data.get('job', {})
+            job_title = job_info.get('title')
             # Format time
             time_range = f"{interview.get('start_time', '')} - {interview.get('end_time', '')}"
 
             # Parse questions
+            print("interviews", interview)
             raw_questions = interview.get('questions')
-            if isinstance(raw_questions, str):
-                try:
-                    questions_list = eval(raw_questions) if raw_questions.strip().startswith('[') else [raw_questions]
-                except:
-                    questions_list = [raw_questions]
-            elif isinstance(raw_questions, list):
-                questions_list = raw_questions
-            else:
-                questions_list = [str(raw_questions)]
+            if isinstance(raw_questions, dict) and 'questions' in raw_questions:
+                raw_questions = raw_questions['questions']
 
-            # Add to final list
+            questions_by_category = {
+                category_name.capitalize(): q_list if isinstance(q_list, list) else [q_list]
+                for category_name, q_list in raw_questions.items()
+}
+
             date_obj = datetime.strptime(interview_date, '%Y-%m-%d')
             questions.append({
                 "id": interview_id,
                 "applicant_name": full_name,
                 "job_title": job_title,
-                "questions": questions_list,
+                "questions": raw_questions,
                 "interview_date": interview_date,
                 "interview_time": time_range,
                 "status": interview_id in answered_ids,
