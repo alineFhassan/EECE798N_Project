@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, make_response
 import requests
 import os
 from datetime import datetime
@@ -8,6 +8,7 @@ import logging
 from prometheus_client import Counter, Histogram, generate_latest
 import time
 
+app = Flask(__name__)
 # ========================
 #   Prometheus metrics
 # ========================
@@ -16,30 +17,22 @@ UPLOAD_CV_SUCCESS = Counter('upload_cv_success_total', 'Total successful CV uplo
 UPLOAD_CV_FAILURE = Counter('upload_cv_failure_total', 'Total failed CV uploads')
 UPLOAD_CV_TIME = Histogram('upload_cv_processing_seconds', 'Time spent in upload_cv')
 
-
-app = Flask(__name__)
-
-# Configuring Flask-Mail with Gmail and your App Password
+# ========================
+#   CONFIGURE FLASK-MAIL
+# ========================
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'zynab.ahmad.saad@gmail.com'  # Replace with your Gmail
+# Replace with your Gmail credentials
+app.config['MAIL_USERNAME'] = 'zynab.ahmad.saad@gmail.com' 
 app.config['MAIL_DEFAULT_SENDER'] = 'zynab.ahmad.saad@gmail.com' 
-app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'    # ← Your App Password
+app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'  
 mail = Mail(app)
 
-# Secret Key
+# ========================
+#   SECRET KEY FOR SESSION MANAGEMENT
+# ========================
 app.secret_key = 'dev-key-123-abc!@#'
-
-# Service Endpoints Configuration
-# PORT = int(os.environ.get("PORT", 5000))
-# CV_EXTRACTION_URL = os.environ.get("CV_EXTRACTION_URL", "http://localhost:5002/extract-cv")
-# JOB_DESCRIPTION_URL = os.environ.get("JOB_DESCRIPTION_URL", "http://localhost:5003/generate-job-description")
-# CV_JOB_MATCHING_URL = os.environ.get("CV_JOB_MATCHING_URL", "http://localhost:5004/cv-job-match")
-# INTERVIEW_QUESTIONS_URL = os.environ.get("INTERVIEW_QUESTIONS_URL", "http://localhost:5005/generate-questions")
-# EVALUATE_ANSWERS_URL = os.environ.get("EVALUATE_ANSWERS_URL", "http://localhost:5006/evaluate")
-# JOB_MATCHER_ALL_URL = os.environ.get("JOB_MATCHER_ALL_URL", "http://localhost:5007/evaluate-multi-job")
-# FINAL_DECISION_URL = os.environ.get("FINAL_DECISION_URL", "http://localhost:5008/final-decision")
 
 BACKEND_API_URL = "http://backend:5000"
 CV_EXTRACTION_URL="http://cv-extraction-api:3001"
@@ -147,30 +140,7 @@ def signup():
             flash('Invalid phone number', 'error')
             return redirect(url_for('signup'))
         
-        # # 5. Date Validation
-        # try:
-        #     # Parse the date in DD/MM/YYYY format
-        #     dob = datetime.strptime(date_str, '%m/%d/%Y')
-            
-        #     # Additional validation (e.g., not future date, reasonable age)
-        #     if dob > datetime.now():
-        #         flash('Date of birth cannot be in the future', 'error')
-        #         return redirect(url_for('signup'))
-                
-        #     # Calculate age
-        #     age = (datetime.now() - dob).days // 365
-        #     if age < 13:  # Minimum age requirement
-        #         flash('You must be at least 13 years old to register', 'error')
-        #         return redirect(url_for('signup'))
-                
-        #     # Convert to standard format for storage (YYYY-MM-DD)
-        #     date_for_storage = dob.strftime('%Y-%m-%d')
-            
-        # except ValueError:
-        #     flash('Invalid date format. Please use DD/MM/YYYY', 'error')
-        #     return redirect(url_for('signup'))
-        
-        # 6. Check for empty fields after cleaning
+        # 5. Check for empty fields after cleaning
         if not all([first_name, last_name, email, phone, date_str, password]):
             flash('All fields are required', 'error')
             return redirect(url_for('signup'))
@@ -206,6 +176,31 @@ def signup():
     
     return render_template('signup.html')
 
+# ========================
+#   LOGOUT
+# ========================
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    try:
+        # Clear the session data
+        session.clear()
+        
+        # Create a response with the index page
+        response = make_response(redirect(url_for('index')))  # Redirect to index page
+        
+        # Add headers to prevent caching of the protected pages
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        
+        # Add security headers to prevent going back
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        
+        return response
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # ========================
@@ -299,7 +294,15 @@ def upload_cv():
     if 'user_id' not in session:
         flash('Please login first', 'error')
         return redirect(url_for('jobseeker_dashboard'))
-   
+    
+    # check if user already upload his cv
+    
+    # Check if user has CV (for displaying upload prompt)
+    cv_check = requests.get(f"{BACKEND_API_URL}/check_cv_exists/{session['user_id']}")
+    if cv_check.status_code == 200:
+        cv_exists = cv_check.json().get('cv_exists', False)
+        return render_template('upload_cv.html', has_cv=cv_exists)  # Just render template
+    
     if request.method == 'POST':
         start_time = time.time()
         try:
@@ -1371,7 +1374,7 @@ def submit_answers(interview_id):
     #     if save_response.status_code != 201:
     #         flash(f'Error saving answer for question {question_id}', 'error')
          
-                
+        # get interview table 
     #     interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
     #     if interview_response.status_code != 201:
     #             flash(f'Error getting question', 'error')
