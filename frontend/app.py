@@ -39,7 +39,7 @@ CV_EXTRACTION_URL="http://cv-extraction-api:3001"
 JOB_DESCRIPTION_URL="http://job-description-api:3002" 
 CV_JOB_MATCHING_URL="http://cv-job-matching-api:3003"
 INTERVIEW_QUESTIONS_URL= "http://interview-questions-api:3004"
-
+ANSWER_EVALUATION_URL= "http://answer-evaluation-api:3005"
 # ========================
 #  MAIN APPLICATION ENTRY
 # ========================
