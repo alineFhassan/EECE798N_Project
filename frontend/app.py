@@ -29,9 +29,9 @@ app.config['MAIL_DEFAULT_SENDER'] = 'zynab.ahmad.saad@gmail.com'
 app.config['MAIL_PASSWORD'] = 'teyv eues tgoq ipvt'  
 mail = Mail(app)
 
-# ========================
+# ===========================================
 #   SECRET KEY FOR SESSION MANAGEMENT
-# ========================
+# ===========================================
 app.secret_key = 'dev-key-123-abc!@#'
 
 BACKEND_API_URL = "http://backend:5000"
@@ -46,6 +46,10 @@ INTERVIEW_QUESTIONS_URL= "http://interview-questions-api:3004"
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# ===========================================
+#       LOGIN LOGOUT SIGNUP
+# ===========================================
 
 # ========================
 #   LOGIN
@@ -202,11 +206,21 @@ def logout():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# ===========================================
+#       PROMETHEUS MONITORING
+# ===========================================
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
-# ========================
-#  APPLICANR DASHBOARD
-# ========================
+@app.route('/monitoring_dashboard')
+def monitoring_dashboard():
+    return render_template('monitoring_dashboard.html')
 
+
+# ===========================================
+#       APPLICANR DASHBOARD CONFIGURATION
+# ===========================================
 # -------- CONFIGURATION FOR ALLOWED FILES --------
 ALLOWED_EXTENSIONS = {'pdf'} # alowed extension
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB limit
@@ -216,77 +230,9 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# -------- UPLOAD CV  --------
-# @app.route('/upload_cv', methods=['GET', 'POST'])
-# def upload_cv():
-#     if 'user_id' not in session:
-#         flash('Please login first', 'error')
-#         return redirect(url_for('jobseeker_dashboard'))
-   
-#     if request.method == 'POST':
-
-#         # Validate file presence
-#         if 'pdfFile' not in request.files:  # change 'file' to 'pdfFile'
-#             flash('No file selected', 'error')
-#             return redirect(url_for('jobseeker_dashboard'))
-
-#         file = request.files['pdfFile'] 
- 
-#         # Validate filename
-#         if file.filename == '':
-#             flash('No file selected', 'error')
-#             return redirect(url_for('jobseeker_dashboard'))
-        
-#         # Validate file type and size
-#         if not (file and allowed_file(file.filename)):
-#             flash('Invalid file type. Only PDF/DOCX files are allowed', 'error')
-#             return redirect(request.url)
-        
-    
-        
-        
-#         try:
-#             # Extract content of cv file 
-#             files = {'file': (file.filename, file.stream, file.mimetype)}
-#             response = requests.post(f"{CV_EXTRACTION_URL}/extract-cv"
-#                     ,
-#                     files=files
-#                 )
-#             response.raise_for_status()
-         
-
-#             cv_data = response.json().get('cv_data', {})
-#             print("cv",cv_data)
-                                  
-#             # Validate extracted data
-#             if not cv_data.get('skills') or not cv_data.get('experience'):
-#                 flash('CV processed but missing critical data (skills/experience)', 'warning')
-            
-#             # Save CV data
-#             save_response = requests.post(
-#                         f"{BACKEND_API_URL}/add_applicant",
-#                         json={
-#                             'cv_data': cv_data,
-#                             'user_id': session['user_id']
-#                         }
-#                          )
-#             print("save",save_response)
-#             if save_response.status_code == 201:
-#                 flash('CV uploaded and processed successfully!', 'success')
-#                 return redirect(url_for('jobseeker_dashboard'))
-            
-#             flash(save_response.json().get('message', 'Error saving CV data'), 'error')
-
-#         except requests.exceptions.RequestException as e:
-#             flash('CV processing service unavailable. Please try later.', 'error')
-#             app.logger.error(f"CV processing error: {str(e)}")
-#         except Exception as e:
-#             flash('An unexpected error occurred', 'error')
-#             app.logger.exception("CV upload error")
-        
-#         return redirect(url_for('jobseeker_dashboard'))
-    
-#     return render_template('upload_cv.html')     
+# ========================
+#   UPLOAD CV
+# ========================  
 @app.route('/upload_cv', methods=['GET', 'POST'])
 def upload_cv():
     UPLOAD_CV_COUNT.inc()  # Increment total request count
@@ -294,8 +240,6 @@ def upload_cv():
     if 'user_id' not in session:
         flash('Please login first', 'error')
         return redirect(url_for('jobseeker_dashboard'))
-    
-    # check if user already upload his cv
     
     # Check if user has CV (for displaying upload prompt)
     cv_check = requests.get(f"{BACKEND_API_URL}/check_cv_exists/{session['user_id']}")
@@ -357,14 +301,10 @@ def upload_cv():
         return redirect(url_for('jobseeker_dashboard'))
     
     return render_template('upload_cv.html')
-@app.route('/metrics')
-def metrics():
-    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
-@app.route('/monitoring_dashboard')
-def monitoring_dashboard():
-    return render_template('monitoring_dashboard.html')
 
-# -------- APPLICANT PROFILE PAGE  --------
+# ========================
+#   APPLICANR PROFILE
+# ========================  
 @app.route('/profile')
 def jobseeker_profile():
     if 'user_id' not in session:
@@ -405,7 +345,9 @@ def jobseeker_profile():
     
     return redirect(url_for('jobseeker_dashboard'))
 
-
+# ========================
+#   JOBSEEKER DASHBOARD
+# ========================  
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
     if 'user_id' not in session:
@@ -507,11 +449,13 @@ def jobseeker_dashboard():
         flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('jobseeker_dashboard.html', jobs=[])
 
-# ========================
-#  APPLICANR DASHBOARD
-# ========================
+# ===========================================
+#       DEPARTMENT DASHBOARD CONFIGURATION
+# ===========================================
 
-# -------- DEPARTMENT DASHBOARD --------
+# ========================
+#  DEPARTMENT DASHBOARD
+# ========================
 @app.route('/company_dashboard')
 def company_dashboard():
     if 'user_id' not in session:
@@ -560,7 +504,9 @@ def company_dashboard():
         flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('company_dashboard.html', jobs=[], stats={})
       
-# -------- OFFER NEW JOB --------
+# ========================
+#   OFFER JOB
+# ========================  
 @app.route('/post_job', methods=['POST','GET'])
 def post_job():
     if 'user_id' not in session:
@@ -615,7 +561,9 @@ def post_job():
         
     return render_template('post_job.html')
 
-# -------- DISPLAY JOB OFFERED BY DEPARTMENT --------
+# ===========================
+#   FILTER JOBS BY DEPARTMENT
+# ==========================  
 @app.route('/job_applicants/<int:job_id>')
 def job_applicants(job_id):
     try:
