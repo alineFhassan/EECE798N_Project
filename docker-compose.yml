@@ -118,7 +118,25 @@ services:
       - "9090:9090"
     networks:
       - eece-network
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3008:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - eece-network
+
+
 
 networks:
   eece-network:
     driver: bridge
+
+volumes:
+  grafana-storage: {}
