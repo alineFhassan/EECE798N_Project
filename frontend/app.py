@@ -781,7 +781,7 @@ def schedule_meeting(applicant_id, job_id):
             flash('Meeting updated successfully!', 'success')
         else:
             if meeting_title == "HR Interview":
-                print("schedule is submitted")
+                print("schedule is submitted", flush=True)
                # Create new meeting
             
                 user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
@@ -1247,37 +1247,35 @@ def weekly_questions():
             if user_response.status_code != 200:
                 continue
             user_data = user_response.json()
-            full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
-
+            user_info = user_data.get('user', {})
+            full_name = f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}"
             # Get job info
             job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
             if job_response.status_code != 200:
                 continue
             job_data = job_response.json()
-            job_title = job_data.get('job_title', 'Unknown Job')
-
+            job_info = job_data.get('job', {})
+            job_title = job_info.get('title')
             # Format time
             time_range = f"{interview.get('start_time', '')} - {interview.get('end_time', '')}"
 
             # Parse questions
+            print("interviews", interview)
             raw_questions = interview.get('questions')
-            if isinstance(raw_questions, str):
-                try:
-                    questions_list = eval(raw_questions) if raw_questions.strip().startswith('[') else [raw_questions]
-                except:
-                    questions_list = [raw_questions]
-            elif isinstance(raw_questions, list):
-                questions_list = raw_questions
-            else:
-                questions_list = [str(raw_questions)]
+            if isinstance(raw_questions, dict) and 'questions' in raw_questions:
+                raw_questions = raw_questions['questions']
 
-            # Add to final list
+            questions_by_category = {
+                category_name.capitalize(): q_list if isinstance(q_list, list) else [q_list]
+                for category_name, q_list in raw_questions.items()
+}
+
             date_obj = datetime.strptime(interview_date, '%Y-%m-%d')
             questions.append({
                 "id": interview_id,
                 "applicant_name": full_name,
                 "job_title": job_title,
-                "questions": questions_list,
+                "questions": raw_questions,
                 "interview_date": interview_date,
                 "interview_time": time_range,
                 "status": interview_id in answered_ids,
@@ -1311,100 +1309,6 @@ def weekly_questions():
                                selected_date_display=today.strftime('%A, %b %d, %Y'),
                                day_of_week=today.strftime('%A'))
 
-# -------- USE FOR TEST --------
-# @app.route('/weekly_questions')
-# def weekly_questions():    
-#     try:
-#         # Get filter parameters from URL
-#         selected_date = request.args.get('date', None)
-        
-#         # Sample data provided by user
-#         questions = [
-#             {
-#                 "id": 1,
-#                 "applicant_name": "Alice Johnson",
-#                 "job_title": "Data Analyst",
-#                 "questions": [
-#                     "What tools do you use for data cleaning?",
-#                     "Explain a project where you used data visualization.",
-#                     "How do you handle missing data?"
-#                 ],
-#                 "interview_date": "2018-09-01", 
-#                 "interview_time": "09:30 - 10:15",
-#                 "status": True
-#             },
-#             {
-#                 "id": 2,
-#                 "applicant_name": "Brian Smith",
-#                 "job_title": "Frontend Developer",
-#                 "questions": [
-#                     "What are the main differences between React and Vue?",
-#                     "How do you handle state management in large applications?",
-#                     "Describe your approach to responsive design."
-#                 ],
-#                 "interview_date": "2025-04-02",
-#                 "interview_time": "14:00 - 15:00",
-#                 "status": False
-#             },
-#             {
-#                 "id": 3,
-#                 "applicant_name": "Carol Williams",
-#                 "job_title": "Backend Developer",
-#                 "questions": [
-#                     "Explain RESTful API design principles",
-#                     "How do you handle database migrations?",
-#                     "Describe your experience with microservices"
-#                 ],
-#                 "interview_date": "2025-04-19",
-#                 "interview_time": "11:00 - 12:00",
-#                 "status": True
-#             }
-#         ]
-      
-#         # Add day_of_week to each question
-#         for question in questions:
-#             date_obj = datetime.strptime(question['interview_date'], '%Y-%m-%d')
-#             question['day_of_week'] = date_obj.strftime('%A')  # Monday, Tuesday, etc.
-        
-#         # If no date is specified, use today
-#         if not selected_date:
-#             today = datetime.now()
-#             selected_date = today.strftime('%Y-%m-%d')
-        
-#         # Parse the selected date
-#         date_obj = datetime.strptime(selected_date, '%Y-%m-%d')
-        
-#         # Filter questions for the selected day only
-#         filtered_questions = [q for q in questions if q['interview_date'] == selected_date]
-
-#         # Calculate progress for the filtered questions
-#         total_questions = len(filtered_questions)
-#         answered_questions = len([q for q in filtered_questions if q['status']])
-#         progress_percent = (answered_questions / total_questions * 100) if total_questions > 0 else 0
-
-#         # Format the selected date for display
-#         selected_date_display = date_obj.strftime('%A, %b %d, %Y')  # e.g., "Monday, Apr 19, 2025"
-        
-#         # Get day of week for display
-#         day_of_week = date_obj.strftime('%A')
-
-#         return render_template('weekly_questions.html', 
-#                             questions=filtered_questions,
-#                             progress_percent=progress_percent,
-#                             total_questions=total_questions,
-#                             answered_questions=answered_questions,
-#                             selected_date=selected_date,
-#                             selected_date_display=selected_date_display,
-#                             day_of_week=day_of_week)
-    
-#     except Exception as e:
-#         flash(f'Error loading questions: {str(e)}', 'error')
-#         today = datetime.now()
-#         return render_template('weekly_questions.html', 
-#                               questions=[], 
-#                               selected_date=today.strftime('%Y-%m-%d'),
-#                               selected_date_display=today.strftime('%A, %b %d, %Y'),
-#                               day_of_week=today.strftime('%A'))
 
 # -------- DISPLAY INTERVIEW QUESTIONS AND THEIR ANSWERS  --------
 @app.route('/answer_question/<int:question_id>')

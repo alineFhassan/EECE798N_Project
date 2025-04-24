@@ -1357,7 +1357,8 @@ def get_interview():
                 date,
                 start_time,
                 end_time,
-                created_at
+                created_at,
+                questions       
             FROM interviews
             ORDER BY date, start_time
         """)
@@ -1373,6 +1374,7 @@ def get_interview():
                 "start_time": safe_serialize_time(row[5]),
                 "end_time": safe_serialize_time(row[6]),
                 "created_at": safe_serialize_time(row[7]),
+                "questions": json.loads(row[8]) if row[8] else [],
             }
             interviews.append(interview)
 

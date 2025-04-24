@@ -68,12 +68,26 @@
               <div class="question-content">
                 <p class="applicant-name">Applicant: {{ question.applicant_name }}</p>
                 <div class="question-list-items">
-                  <ul>
-                    {% for q in question.questions %}
-                    <li>{{ q }}</li>
+                  {% if question.questions is mapping %}
+                    {% for category, q_list in question.questions.items() %}
+                      <div class="question-category">
+                        <h4>{{ category|capitalize }}</h4>
+                        <ul>
+                          {% for q in q_list %}
+                            <li>{{ q }}</li>
+                          {% endfor %}
+                        </ul>
+                      </div>
                     {% endfor %}
-                  </ul>
+                  {% else %}
+                    <ul>
+                      {% for q in question.questions %}
+                        <li>{{ q }}</li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
                 </div>
+                
               </div>
               <div class="question-footer">
                 <div class="question-meta">
