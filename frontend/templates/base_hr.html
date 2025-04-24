@@ -23,12 +23,7 @@
       </div>
       <div class="sidebar-content">
         <ul class="sidebar-menu">
-          <li class="sidebar-menu-item {{ 'active' if request.endpoint == 'hr_dashboard' else '' }}">
-            <a href="{{ url_for('hr_dashboard') }}" class="sidebar-menu-link">
-              <i class="fas fa-tachometer-alt"></i>
-              <span>Dashboard</span>
-            </a>
-          </li>
+      
 
           <li class="sidebar-menu-item {{ 'active' if request.endpoint == 'offered_job' else '' }}">
             <a href="{{ url_for('offered_job') }}" class="sidebar-menu-link">
