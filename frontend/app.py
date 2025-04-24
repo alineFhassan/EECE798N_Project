@@ -1336,248 +1336,248 @@ def submit_answers(interview_id):
                 flash(f'Error getting question', 'error')
                 return redirect(url_for('weekly_questions'))
         # get interview table 
-    #     interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
-    #     if interview_response.status_code != 201:
-    #             flash(f'Error getting question', 'error')
-    #             return redirect(url_for('weekly_questions'))
+        interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
+        if interview_response.status_code != 201:
+                flash(f'Error getting question', 'error')
+                return redirect(url_for('weekly_questions'))
              
-    #     job_id =   interview_response.json().get('job_id') 
-    #     applicant_id = interview_response.json().get('applicant_id') 
-    #     questions =   interview_response.json().get('questions') 
+        job_id =   interview_response.json().get('job_id') 
+        applicant_id = interview_response.json().get('applicant_id') 
+        questions =   interview_response.json().get('questions') 
 
-    # #     applied_job_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")    
-    # #     if applied_job_response.status_code != 201:
-    # #             flash(f'Error getting job', 'error')
-    # #             return redirect(url_for('weekly_questions'))
-      
-    #     requirements = applied_job_response.json().get("requirements")
-    #     responsibilities = applied_job_response.json().get("responsibilities")
-
-    #     # Evaluate the answer using the Evaluation_Question model
-    #     eval_response = requests.post(f"{EVALUATE_ANSWERS_URL}/evaluate", json={
-    #            'interview_questions': questions, 
-    #            'interview_answers': answers,
-    #             'requirements': requirements,
-    #             'responsibilities':responsibilities
-    #         })
-            
-    #     if eval_response.status_code != 200:
-    #             flash(f'Answer saved but evaluation failed for question ', 'warning')
+    #     applied_job_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")    
+    #     if applied_job_response.status_code != 201:
+    #             flash(f'Error getting job', 'error')
     #             return redirect(url_for('weekly_questions'))
-               
-    #     evaluation = eval_response.json().get('evaluation') 
+      
+        requirements = applied_job_response.json().get("requirements")
+        responsibilities = applied_job_response.json().get("responsibilities")
 
-    #     overall_scores = evaluation.get("overall_scores", {})
-    #     requirements_scores = overall_scores.get("requirements", {})
-    #     responsibilities_scores = overall_scores.get("responsibilities", {})
-
-    #     # Extract the scores, defaulting to 0.0 if not present
-    #     req_avg = requirements_scores.get("average_score_all_answers", 0.0)
-    #     resp_avg = responsibilities_scores.get("average_score_all_answers", 0.0)
-
-    #     # Calculate the average of the two
-    #     final_average = (req_avg + resp_avg) / 2
+        # Evaluate the answer using the Evaluation_Question model
+        eval_response = requests.post(f"{EVALUATE_ANSWERS_URL}/evaluate", json={
+               'interview_questions': questions, 
+               'interview_answers': answers,
+                'requirements': requirements,
+                'responsibilities':responsibilities
+            })
             
-    #     if save_response.status_code != 201:
-    #             flash(f'Error saving evaluation', 'error')
+        if eval_response.status_code != 200:
+                flash(f'Answer saved but evaluation failed for question ', 'warning')
+                return redirect(url_for('weekly_questions'))
+               
+        evaluation = eval_response.json().get('evaluation') 
+
+        overall_scores = evaluation.get("overall_scores", {})
+        requirements_scores = overall_scores.get("requirements", {})
+        responsibilities_scores = overall_scores.get("responsibilities", {})
+
+        # Extract the scores, defaulting to 0.0 if not present
+        req_avg = requirements_scores.get("average_score_all_answers", 0.0)
+        resp_avg = responsibilities_scores.get("average_score_all_answers", 0.0)
+
+        # Calculate the average of the two
+        final_average = (req_avg + resp_avg) / 2
+            
+        if save_response.status_code != 201:
+                flash(f'Error saving evaluation', 'error')
             
                 
   
-    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-    #     if user_response.status_code != 200:
-    #             flash('Error fetching user data', 'error')
-    #             return redirect(url_for('weekly_questions'))
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
+        if user_response.status_code != 200:
+                flash('Error fetching user data', 'error')
+                return redirect(url_for('weekly_questions'))
               
-    #     user_data = user_response.json().get('user', {})
+        user_data = user_response.json().get('user', {})
 
-    #     offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-    #     if  offered_job_response.status_code != 200:
-    #             flash('Error fetching job data', 'error')
-    #             return redirect(url_for('weekly_questions'))
+        offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+        if  offered_job_response.status_code != 200:
+                flash('Error fetching job data', 'error')
+                return redirect(url_for('weekly_questions'))
                
-    #     offered_job_response = user_response.json().get('', {})
+        offered_job_response = user_response.json().get('', {})
 
             
-    #         # Assume you've extracted this data:
-    #     first_name = user_data.get('first_name', '')
-    #     last_name = user_data.get('last_name', '')
-    #     email = user_data.get('email', '')
-    #     job_title =  offered_job_response.get('job_title', '')  
-    #     job_level = offered_job_response.get('job_level', '')  
+            # Assume you've extracted this data:
+        first_name = user_data.get('first_name', '')
+        last_name = user_data.get('last_name', '')
+        email = user_data.get('email', '')
+        job_title =  offered_job_response.get('job_title', '')  
+        job_level = offered_job_response.get('job_level', '')  
 
-    #     # get all answer
-    #     if final_average >= 50:
-    #         email_body = f"""
-    #         Dear {first_name} {last_name},
+        # get all answer
+        if final_average >= 50:
+            email_body = f"""
+            Dear {first_name} {last_name},
 
-    #         We are pleased to inform you that you have successfully passed the second stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.  
+            We are pleased to inform you that you have successfully passed the second stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.  
 
-    #         🎉 **Congratulations!**  
+            🎉 **Congratulations!**  
 
-    #         You are now advancing to the **technical interview**, which will be scheduled shortly. We will send you the details (date, time, and format) very soon.  
+            You are now advancing to the **technical interview**, which will be scheduled shortly. We will send you the details (date, time, and format) very soon.  
 
-    #         In the meantime, please ensure you are prepared for a technical discussion relevant to the role. If you have any questions or need assistance, feel free to reply to this email.  
+            In the meantime, please ensure you are prepared for a technical discussion relevant to the role. If you have any questions or need assistance, feel free to reply to this email.  
 
-    #         We appreciate your patience and look forward to continuing the process with you!  
+            We appreciate your patience and look forward to continuing the process with you!  
 
-    #         Warm regards,  
-    #         **Hirevo HR Team**  
-    #         hr@hirevo.com  
-    #         """
-    #         msg = Message(
-    #             subject="Passed the Second Phase – Technical Interview Coming Soon 🎯",
-    #             recipients=[email],
-    #             body=email_body
-    #         )
+            Warm regards,  
+            **Hirevo HR Team**  
+            hr@hirevo.com  
+            """
+            msg = Message(
+                subject="Passed the Second Phase – Technical Interview Coming Soon 🎯",
+                recipients=[email],
+                body=email_body
+            )
            
 
-    #         mail.send(msg)    
-    #         get_interview = requests.post(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
-    #         answer_id = get_interview.json().get('id')    
+            mail.send(msg)    
+            get_interview = requests.post(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
+            answer_id = get_interview.json().get('id')    
 
-    #         # Save the answer to the database
-    #         save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
-    #             "answer_id": answer_id,
-    #             'evaluation': evaluation,
-    #             "qualified_interview": "qualified"
+            # Save the answer to the database
+            save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
+                "answer_id": answer_id,
+                'evaluation': evaluation,
+                "qualified_interview": "qualified"
 
-    #         })
-    #     else:
-    #         save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
-    #             "answer_id": answer_id,
-    #             'evaluation': evaluation,
-    #             "qualified_interview": "Unqualified"
+            })
+        else:
+            save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
+                "answer_id": answer_id,
+                'evaluation': evaluation,
+                "qualified_interview": "Unqualified"
 
-    #         })  
-    #         offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job") 
+            })  
+            offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job") 
 
-    #         if offered_job_response.status_code != 201:
-    #             flash(f'Error getting job', 'error')  
-    #             return redirect(url_for('weekly_questions'))
+            if offered_job_response.status_code != 201:
+                flash(f'Error getting job', 'error')  
+                return redirect(url_for('weekly_questions'))
 
-    #         jobs = offered_job_response.json().get('jobs') 
-    #         eval_all_response = requests.post(f"{JOB_MATCHER_ALL_URL}/evaluate-multi-job", json={
-    #            'interview_questions': questions, 
-    #            'interview_answers': answers,
-    #             'jobs': jobs,
+            jobs = offered_job_response.json().get('jobs') 
+            eval_all_response = requests.post(f"{JOB_MATCHER_ALL_URL}/evaluate-multi-job", json={
+               'interview_questions': questions, 
+               'interview_answers': answers,
+                'jobs': jobs,
                
-    #         })
-    #         best_match = eval_all_response.json().get('best_match')
-    #         best_match = eval_all_response.json().get('best_match', {})
+            })
+            best_match = eval_all_response.json().get('best_match')
+            best_match = eval_all_response.json().get('best_match', {})
 
-    #         # Extract overall scores
-    #         overall_scores = best_match.get('overall_scores', {})
-    #         requirements_scores = overall_scores.get("requirements", {})
-    #         responsibilities_scores = overall_scores.get("responsibilities", {})
+            # Extract overall scores
+            overall_scores = best_match.get('overall_scores', {})
+            requirements_scores = overall_scores.get("requirements", {})
+            responsibilities_scores = overall_scores.get("responsibilities", {})
 
-    #         # Extract average_score_all_answers with default values
-    #         req_avg = requirements_scores.get("average_score_all_answers", 0.0)
-    #         resp_avg = responsibilities_scores.get("average_score_all_answers", 0.0)
+            # Extract average_score_all_answers with default values
+            req_avg = requirements_scores.get("average_score_all_answers", 0.0)
+            resp_avg = responsibilities_scores.get("average_score_all_answers", 0.0)
 
-    #         # Calculate combined average
-    #         final_average = (req_avg + resp_avg) / 2
+            # Calculate combined average
+            final_average = (req_avg + resp_avg) / 2
 
           
-    #         if final_average < 50:
-    #             email_body = f"""
-    #             Dear {first_name} {last_name},
+            if final_average < 50:
+                email_body = f"""
+                Dear {first_name} {last_name},
 
-    #             Thank you for your interest in the **{job_title} ({job_level})** position at Hirevo.
+                Thank you for your interest in the **{job_title} ({job_level})** position at Hirevo.
 
-    #             After careful consideration, we regret to inform you that at this time, we will not be moving forward with your application for this or any current openings.  
+                After careful consideration, we regret to inform you that at this time, we will not be moving forward with your application for this or any current openings.  
 
-    #             Please know that this decision was not easy, and it does not reflect negatively on your qualifications or experience. We encourage you to apply again in the future as new opportunities arise.  
+                Please know that this decision was not easy, and it does not reflect negatively on your qualifications or experience. We encourage you to apply again in the future as new opportunities arise.  
 
-    #             We sincerely appreciate the time and effort you invested in the application process.  
+                We sincerely appreciate the time and effort you invested in the application process.  
 
-    #             Wishing you the best in your job search and future endeavors.  
+                Wishing you the best in your job search and future endeavors.  
 
-    #             Warm regards,  
-    #             **Hirevo HR Team**  
-    #             hr@hirevo.com  
-    #             """
+                Warm regards,  
+                **Hirevo HR Team**  
+                hr@hirevo.com  
+                """
 
-    #             msg = Message(
-    #                 subject="Application Update from Hirevo",
-    #                 recipients=[email],
-    #                 body=email_body
-    #             )
+                msg = Message(
+                    subject="Application Update from Hirevo",
+                    recipients=[email],
+                    body=email_body
+                )
 
-    #             mail.send(msg)
-    #         else:
-    #             cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
-    #             cv_data = cv_response.json().get('cv_data', {})
+                mail.send(msg)
+            else:
+                cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
+                cv_data = cv_response.json().get('cv_data', {})
 
-    #             # final descision
-    #             FINAL_DECISION_URL_response = requests.post(f"{FINAL_DECISION_URL}/final-decision", json={
-    #            'cv_data': cv_data, 
-    #             'jobs': jobs,
+                # final descision
+                FINAL_DECISION_URL_response = requests.post(f"{FINAL_DECISION_URL}/final-decision", json={
+               'cv_data': cv_data, 
+                'jobs': jobs,
                
-    #              }) 
-    #             evaluation = FINAL_DECISION_URL_response.json().get('evaluation', {})
+                 }) 
+                evaluation = FINAL_DECISION_URL_response.json().get('evaluation', {})
 
-    #             # Extract and clean percentage_met
-    #             percentage_str = evaluation.get('percentage_met', '0%')
-    #             percentage_number = float(percentage_str.strip('%'))
+                # Extract and clean percentage_met
+                percentage_str = evaluation.get('percentage_met', '0%')
+                percentage_number = float(percentage_str.strip('%'))
 
-    #             # Extract final_reason
-    #             final_reason = evaluation.get('final_reason', 'No reason provided')
+                # Extract final_reason
+                final_reason = evaluation.get('final_reason', 'No reason provided')
                 
-    #             job_title_best = eval_all_response.json().get('job_title')
-    #             job_level_best = eval_all_response.json().get('job_level')
-    #             evaluation =  eval_all_response.json().get('job_level')
-    #             if percentage_number >= 50:
-    #                 email_body = f"""
-    #                 Dear {first_name} {last_name},
+                job_title_best = eval_all_response.json().get('job_title')
+                job_level_best = eval_all_response.json().get('job_level')
+                evaluation =  eval_all_response.json().get('job_level')
+                if percentage_number >= 50:
+                    email_body = f"""
+                    Dear {first_name} {last_name},
 
-    #                 Thank you for taking part in our hiring process.
+                    Thank you for taking part in our hiring process.
 
-    #                 While you were not selected for the position of **{job_title} ({job_level})**, we’re excited to let you know that you've been identified as a strong candidate for another opportunity at Hirevo:  
-    #                 **{job_title_best} ({job_level_best})**.
+                    While you were not selected for the position of **{job_title} ({job_level})**, we’re excited to let you know that you've been identified as a strong candidate for another opportunity at Hirevo:  
+                    **{job_title_best} ({job_level_best})**.
 
 
-    #                 We believe this role better aligns with your background and skills, and we’re pleased to proceed with your application under this new track.
+                    We believe this role better aligns with your background and skills, and we’re pleased to proceed with your application under this new track.
 
-    #                 If you have any questions in the meantime, feel free to reach out.
+                    If you have any questions in the meantime, feel free to reach out.
 
-    #                 We’re looking forward to moving ahead with you!
+                    We’re looking forward to moving ahead with you!
 
-    #                 Warm regards,  
-    #                 **Hirevo HR Team**  
-    #                 hr@hirevo.com  
-    #                 """
+                    Warm regards,  
+                    **Hirevo HR Team**  
+                    hr@hirevo.com  
+                    """
 
-    #                 msg = Message(
-    #                     subject="New Opportunity Match at Hirevo 🎯",
-    #                     recipients=[email],
-    #                     body=email_body
-    #                 )
+                    msg = Message(
+                        subject="New Opportunity Match at Hirevo 🎯",
+                        recipients=[email],
+                        body=email_body
+                    )
 
-    #                 mail.send(msg)
-    #                 # Save the answer to the database
+                    mail.send(msg)
+                    # Save the answer to the database
 
-    #                 save_response = requests.post(f"{BACKEND_API_URL}/add_best_match", json={
-    #                     "applicant_id": applicant_id,
-    #                     'job_id': job_id,
-    #                     "evaluation": evaluation
+                    save_response = requests.post(f"{BACKEND_API_URL}/add_best_match", json={
+                        "applicant_id": applicant_id,
+                        'job_id': job_id,
+                        "evaluation": evaluation
 
-    #                 })
-    #             else:
-    #                 email_body = """"
-    #                 Dear {first_name} {last_name},
+                    })
+                else:
+                    email_body = """"
+                    Dear {first_name} {last_name},
 
-    #                 Thank you for taking the time to interview with us for the {job_title} position at Hirevo. We appreciate the effort you put into the process and the opportunity to learn more about your skills and experience.
+                    Thank you for taking the time to interview with us for the {job_title} position at Hirevo. We appreciate the effort you put into the process and the opportunity to learn more about your skills and experience.
 
-    #                 After careful consideration, we regret to inform you that your profile does not currently meet the specific requirements for this role or other open positions at Hirevo. {final_reason}
+                    After careful consideration, we regret to inform you that your profile does not currently meet the specific requirements for this role or other open positions at Hirevo. {final_reason}
 
-    #                 While we don’t have a match for you at this time, we encourage you to stay connected with us for future opportunities that may align better with your background.
+                    While we don’t have a match for you at this time, we encourage you to stay connected with us for future opportunities that may align better with your background.
 
-    #                 We sincerely appreciate your interest in joining our team and wish you the best in your job search.
+                    We sincerely appreciate your interest in joining our team and wish you the best in your job search.
 
-    #                 Warm regards,
-    #                 Hirevo HR Team
-    #                 hr@hirevo.com
-    #                 """
+                    Warm regards,
+                    Hirevo HR Team
+                    hr@hirevo.com
+                    """
 
         flash('Your answers have been submitted successfully', 'success')
         return redirect(url_for('weekly_questions'))
