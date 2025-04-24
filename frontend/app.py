@@ -1224,7 +1224,7 @@ def weekly_questions():
         answered_ids = set()
         if answers_response.status_code == 200:
             answers = answers_response.json().get('answers', [])
-            answered_ids = {answer['id_interview'] for answer in answers}
+            answered_ids = {answer['interview_id'] for answer in answers}
 
         questions = []
 
@@ -1313,78 +1313,86 @@ def weekly_questions():
 # -------- DISPLAY INTERVIEW QUESTIONS AND THEIR ANSWERS  --------
 @app.route('/answer_question/<int:question_id>')
 def answer_question(question_id):
-    print("submit", question_id)
+    print("submit", question_id, flush=True)
     """Display a form with a list of questions to answer."""
     if 'user_id' not in session:
         flash('Please login first', 'error')
         return redirect(url_for('login'))
   
     try:
-        #database 
+        # Fetch interview data from the backend
         get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")
+        print("Response content:", get_interview_response.json(), flush=True)
+        
+        # Check if the response is successful
         if get_interview_response.status_code != 200:
             flash('Error fetching interviews', 'error')
             return redirect(url_for('company_dashboard'))
 
-     
-       
-        questions = get_interview_response.json().get('questions')
-
-        questions = [
-        "What are the main differences between React and Vue?",
-        "How do you handle state management in large applications?",
-        "Describe your approach to responsive design."
-    ]
-           
+        # Extract questions from the response
+        response_data = get_interview_response.json()
+        questions_by_category = response_data.get('interview', {}).get('questions', {}).get('questions', {})
+        if not questions_by_category:
+            print("No questions found in the response", flush=True)
+            flash('No questions found for this interview', 'error')
+            return redirect(url_for('weekly_questions'))
         
-        return render_template('answer_question.html', questions=questions, target_question_id=question_id)
+        # Flatten the questions into a single list
+        flattened_questions = []
+        for category, question_list in questions_by_category.items():
+            for question in question_list:
+                flattened_questions.append(question)
+
+        # Render the template with the flattened questions
+        return render_template('answer_question.html', questions=flattened_questions, target_question_id=question_id)
     
     except Exception as e:
+        print("Error:", str(e), flush=True)
         flash(f'Error loading questions: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
 
 # -------- SUBMIT ANSWERS OF INTERVIEW QUESTION  --------
 @app.route('/submit_answers/<int:interview_id>', methods=['POST'])
 def submit_answers(interview_id):
-    # """Process the submitted answers for multiple questions."""
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
+    """Process the submitted answers for multiple questions."""
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
     
-    # try:
-    #     # Get all the answers from the form
-    #     answers = []
-    #     for key, value in request.form.items():
-    #         if key.startswith('answer_'):
-    #             question_id = int(key.split('_')[1])
-    #             answers.append((question_id, value))
+    try:
+        # Get all the answers from the form
+        answers = []
+        for key, value in request.form.items():
+            if key.startswith('answer_'):
+                question_id = int(key.split('_')[1])
+                answers.append((question_id, value))
 
-    #     print(answers)
+        print("answers", answers, flush=True)
        
      
-    #     # Save the answer to the database
-    #     save_response = requests.post(f"{BACKEND_API_URL}/add_interview_answers", json={
-    #             'interview_id': interview_id,
-    #             'answers': answers
-    #         })
+        # Save the answer to the database
+        save_response = requests.post(f"{BACKEND_API_URL}/add_interview_answers", json={
+                'interview_id': interview_id,
+                'answers': answers
+            })
             
-    #     if save_response.status_code != 201:
-    #         flash(f'Error saving answer for question {question_id}', 'error')
+        if save_response.status_code != 201:
+            flash(f'Error saving answer for question {question_id}', 'error')
          
                 
-    #     interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
-    #     if interview_response.status_code != 201:
-    #             flash(f'Error getting question', 'error')
-    #             return redirect(url_for('weekly_questions'))
+        interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
+        if interview_response.status_code != 201:
+                flash(f'Error getting question', 'error')
+                return redirect(url_for('weekly_questions'))
              
     #     job_id =   interview_response.json().get('job_id') 
     #     applicant_id = interview_response.json().get('applicant_id') 
     #     questions =   interview_response.json().get('questions') 
 
-    #     applied_job_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")    
-    #     if applied_job_response.status_code != 201:
-    #             flash(f'Error getting job', 'error')
-    #             return redirect(url_for('weekly_questions'))
+    # #     applied_job_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")    
+    # #     if applied_job_response.status_code != 201:
+    # #             flash(f'Error getting job', 'error')
+    # #             return redirect(url_for('weekly_questions'))
       
     #     requirements = applied_job_response.json().get("requirements")
     #     responsibilities = applied_job_response.json().get("responsibilities")
@@ -1472,14 +1480,14 @@ def submit_answers(interview_id):
     #         answer_id = get_interview.json().get('id')    
 
     #         # Save the answer to the database
-    #         save_response = requests.post(f"{BACKEND_API_URL}/add_Answer_evaluation", json={
+    #         save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
     #             "answer_id": answer_id,
     #             'evaluation': evaluation,
     #             "qualified_interview": "qualified"
 
     #         })
     #     else:
-    #         save_response = requests.post(f"{BACKEND_API_URL}/add_Answer_evaluation", json={
+    #         save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
     #             "answer_id": answer_id,
     #             'evaluation': evaluation,
     #             "qualified_interview": "Unqualified"
@@ -1618,37 +1626,63 @@ def submit_answers(interview_id):
         flash('Your answers have been submitted successfully', 'success')
         return redirect(url_for('weekly_questions'))
     
-    # except Exception as e:
-    #     flash(f'Error processing answers: {str(e)}', 'error')
-    #     return redirect(url_for('weekly_questions'))
+    except Exception as e:
+        flash(f'Error processing answers: {str(e)}', 'error')
+        return redirect(url_for('weekly_questions'))
 
 # -------- VIEW INTERVIEW ANSWERS AND THEIR QUESTIONS  --------
 @app.route('/view_answer/<int:question_id>')
 def view_answer(question_id):
-    # """View a previously submitted answer."""
-    # if 'user_id' not in session:
-    #     flash('Please login first', 'error')
-    #     return redirect(url_for('login'))
-    print(question_id)
+    """View a previously submitted answer."""
+    if 'user_id' not in session:
+        flash('Please login first', 'error')
+        return redirect(url_for('login'))
+    
     try:
-        question = [
-        "What are the main differences between React and Vue?",
-        "How do you handle state management in large applications?",
-        "Describe your approach to responsive design."
-        ]
-        answer = [
-        "What are the main differences between React and Vue?",
-        "How do you handle state management in large applications?",
-        "Describe your approach to responsive design."
-        ]
-        evaluation= 80
-        data = {
-            'question': question,
-            'answer': answer,
-            'evaluation': evaluation
+        # Fetch the interview questions from the backend
+        interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")
+        if interview_response.status_code != 200:
+            flash('Error fetching interview data', 'error')
+            return redirect(url_for('weekly_questions'))
+        
+        interview_data = interview_response.json().get('interview', {})
+        questions_by_category = interview_data.get('questions', {}).get('questions', {})
 
+        # Flatten the questions into a single list
+        questions = []
+        for category, question_list in questions_by_category.items():
+            questions.extend(question_list)
+
+        print("Flattened questions:", questions, flush=True)
+
+        # Fetch the answers for the interview
+        answers_response = requests.get(f"{BACKEND_API_URL}/get_interview_answers/{question_id}")
+        print("ans", answers_response, flush=True)
+        if answers_response.status_code != 200:
+            flash('Error fetching answers', 'error')
+            return redirect(url_for('weekly_questions'))
+        
+        answers_data = answers_response.json().get('answers', {}).get('answers', [])
+
+        # Align answers with questions
+        aligned_answers = []
+        for i, question in enumerate(questions):
+            # Find the corresponding answer for the question
+            answer_text = next((answer[1] for answer in answers_data if answer[0] == i + 1), "No answer provided")
+            aligned_answers.append({
+                "question": question,
+                "answer": answer_text
+            })
+
+        # Fetch the evaluation score
+        evaluation_response = requests.get(f"{BACKEND_API_URL}/get_answer_evaluation/{question_id}")
+        evaluation = evaluation_response.json().get('evaluation', {}).get('avg_score_requirements', 0)
+
+        # Prepare the data for rendering
+        data = {
+            'questions_and_answers': aligned_answers,
+            'evaluation': evaluation
         }
-     
         
         return render_template('view_answer.html', answer=data)
     
@@ -1656,7 +1690,6 @@ def view_answer(question_id):
         print(e)
         flash(f'Error loading answer: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
-
 
 # -------- LIST OF APPLICANT APPLIED TO A JOB--------
 @app.route('/hr_view_technical_interview_applicant/<int:job_id>')

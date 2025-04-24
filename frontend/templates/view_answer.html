@@ -54,25 +54,24 @@
     <div class="qa-container">
       <h2 class="qa-title">Questions & Answers</h2>
       
-      {% for i in range(answer.question|length) %}
+      {% for qa in answer.questions_and_answers %}
         <div class="qa-card">
           <div class="qa-header">
-            <h3 class="qa-number">Question {{ i+1 }}</h3>
+            <h3 class="qa-number">Question {{ loop.index }}</h3>
           </div>
           <div class="qa-content">
             <div class="question-section">
               <div class="section-label">Question:</div>
-              <div class="question-text">{{ answer.question[i] }}</div>
+              <div class="question-text">{{ qa.question }}</div>
             </div>
             <div class="answer-section">
               <div class="section-label">Answer:</div>
-              <div class="answer-text">{{ answer.answer[i] }}</div>
+              <div class="answer-text">{{ qa.answer }}</div>
             </div>
           </div>
         </div>
       {% endfor %}
     </div>
-
     <!-- Feedback Section -->
     <div class="feedback-card">
       <h2 class="feedback-title">Feedback & Recommendations</h2>

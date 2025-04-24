@@ -353,27 +353,28 @@
       
       // Submit form
       if (submitBtn && answerForm) {
-        submitBtn.addEventListener('click', function() {
-          // Check if at least one question is answered
-          let hasAnswer = false;
+        submitBtn.addEventListener('click', function(event) {
+          // Check if all questions are answered
+          let allAnswered = true;
           answerTextareas.forEach(textarea => {
-            if (textarea.value.trim() !== '') {
-              hasAnswer = true;
+            if (textarea.value.trim() === '') {
+              allAnswered = false;
             }
           });
-          
-          if (!hasAnswer) {
-            alert('Please answer at least one question before submitting.');
+
+          if (!allAnswered) {
+            alert('Please answer all questions before submitting.');
+            event.preventDefault(); // Prevent form submission
             return;
           }
-          
+
           // Clear drafts on submission
           answerTextareas.forEach(textarea => {
             const questionId = textarea.getAttribute('data-question-id');
             localStorage.removeItem(`draft_answer_${questionId}`);
           });
-          
-          answerForm.submit();
+
+          answerForm.submit(); // Submit the form if all questions are answered
         });
       }
       
