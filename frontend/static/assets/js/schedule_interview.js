@@ -259,13 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>`;
       }
   
-      modalHTML += `
-        </div>
-        <div class="modal-actions">
-            <button class="btn-secondary" onclick="editMeeting(${meeting.id})">Edit Meeting</button>
-        </div>
-      `;
-  
+   
       modalContent.innerHTML = modalHTML;
       meetingModal.style.display = "block";
     }
