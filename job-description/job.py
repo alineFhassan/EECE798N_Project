@@ -3,6 +3,7 @@ from openai import OpenAI
 import json
 import logging
 import requests
+import os
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # Configure OpenAI
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
     
 @app.route('/generate-job-description', methods=['POST'])

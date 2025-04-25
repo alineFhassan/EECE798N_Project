@@ -3,9 +3,9 @@ import requests
 from mistralai import Mistral
 import json
 app = Flask(__name__)
-
+import os
 # Configuration
-MISTRAL_API_KEY = "DgPbZl3NaH3ai9xd8ruJBy4qCfqLQSxE"
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 MODEL_NAME = "ft:open-mistral-7b:c099368a:20250414:4d9d311e"
 

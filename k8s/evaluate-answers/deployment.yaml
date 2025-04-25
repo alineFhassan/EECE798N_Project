@@ -16,6 +16,22 @@ spec:
       containers:
       - name: evaluate-answers
         image: {{DOCKERHUB_USERNAME}}/eece798n-evaluate-answers:{{IMAGE_TAG}}
+        env:
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: HF_TOKEN
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: OPENAI_API_KEY
+        - name: MISTRAL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: MISTRAL_API_KEY
         ports:
         - containerPort: 3005
         env:

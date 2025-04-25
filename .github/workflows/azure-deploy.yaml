@@ -9,7 +9,7 @@ on:
 
 env:
   DOCKERHUB_REPO_PREFIX: ${{ secrets.DOCKERHUB_USERNAME }}/eece798n
-  PROJECT_DIR: .  # Changed to root directory
+  PROJECT_DIR: .
 
 jobs:
   build-push:
@@ -37,9 +37,10 @@ jobs:
 
     - name: Build & Push ${{ matrix.service }}
       run: |
-        cd ${{ matrix.service }}  # Directly access service directories
+        cd ${{ matrix.service }}
         docker build -t ${{ env.DOCKERHUB_REPO_PREFIX }}-$(echo "${{ matrix.service }}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]'):${{ github.sha }} .
         docker push ${{ env.DOCKERHUB_REPO_PREFIX }}-$(echo "${{ matrix.service }}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]'):${{ github.sha }}
+
   deploy:
     needs: build-push
     runs-on: ubuntu-latest
@@ -66,16 +67,19 @@ jobs:
           --overwrite-existing
 
     
+    - name: Create API Key Secrets
+      run: |
+        kubectl create secret generic api-keys \
+          --namespace=eece-system \
+          --from-literal=HF_TOKEN=${{ secrets.HF_TOKEN }} \
+          --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+          --from-literal=MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
     - name: Deploy to AKS
       run: |
         # Create namespace
         kubectl apply -f k8s/namespace.yaml --wait
-
-        # Create database secret
-        kubectl create secret generic db-secrets \
-          --namespace=eece-system \
-          --from-literal=root-password=${{ secrets.DB_PASSWORD }} \
-          --dry-run=client -o yaml | kubectl apply -f -
 
         # Deploy MySQL
         kubectl apply -f k8s/database/mysql.yaml --namespace=eece-system
@@ -86,7 +90,7 @@ jobs:
           find k8s/$service -name '*.yaml' -exec sed -i \
             -e "s/{{DOCKERHUB_USERNAME}}/${{ secrets.DOCKERHUB_USERNAME }}/g" \
             -e "s/{{IMAGE_TAG}}/${{ github.sha }}/g" {} \;
-          
+
           # Apply manifests
           kubectl apply -f k8s/$service/ --namespace=eece-system
         done
