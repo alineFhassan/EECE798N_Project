@@ -1012,35 +1012,45 @@ def schedule_meeting(applicant_id, job_id):
                              applicant_id=original_applicant_id, 
                              job_id=original_job_id)
 
+    # GET request handling
+    get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
+    stats_response = requests.get(f"{BACKEND_API_URL}/get_dashboard_stats")
+    stats = stats_response.json().get('stats', {}) if stats_response.status_code == 200 else {}
+
+    if get_interview_response.status_code != 200:
+        flash('Error fetching interviews', 'error')
+        return render_template('schedule_interview.html', 
+                            applicant_id=original_applicant_id, 
+                            job_id=original_job_id)
+
     interviews = get_interview_response.json().get('interviews', [])
     meeting_data = []
 
     for interview in interviews:
-        current_applicant_id = interview.get('applicant_id')
-        current_job_id = interview.get('job_id')
-
-        if not current_applicant_id or not current_job_id:
-            continue
-
-        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{current_applicant_id}")
+        # Get user data directly from the API
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{interview['applicant_id']}")
         if user_response.status_code != 200:
             continue
-        user_data = user_response.json()
+        
+        user_data = user_response.json().get('user', {})
         full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
-
-        job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{current_job_id}")
+        
+        # Get job data directly from the API
+        job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{interview['job_id']}")
         if job_response.status_code != 200:
             continue
-        job_data = job_response.json()
-        job_title = job_data.get('job_title', 'Unknown Job')
-
+        
+        job_data = job_response.json().get('job', {})
+        job_title = job_data.get('title', 'Unknown Job')
+        
         meeting_data.append({
             "applicant_name": full_name,
             "job_title": job_title,
             "meeting_title": interview.get('meeting_title', 'Untitled'),
             "meeting_date": interview.get('meeting_date', ''),
             "start_time": interview.get('start_time', ''),
-            "end_time": interview.get('end_time', '')
+            "end_time": interview.get('end_time', ''),
+            "interview_id": interview.get('id', '')  # Include interview ID for updates
         })
 
     return render_template('schedule_interview.html', 
