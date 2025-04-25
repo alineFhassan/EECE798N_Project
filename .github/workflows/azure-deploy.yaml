@@ -80,7 +80,7 @@ jobs:
         kubectl apply -f k8s/database/mysql.yaml --namespace=eece-system
 
         # Update and deploy backend
-        for service in backend frontend cv-job-matching interview-questions answer-evaluation; do
+        for service in backend frontend cv-job-matching cv-format job-description interview-questions evaluate-answers; do
           # Replace image tags in manifests
           find k8s/$service -name '*.yaml' -exec sed -i \
             -e "s/{{DOCKERHUB_USERNAME}}/${{ secrets.DOCKERHUB_USERNAME }}/g" \
