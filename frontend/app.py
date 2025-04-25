@@ -714,21 +714,12 @@ def hr_view_applied_applicant(job_id):
 @app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
 def reject_applicant(applicant_id, job_id):
     try:
-        # Log the start of the process
-        logger.info(f"Rejecting applicant {applicant_id} for job {job_id}")
-
-        # Get applicant details
-        logger.debug(f"Fetching applicant details for applicant_id: {applicant_id}")
         user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-        
-        # Debugging: Check if the response status is OK
-        logger.debug(f"Applicant data response status: {user_response.status_code}")
         if user_response.status_code != 200:
             flash('Error fetching applicant data', 'error')
             return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
         
         user_data = user_response.json()
-        logger.debug(f"Applicant data fetched: {user_data}")
 
         # Access the 'user' key in the response data
         user_info = user_data.get('user', {})
@@ -736,25 +727,15 @@ def reject_applicant(applicant_id, job_id):
         first_name = user_info.get('first_name', '')
         last_name = user_info.get('last_name', '')
         email = user_info.get('email', '')
-
-        logger.info(f"Applicant Name: {first_name} {last_name}, Email: {email}")
-
-        # Get job details
-        logger.debug(f"Fetching job details for job_id: {job_id}")
         job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-        
-        # Debugging: Check if the response status is OK
-        logger.debug(f"Job data response status: {job_response.status_code}")
         if job_response.status_code != 200:
             flash('Error fetching job data', 'error')
             return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
         
         job_data = job_response.json()
-        logger.debug(f"Job data fetched: {job_data}")
         
         job_title = job_data.get('job_title', 'the position')
         company_name = "Hirevo"  # You might want to fetch this from your database
-        logger.info(f"Job Title: {job_title}, Company Name: {company_name}")
 
         email_body = f"""
         Dear {first_name} {last_name},
@@ -781,9 +762,6 @@ def reject_applicant(applicant_id, job_id):
         hr@{company_name.lower()}.com
         """
 
-        # Log email content for debugging
-        logger.debug(f"Sending rejection email: {email_body}")
-
         # Send email (assuming you have Flask-Mail configured)
         msg = Message(
             subject="Application Follow-up",
@@ -793,11 +771,9 @@ def reject_applicant(applicant_id, job_id):
         
         # Attempt to send the email and catch any errors
         try:
-            logger.info("Attempting to send the rejection email...")
             mail.send(msg)
-            logger.info("Email sent successfully.")
         except Exception as e:
-            logger.error(f"Error sending email: {str(e)}")
+            print('Failed to send rejection email', 'error')
 
         # Update applicant status in the database (optional)
         # Uncomment the following lines if you want to update the status in the backend
@@ -807,16 +783,10 @@ def reject_applicant(applicant_id, job_id):
             'status': 'rejected'
         })
 
-        if update_response.status_code == 200:
-            logger.info('Applicant has been rejected and status updated successfully')
-        else:
-            logger.error(f"Failed to update status: {update_response.json().get('message', 'Unknown error')}")
-
         # Redirect to the HR view with the updated applicant status
         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
 
     except Exception as e:
-        logger.error(f"Error rejecting applicant: {str(e)}")
         flash('An error occurred while processing the rejection', 'error')
         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
 
@@ -1307,7 +1277,7 @@ def submit_answers(interview_id):
         job_level = offered_job_response.get('job_level', '')  
 
         # Get all answers
-        if final_average >= 0.2:
+        if final_average >= 0.1:
             email_body = f"""
             Dear {first_name} {last_name},
 
@@ -1387,7 +1357,7 @@ def submit_answers(interview_id):
             answer_id = get_interview.json().get('answers', {}).get('id')
             if answer_id:
                 # Save the answer evaluation to the database
-                if final_average >= 0.2:
+                if final_average >= 0.1:
                     save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
                         "answer_id": answer_id,
                         "avg_score_requirements": req_avg,
