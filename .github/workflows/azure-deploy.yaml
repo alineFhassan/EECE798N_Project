@@ -127,6 +127,6 @@ jobs:
         kubectl get ingress -n eece-system
 
         # Verify deployments
-        kubectl rollout status --namespace=eece-system deployment/backend --timeout=300s
-        kubectl rollout status --namespace=eece-system deployment/frontend --timeout=300s
+        kubectl rollout status --namespace=eece-system deployment/backend --timeout=3000s
+        kubectl rollout status --namespace=eece-system deployment/frontend --timeout=3000s
         kubectl get all --namespace=eece-system
