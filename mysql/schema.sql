@@ -151,3 +151,27 @@ CREATE TABLE IF NOT EXISTS pending_decisions (
     FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
     UNIQUE (applicant_id, job_id)
 );
+
+-- Insert values into the departments table
+INSERT INTO departments (id, name, email, password)
+VALUES 
+  (1, 'HR', 'hr@gmail.com', 'hr'),
+  (2, 'AI', 'ai@gmail.com', 'ai'),
+  (3, 'Finance', 'finance@gmail.com', 'finance'),
+  (4, 'Marketing', 'marketing@gmail.com', 'marketing'),
+  (5, 'IT', 'it@gmail.com', 'it'),
+  (6, 'Sales', 'sales@gmail.com', 'sales'),
+  (7, 'Logistics', 'logistics@gmail.com', 'logistics'),
+  (8, 'Legal', 'legal@gmail.com', 'legal'),
+  (9, 'Operations', 'operations@gmail.com', 'operations'),
+  (10, 'R&D', 'rnd@gmail.com', 'rnd'),
+  (11, 'Mechanical Engineering', 'mech_eng@gmail.com', 'mech'),
+  (12, 'Electrical Engineering', 'elec_eng@gmail.com', 'elec'),
+  (13, 'Civil Engineering', 'civil_eng@gmail.com', 'civil'),
+  (14, 'Chemical Engineering', 'chem_eng@gmail.com', 'chem'),
+  (15, 'Computer Engineering', 'comp_eng@gmail.com', 'comp'),
+  (16, 'Software Engineering', 'soft_eng@gmail.com', 'soft'),
+  (17, 'Aerospace Engineering', 'aero_eng@gmail.com', 'aero'),
+  (18, 'Biomedical Engineering', 'biomed_eng@gmail.com', 'biomed'),
+  (19, 'Industrial Engineering', 'indust_eng@gmail.com', 'indust'),
+  (20, 'Environmental Engineering', 'env_eng@gmail.com', 'env');
