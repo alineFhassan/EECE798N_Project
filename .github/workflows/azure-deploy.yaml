@@ -46,7 +46,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -58,11 +57,51 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         enable-federated-identity: true
-        
 
-    - name: Deploy to AKS
+    - name: Get AKS credentials
       run: |
         az aks get-credentials \
           --name Test \
           --resource-group Test_Group \
           --overwrite-existing
+
+    - name: Deploy to AKS
+      run: |
+        # Create namespace
+        kubectl apply -f k8s/namespace.yaml --wait
+
+        # Create database secret
+        kubectl create secret generic db-secrets \
+          --namespace=eece-system \
+          --from-literal=root-password=${{ secrets.DB_PASSWORD }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        # Deploy MySQL
+        kubectl apply -f k8s/database/mysql.yaml --namespace=eece-system
+
+        # Update and deploy backend
+        for service in backend frontend cv-job-matching cv-format job-description interview-questions evaluate-answers; do
+          # Replace image tags in manifests
+          find k8s/$service -name '*.yaml' -exec sed -i \
+            -e "s/{{DOCKERHUB_USERNAME}}/${{ secrets.DOCKERHUB_USERNAME }}/g" \
+            -e "s/{{IMAGE_TAG}}/${{ github.sha }}/g" {} \;
+          
+          # Apply manifests
+          kubectl apply -f k8s/$service/ --namespace=eece-system
+        done
+
+        # Deploy monitoring stack
+        kubectl apply -f k8s/monitoring/ --namespace=eece-system
+
+        # Configure ingress
+        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+        helm repo update
+        helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          --namespace=eece-system \
+          --set controller.replicaCount=2 \
+          --set controller.nodeSelector."kubernetes\.io/os"=linux
+
+        # Verify deployments
+        kubectl rollout status --namespace=eece-system deployment/backend --timeout=300s
+        kubectl rollout status --namespace=eece-system deployment/frontend --timeout=300s
+        kubectl get all --namespace=eece-system

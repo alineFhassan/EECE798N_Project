@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: eece-system
+spec:
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+    spec:
+      containers:
+      - name: frontend
+        image: {{DOCKERHUB_USERNAME}}/eece798n-frontend:{{IMAGE_TAG}}
+        env:
+        - name: CV_EXTRACTION_URL
+          value: "http://cv-format.eece-system.svc.cluster.local:3001"
+        - name: JOB_DESCRIPTION_URL
+          value: "http://job-description.eece-system.svc.cluster.local:3002"
+        - name: CV_JOB_MATCHING_URL
+          value: "http://cv-job-matching.eece-system.svc.cluster.local:3003"
+        - name: INTERVIEW_QUESTIONS_URL
+          value: "http://interview-questions.eece-system.svc.cluster.local:3004"
+        - name: ANSWER_EVALUATION_URL
+          value: "http://answer-evaluation.eece-system.svc.cluster.local:3005"
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: eece-system
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-description
+  namespace: eece-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: job-description
+  template:
+    metadata:
+      labels:
+        app: job-description
+    spec:
+      containers:
+      - name: job-description
+        image: {{DOCKERHUB_USERNAME}}/eece798n-job-description:{{IMAGE_TAG}}
+        ports:
+        - containerPort: 3002
+        env:
+        - name: NLP_MODEL
+          value: "en_core_web_lg"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-description
+  namespace: eece-system
+spec:
+  selector:
+    app: job-description
+  ports:
+    - protocol: TCP
+      port: 3002
+      targetPort: 3002
