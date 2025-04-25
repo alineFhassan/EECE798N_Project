@@ -39,11 +39,11 @@ spec:
           value: "sentence-transformers/all-mpnet-base-v2"
         resources:
           limits:
-            memory: "256Mi"
-            cpu: "150m"
-          requests:
-            memory: "128Mi"
+            memory: "120Mi"
             cpu: "100m"
+          requests:
+            memory: "100Mi"
+            cpu: "70m"
 ---
 apiVersion: v1
 kind: Service
