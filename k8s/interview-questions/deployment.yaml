@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: interview-questions
+  namespace: eece-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: interview-questions
+  template:
+    metadata:
+      labels:
+        app: interview-questions
+    spec:
+      containers:
+      - name: interview-questions
+        image: {{DOCKERHUB_USERNAME}}/eece798n-interview-questions:{{IMAGE_TAG}}
+        ports:
+        - containerPort: 3004
+        env:
+        - name: QUESTION_GEN_MODEL
+          value: "gpt-3.5-turbo"
+        - name: OPENAI_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: api-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: interview-questions
+  namespace: eece-system
+spec:
+  selector:
+    app: interview-questions
+  ports:
+    - protocol: TCP
+      port: 3004
+      targetPort: 3004

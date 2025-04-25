@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cv-format
+  namespace: eece-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cv-format
+  template:
+    metadata:
+      labels:
+        app: cv-format
+    spec:
+      containers:
+      - name: cv-format
+        image: {{DOCKERHUB_USERNAME}}/eece798n-cv-format:{{IMAGE_TAG}}
+        ports:
+        - containerPort: 3001
+        resources:
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cv-format
+  namespace: eece-system
+spec:
+  selector:
+    app: cv-format
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001

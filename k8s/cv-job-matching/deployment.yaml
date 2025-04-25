@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cv-job-matching
+  namespace: eece-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cv-job-matching
+  template:
+    metadata:
+      labels:
+        app: cv-job-matching
+    spec:
+      containers:
+      - name: cv-job-matching
+        image: {{DOCKERHUB_USERNAME}}/eece798n-cv-job-matching:{{IMAGE_TAG}}
+        ports:
+        - containerPort: 3003
+        env:
+        - name: EMBEDDING_MODEL
+          value: "sentence-transformers/all-mpnet-base-v2"
+        resources:
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cv-job-matching
+  namespace: eece-system
+spec:
+  selector:
+    app: cv-job-matching
+  ports:
+    - protocol: TCP
+      port: 3003
+      targetPort: 3003

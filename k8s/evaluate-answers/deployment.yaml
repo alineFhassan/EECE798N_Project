@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evaluate-answers
+  namespace: eece-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: evaluate-answers
+  template:
+    metadata:
+      labels:
+        app: evaluate-answers
+    spec:
+      containers:
+      - name: evaluate-answers
+        image: {{DOCKERHUB_USERNAME}}/eece798n-evaluate-answers:{{IMAGE_TAG}}
+        ports:
+        - containerPort: 3005
+        env:
+        - name: MODEL_PATH
+          value: "/app/models/evaluation_model.pkl"
+        volumeMounts:
+        - name: model-storage
+          mountPath: "/app/models"
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: answer-evaluation
+  namespace: eece-system
+spec:
+  selector:
+    app: evaluate-answers
+  ports:
+    - protocol: TCP
+      port: 3005
+      targetPort: 3005
