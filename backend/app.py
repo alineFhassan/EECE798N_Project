@@ -1699,3 +1699,50 @@ def get_interview_by_id(question_id):  # Renamed function to avoid conflict
             cursor.close()
         if 'conn' in locals():
             conn.close()
+
+
+
+@app.route('/get_interviews/<int:applicant_id>/<int:job_id>', methods=['GET'])
+def get_interviews(applicant_id, job_id):
+    try:
+        db = get_db_connection()
+        cursor = db.cursor(dictionary=True)
+
+        # Query to get interviews for specific applicant and job
+        query = """
+        SELECT id, applicant_id, job_id, meeting_title, date, 
+               start_time, end_time, questions, created_at
+        FROM interviews
+        WHERE applicant_id = %s AND job_id = %s
+        """
+        cursor.execute(query, (applicant_id, job_id))
+        interviews = cursor.fetchall()
+
+        cursor.close()
+        db.close()
+
+        # Convert datetime/date objects to strings
+        interviews = [{
+            **interview,
+            'date': str(interview['date']),
+            'start_time': str(interview['start_time']),
+            'end_time': str(interview['end_time']),
+            'created_at': str(interview['created_at'])
+        } for interview in interviews]
+
+        return jsonify({
+            "status": "success",
+            "message": "Interviews retrieved successfully",
+            "interviews": interviews
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": "error",
+            "message": f"Database error: {err}"
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Server error: {str(e)}"
+        }), 500
