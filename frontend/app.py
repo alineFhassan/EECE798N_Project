@@ -735,7 +735,7 @@ def reject_applicant(applicant_id, job_id):
         job_data = job_response.json()
         
         job_title = job_data.get('job_title', 'the position')
-        company_name = "Hirevo"  # You might want to fetch this from your database
+        company_name = "AURION"  # You might want to fetch this from your database
 
         email_body = f"""
         Dear {first_name} {last_name},
@@ -836,7 +836,7 @@ def schedule_meeting(applicant_id, job_id):
                 email_body = f"""
                 Dear {first_name} {last_name},
 
-                We are pleased to inform you that you have successfully passed the first stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.
+                We are pleased to inform you that you have successfully passed the first stage of our hiring process for the position of **{job_title} ({job_level})** at AURION.
 
                 🎉 **Congratulations!**
 
@@ -846,7 +846,7 @@ def schedule_meeting(applicant_id, job_id):
                 - **Title:** {meeting_title}
                 - **Date:** {meeting_date}
                 - **Time:** {start_time} - {end_time}
-                - **Location:** Hirevo Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
+                - **Location:** AURION Offices, American University of Beirut (AUB), Bliss Street, Beirut, Lebanon
 
                 Please make sure to arrive at least 10 minutes early and bring:
                 - A copy of your resume
@@ -855,8 +855,8 @@ def schedule_meeting(applicant_id, job_id):
                 We look forward to meeting you in person!
 
                 Warm regards,  
-                **Hirevo HR Team**  
-                hr@hirevo.com
+                **AURION HR Team**  
+                hr@aurion.com
                 """
                 
                 job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{original_job_id}")
@@ -889,7 +889,7 @@ def schedule_meeting(applicant_id, job_id):
                     return redirect(url_for('jobseeker_dashboard'))
 
                 msg = Message(
-                    subject="You're Invited: Next Step in Your Hirevo Application 🎯",
+                    subject="You're Invited: Next Step in Your AURION Application 🎯",
                     recipients=[email],
                     body=email_body
                 )
@@ -1281,7 +1281,7 @@ def submit_answers(interview_id):
             email_body = f"""
             Dear {first_name} {last_name},
 
-            We are pleased to inform you that you have successfully passed the second stage of our hiring process for the position of **{job_title} ({job_level})** at Hirevo.  
+            We are pleased to inform you that you have successfully passed the second stage of our hiring process for the position of **{job_title} ({job_level})** at AURION.  
 
             🎉 **Congratulations!**  
 
@@ -1292,8 +1292,8 @@ def submit_answers(interview_id):
             We appreciate your patience and look forward to continuing the process with you!  
 
             Warm regards,  
-            **Hirevo HR Team**  
-            hr@hirevo.com  
+            **AURION HR Team**  
+            hr@aurion.com  
             """
             msg = Message(
                 subject="Passed the Second Phase – Technical Interview Coming Soon 🎯",
@@ -1319,17 +1319,17 @@ def submit_answers(interview_id):
             email_body = f"""
             Dear {first_name} {last_name},
 
-            Thank you for taking the time to apply for the **{job_title} ({job_level})** position at Hirevo.  
+            Thank you for taking the time to apply for the **{job_title} ({job_level})** position at AURION.  
 
             After careful consideration, we regret to inform you that we have decided to move forward with other candidates whose qualifications more closely match our current needs.  
 
-            We genuinely appreciate your interest in Hirevo and encourage you to apply for future opportunities.  
+            We genuinely appreciate your interest in AURION and encourage you to apply for future opportunities.  
 
             Wishing you the best in your job search and future career endeavors.  
 
             Warm regards,  
-            **Hirevo HR Team**  
-            hr@hirevo.com  
+            **AURION HR Team**  
+            hr@aurion.com  
             """
             msg = Message(
                 subject="Application Update – Thank You for Applying",

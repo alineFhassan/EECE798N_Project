@@ -64,6 +64,7 @@ services:
       - eece-network
     environment:
       - PORT=3001
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
 
   # Job Description API
   job-description-api:
@@ -79,7 +80,7 @@ services:
       - eece-network
     environment:
       - PORT=3002
-
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
   # CV Job Matching API
   cv-job-matching-api:
     stdin_open: true
@@ -94,6 +95,7 @@ services:
       - eece-network
     environment:
       - PORT=3003
+      - HF_TOKEN=${HF_TOKEN}
 
   # Interview Questions API
   interview-questions-api:
@@ -123,6 +125,7 @@ services:
       - eece-network
     environment:
       - PORT=3005
+      - HF_TOKEN=${HF_TOKEN}
   # Prometheus for monitoring
   prometheus:
     image: prom/prometheus:latest

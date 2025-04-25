@@ -2,11 +2,11 @@ from flask import Flask, request, jsonify
 import requests
 import numpy as np
 from typing import List
-
+import os
 app = Flask(__name__)
 
 HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
-HF_TOKEN = "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"  # Secure this token in production
+HF_TOKEN = os.getenv("HF_TOKEN")    # Secure this token in production
 
 def get_embeddings(texts: List[str]) -> List[List[float]]:
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
