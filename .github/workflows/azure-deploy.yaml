@@ -93,12 +93,16 @@ jobs:
 
    
         # Configure ingress
-        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-        helm repo update
-        helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-          --namespace=eece-system \
-          --set controller.replicaCount=2 \
-          --set controller.nodeSelector."kubernetes\.io/os"=linux
+        kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+    
+        # Wait for LoadBalancer IP
+        kubectl wait --namespace ingress-nginx \
+          --for=condition=ready pod \
+          --selector=app.kubernetes.io/component=controller \
+          --timeout=120s
+
+        # Apply your ingress rules
+        kubectl apply -f k8s/networking/ingress.yaml --namespace=eece-system
 
         # Verify deployments
         kubectl rollout status --namespace=eece-system deployment/backend --timeout=300s
