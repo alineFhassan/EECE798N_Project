@@ -23,7 +23,7 @@ spec:
       containers:
       - name: backend
         image: {{DOCKERHUB_USERNAME}}/eece798n-backend:{{IMAGE_TAG}}
-                env:
+        env:
       - name: DB_HOST
         value: mysql-service  # Matches the MySQL service name
       - name: DB_PORT
