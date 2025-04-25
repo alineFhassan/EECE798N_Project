@@ -618,58 +618,150 @@ def format_date_filter(date_str):
         return date_str
 
 # -------- LIST OF APPLICANT APPLIED TO A JOB--------
+# @app.route('/hr_applied_applicant/<int:job_id>')
+# def hr_view_applied_applicant(job_id): 
+#     # Fetch job details --> requirements 
+#     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+#     if job_response.status_code != 200:
+#         flash('Error fetching your offeredt jobs', 'error')
+#         return render_template('hr_view_applied_applicant.html', jobs=[])
+        
+#     job = job_response.json()
+    
+#     # Fetch applicants for this job --> with his match result
+#     applicants_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
+#     if applicants_response.status_code != 200:
+#         flash('Error fetching your applicant', 'error')
+#         return render_template('hr_view_applied_applicant.html', job=[])
+    
+#     applicants_data = []
+#     for application in applicants_response.json().get("applications", []):
+#         # Get applicant details
+#         logging.basicConfig(level=logging.DEBUG)
+#         logger = logging.getLogger(__name__)
+#         logger.debug(f"app: {application}")
+#         user_response = requests.get(f"{BACKEND_API_URL}/get_user/{application['applicant_id']}")
+#         if user_response.status_code != 200:
+#             continue
+            
+#         user = user_response.json()
+#         user_data = user.get('user', {})
+#         # Get applicant CV
+#         cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{application['applicant_id']}")
+#         logger.debug(f"Raw CV response: {cv_response}")
+#         logger.debug(f"cv_response.json(): {cv_response.json()}")
+#         cv_json = cv_response.json()
+#         cv = cv_json.get('cv_data') if cv_response.status_code == 200 and cv_json.get('status') == 'success' else None
+
+#         # Get passed_criteria as a string like '1/6'
+#         match_score_str = application.get("passed_criteria", "0/0")  # Default to '0/0' if key is missing
+#         logger.debug(f"match_score without percent: {match_score_str}")
+
+#         # Split the string into passed and total
+#         passed, total = map(int, match_score_str.split("/"))
+
+#         # Calculate the passed_criteria_percent
+#         passed_criteria_percent = (passed / total) * 100 if total != 0 else 0  # Avoid division by zero
+
+#         # Create the dictionary to include the percentage
+#         match_score = {
+#             "passed_criteria_percent": round(passed_criteria_percent, 2),  # Rounded to 2 decimal places
+#             "passed_criteria": match_score_str  # You can also store the original passed criteria string
+#         }
+
+#         logger.debug(f"match_score with percent: {match_score['passed_criteria_percent']}")
+
+#         applicants_data.append({
+#             'id': user_data.get('id'),
+#             'name': f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}",
+#             'similarity_score': match_score["passed_criteria_percent"],
+#             'exp_years': cv.get('experience_years', 0) if cv else 0,
+#             'email': user_data.get('email'),
+#             'phone_number': user_data.get('phone_number'),
+#             'skills': cv.get('skills', []) if cv else [],
+#             'status': application.get('status'),
+#             'meets_threshold': application.get('meets_threshold'),
+#             'qualified_cv': application.get('qualified_cv')
+#         })
+#     return render_template('hr_view_applied_applicant.html', 
+#                          job=job, 
+#                          applicants=applicants_data)
+
+
+from datetime import datetime
+import logging
+from flask import render_template, flash
+import requests
+
 @app.route('/hr_applied_applicant/<int:job_id>')
-def hr_view_applied_applicant(job_id): 
-    # Fetch job details --> requirements 
+def hr_view_applied_applicant(job_id):
+    # Fetch job details
     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
     if job_response.status_code != 200:
-        flash('Error fetching your offeredt jobs', 'error')
+        flash('Error fetching job details', 'error')
         return render_template('hr_view_applied_applicant.html', jobs=[])
         
     job = job_response.json()
     
-    # Fetch applicants for this job --> with his match result
+    # Fetch applicants for this job
     applicants_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
     if applicants_response.status_code != 200:
-        flash('Error fetching your applicant', 'error')
+        flash('Error fetching applicants', 'error')
         return render_template('hr_view_applied_applicant.html', job=[])
     
     applicants_data = []
+    today = datetime.now().date()
+    
     for application in applicants_response.json().get("applications", []):
         # Get applicant details
-        logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
-        logger.debug(f"app: {application}")
-        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{application['applicant_id']}")
+        logger.debug(f"Application: {application}")
+        
+        # Check for interviews scheduled today or before
+        applicant_id = application['applicant_id']
+        interviews_response = requests.get(f"{BACKEND_API_URL}/get_interviews/{applicant_id}/{job_id}")
+        
+        if interviews_response.status_code == 200:
+            interviews = interviews_response.json().get('interviews', [])
+            has_past_or_current_interview = False
+            
+            for interview in interviews:
+                try:
+                    interview_date = datetime.strptime(interview['date'], "%Y-%m-%d").date()
+                    if interview_date <= today:
+                        has_past_or_current_interview = True
+                        break
+                except Exception as e:
+                    logger.error(f"Error parsing interview date: {e}")
+                    continue
+            
+            if has_past_or_current_interview:
+                logger.debug(f"Skipping applicant {applicant_id} - has interview on or before today")
+                continue
+
+        # Get user details
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
         if user_response.status_code != 200:
             continue
             
         user = user_response.json()
         user_data = user.get('user', {})
+        
         # Get applicant CV
-        cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{application['applicant_id']}")
-        logger.debug(f"Raw CV response: {cv_response}")
-        logger.debug(f"cv_response.json(): {cv_response.json()}")
+        cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
+        logger.debug(f"CV response: {cv_response.json()}")
         cv_json = cv_response.json()
         cv = cv_json.get('cv_data') if cv_response.status_code == 200 and cv_json.get('status') == 'success' else None
 
-        # Get passed_criteria as a string like '1/6'
-        match_score_str = application.get("passed_criteria", "0/0")  # Default to '0/0' if key is missing
-        logger.debug(f"match_score without percent: {match_score_str}")
-
-        # Split the string into passed and total
+        # Calculate match score
+        match_score_str = application.get("passed_criteria", "0/0")
         passed, total = map(int, match_score_str.split("/"))
+        passed_criteria_percent = (passed / total) * 100 if total != 0 else 0
 
-        # Calculate the passed_criteria_percent
-        passed_criteria_percent = (passed / total) * 100 if total != 0 else 0  # Avoid division by zero
-
-        # Create the dictionary to include the percentage
         match_score = {
-            "passed_criteria_percent": round(passed_criteria_percent, 2),  # Rounded to 2 decimal places
-            "passed_criteria": match_score_str  # You can also store the original passed criteria string
+            "passed_criteria_percent": round(passed_criteria_percent, 2),
+            "passed_criteria": match_score_str
         }
-
-        logger.debug(f"match_score with percent: {match_score['passed_criteria_percent']}")
 
         applicants_data.append({
             'id': user_data.get('id'),
@@ -683,10 +775,10 @@ def hr_view_applied_applicant(job_id):
             'meets_threshold': application.get('meets_threshold'),
             'qualified_cv': application.get('qualified_cv')
         })
+    
     return render_template('hr_view_applied_applicant.html', 
                          job=job, 
                          applicants=applicants_data)
-
 # -------- SCHEDULE A MEETING IF MATCH THE BEST SCORE --------
 @app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>', methods=['GET', 'POST'])
 def schedule_meeting(applicant_id, job_id):
