@@ -6,9 +6,11 @@ from flask_mail import Mail, Message
 import re
 import logging
 from prometheus_client import Counter, Histogram, generate_latest
+import requests
 import time
 
 app = Flask(__name__)
+
 # ========================
 #   Prometheus metrics
 # ========================
@@ -47,9 +49,6 @@ ANSWER_EVALUATION_URL= "http://answer-evaluation-api:3005"
 def index():
     return render_template('index.html')
 
-# ===========================================
-#       LOGIN LOGOUT SIGNUP
-# ===========================================
 
 # ========================
 #   LOGIN
@@ -209,9 +208,9 @@ def logout():
 # ===========================================
 #       PROMETHEUS MONITORING
 # ===========================================
-@app.route('/metrics')
-def metrics():
-    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+# @app.route('/metrics')
+# def metrics():
+#     return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 @app.route('/monitoring_dashboard')
 def monitoring_dashboard():
@@ -308,6 +307,7 @@ def upload_cv():
 
     # Always render the template with current has_cv status
     return render_template('upload_cv.html', has_cv=has_cv)
+
 # ========================
 #   APPLICANR PROFILE
 # ========================  
@@ -352,7 +352,7 @@ def jobseeker_profile():
     return redirect(url_for('jobseeker_dashboard'))
 
 # ========================
-#   JOBSEEKER DASHBOARD
+#   Applicant DASHBOARD
 # ========================  
 @app.route('/jobseeker_dashboard', methods=['GET', 'POST'])
 def jobseeker_dashboard():
@@ -617,82 +617,10 @@ def format_date_filter(date_str):
     except:
         return date_str
 
-# -------- LIST OF APPLICANT APPLIED TO A JOB--------
-# @app.route('/hr_applied_applicant/<int:job_id>')
-# def hr_view_applied_applicant(job_id): 
-#     # Fetch job details --> requirements 
-#     job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-#     if job_response.status_code != 200:
-#         flash('Error fetching your offeredt jobs', 'error')
-#         return render_template('hr_view_applied_applicant.html', jobs=[])
-        
-#     job = job_response.json()
-    
-#     # Fetch applicants for this job --> with his match result
-#     applicants_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
-#     if applicants_response.status_code != 200:
-#         flash('Error fetching your applicant', 'error')
-#         return render_template('hr_view_applied_applicant.html', job=[])
-    
-#     applicants_data = []
-#     for application in applicants_response.json().get("applications", []):
-#         # Get applicant details
-#         logging.basicConfig(level=logging.DEBUG)
-#         logger = logging.getLogger(__name__)
-#         logger.debug(f"app: {application}")
-#         user_response = requests.get(f"{BACKEND_API_URL}/get_user/{application['applicant_id']}")
-#         if user_response.status_code != 200:
-#             continue
-            
-#         user = user_response.json()
-#         user_data = user.get('user', {})
-#         # Get applicant CV
-#         cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{application['applicant_id']}")
-#         logger.debug(f"Raw CV response: {cv_response}")
-#         logger.debug(f"cv_response.json(): {cv_response.json()}")
-#         cv_json = cv_response.json()
-#         cv = cv_json.get('cv_data') if cv_response.status_code == 200 and cv_json.get('status') == 'success' else None
 
-#         # Get passed_criteria as a string like '1/6'
-#         match_score_str = application.get("passed_criteria", "0/0")  # Default to '0/0' if key is missing
-#         logger.debug(f"match_score without percent: {match_score_str}")
-
-#         # Split the string into passed and total
-#         passed, total = map(int, match_score_str.split("/"))
-
-#         # Calculate the passed_criteria_percent
-#         passed_criteria_percent = (passed / total) * 100 if total != 0  # Avoid division by zero
-
-#         # Create the dictionary to include the percentage
-#         match_score = {
-#             "passed_criteria_percent": round(passed_criteria_percent, 2),  # Rounded to 2 decimal places
-#             "passed_criteria": match_score_str  # You can also store the original passed criteria string
-#         }
-
-#         logger.debug(f"match_score with percent: {match_score['passed_criteria_percent']}")
-
-#         applicants_data.append({
-#             'id': user_data.get('id'),
-#             'name': f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}",
-#             'similarity_score': match_score["passed_criteria_percent"],
-#             'exp_years': cv.get('experience_years', 0) if cv else 0,
-#             'email': user_data.get('email'),
-#             'phone_number': user_data.get('phone_number'),
-#             'skills': cv.get('skills', []) if cv else [],
-#             'status': application.get('status'),
-#             'meets_threshold': application.get('meets_threshold'),
-#             'qualified_cv': application.get('qualified_cv')
-#         })
-#     return render_template('hr_view_applied_applicant.html', 
-#                          job=job, 
-#                          applicants=applicants_data)
-
-
-from datetime import datetime
-import logging
-from flask import render_template, flash
-import requests
-
+# ===========================
+#  VIEW APPLIED APPLICANTS
+# ==========================  
 @app.route('/hr_applied_applicant/<int:job_id>')
 def hr_view_applied_applicant(job_id):
     # Fetch job details
@@ -779,7 +707,10 @@ def hr_view_applied_applicant(job_id):
     return render_template('hr_view_applied_applicant.html', 
                          job=job, 
                          applicants=applicants_data)
-## reject
+
+# ===========================
+#   REJECT APPLICANT
+# ==========================  
 @app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
 def reject_applicant(applicant_id, job_id):
     try:
@@ -888,7 +819,10 @@ def reject_applicant(applicant_id, job_id):
         logger.error(f"Error rejecting applicant: {str(e)}")
         flash('An error occurred while processing the rejection', 'error')
         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
-# -------- SCHEDULE A MEETING IF MATCH THE BEST SCORE --------
+
+# ===========================
+#   SCHEDULE MEETING
+# ==========================  
 @app.route('/schedule_meeting/<int:applicant_id>/<int:job_id>', methods=['GET', 'POST'])
 def schedule_meeting(applicant_id, job_id):
     if 'user_id' not in session:
@@ -1071,8 +1005,10 @@ def schedule_meeting(applicant_id, job_id):
                          meetings=meeting_data, 
                          applicant_id=original_applicant_id,
                          job_id=original_job_id)
-# -------- DISPLAY ALL JOB OFFERED  --------
-### Offered Job List ###
+
+# ===========================
+#   VIEW OFFERED JOBS
+# ==========================  
 @app.route('/offered_job')
 def offered_job():
     if 'user_id' not in session:
@@ -1106,26 +1042,9 @@ def offered_job():
         flash(f'Error loading dashboard: {str(e)}', 'error')
         return render_template('offered_job.html', jobs=[], stats={})
     
-# @app.route('/offered_job')
-# def offered_job():
-#     if 'user_id' not in session:
-#         flash('Please login', 'error')
-#         return redirect(url_for('login'))
-    
-#     try:
-#         job_offer_response = requests.get(f"{BACKEND_API_URL}/get_offered_job")
-        
-#         if job_offer_response.status_code != 200:
-#             flash('Error fetching jobs', 'error')
-#             return render_template('offered_job.html', jobs=[])
-        
-#         jobs = job_offer_response.json().get('jobs', [])
-#         return render_template('offered_job.html', jobs=jobs)
-    
-#     except Exception as e:
-#         flash(f'Error loading jobs: {str(e)}', 'error')
-#         return render_template('offered_job.html', jobs=[])
-# -------- DISPLAY QUESTION FOR INTERVIEW AND FILTER BY DAY --------
+# ===========================
+#   wEEKLY QUESTIONS
+# ==========================  
 @app.route('/weekly_questions')
 def weekly_questions():    
     try:
@@ -1235,7 +1154,9 @@ def weekly_questions():
                                day_of_week=today.strftime('%A'))
 
 
-# -------- DISPLAY INTERVIEW QUESTIONS AND THEIR ANSWERS  --------
+# ===========================
+#   ANSWER INTERVIEW QUESTION
+# ==========================  
 @app.route('/answer_question/<int:question_id>')
 def answer_question(question_id):
     print("submit", question_id, flush=True)
@@ -1276,7 +1197,9 @@ def answer_question(question_id):
         flash(f'Error loading questions: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
 
-# -------- SUBMIT ANSWERS OF INTERVIEW QUESTION  --------
+# ===========================
+#   SUBMIT ANSWERS
+# ==========================  
 @app.route('/submit_answers/<int:interview_id>', methods=['POST'])
 def submit_answers(interview_id):
     """Process the submitted answers for multiple questions."""
@@ -1484,135 +1407,6 @@ def submit_answers(interview_id):
                 flash('Answer ID not found in the response', 'error')
         else:
             flash('Error fetching interview answers', 'error')
-#             offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job") 
-
-#             if offered_job_response.status_code != 201:
-#                 flash(f'Error getting job', 'error')  
-#                 return redirect(url_for('weekly_questions'))
-
-#             jobs = offered_job_response.json().get('jobs') 
-#             eval_all_response = requests.post(f"{JOB_MATCHER_ALL_URL}/evaluate-multi-job", json={
-#                'interview_questions': questions, 
-#                'interview_answers': answers,
-#                 'jobs': jobs,
-               
-#             })
-#             best_match = eval_all_response.json().get('best_match')
-#             best_match = eval_all_response.json().get('best_match', {})
-
-#             # Extract overall scores
-#             overall_scores = best_match.get('overall_scores', {})
-#             requirements_scores = overall_scores.get("requirements", {})
-#             responsibilities_scores = overall_scores.get("responsibilities", {})
-
-#             # Extract average_score_all_answers with default values
-#             req_avg = requirements_scores.get("average_score_all_answers", 0.0)
-#             resp_avg = responsibilities_scores.get("average_score_all_answers", 0.0)
-
-#             # Calculate combined average
-#             final_average = (req_avg + resp_avg) / 2
-
-          
-#             if final_average < 50:
-#                 email_body = f"""
-#                 Dear {first_name} {last_name},
-
-#                 Thank you for your interest in the **{job_title} ({job_level})** position at Hirevo.
-
-#                 After careful consideration, we regret to inform you that at this time, we will not be moving forward with your application for this or any current openings.  
-
-#                 Please know that this decision was not easy, and it does not reflect negatively on your qualifications or experience. We encourage you to apply again in the future as new opportunities arise.  
-
-#                 We sincerely appreciate the time and effort you invested in the application process.  
-
-#                 Wishing you the best in your job search and future endeavors.  
-
-#                 Warm regards,  
-#                 **Hirevo HR Team**  
-#                 hr@hirevo.com  
-#                 """
-
-#                 msg = Message(
-#                     subject="Application Update from Hirevo",
-#                     recipients=[email],
-#                     body=email_body
-#                 )
-
-#                 mail.send(msg)
-#             else:
-#                 cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
-#                 cv_data = cv_response.json().get('cv_data', {})
-
-#                 # final descision
-#                 FINAL_DECISION_URL_response = requests.post(f"{FINAL_DECISION_URL}/final-decision", json={
-#                'cv_data': cv_data, 
-#                 'jobs': jobs,
-               
-#                  }) 
-#                 evaluation = FINAL_DECISION_URL_response.json().get('evaluation', {})
-
-#                 # Extract and clean percentage_met
-#                 percentage_str = evaluation.get('percentage_met', '0%')
-#                 percentage_number = float(percentage_str.strip('%'))
-
-#                 # Extract final_reason
-#                 final_reason = evaluation.get('final_reason', 'No reason provided')
-                
-#                 job_title_best = eval_all_response.json().get('job_title')
-#                 job_level_best = eval_all_response.json().get('job_level')
-#                 evaluation =  eval_all_response.json().get('job_level')
-#                 if percentage_number >= 50:
-#                     email_body = f"""
-#                     Dear {first_name} {last_name},
-
-#                     Thank you for taking part in our hiring process.
-
-#                     While you were not selected for the position of **{job_title} ({job_level})**, we’re excited to let you know that you've been identified as a strong candidate for another opportunity at Hirevo:  
-#                     **{job_title_best} ({job_level_best})**.
-
-
-#                     We believe this role better aligns with your background and skills, and we’re pleased to proceed with your application under this new track.
-
-#                     If you have any questions in the meantime, feel free to reach out.
-
-#                     We’re looking forward to moving ahead with you!
-
-#                     Warm regards,  
-#                     **Hirevo HR Team**  
-#                     hr@hirevo.com  
-#                     """
-
-#                     msg = Message(
-#                         subject="New Opportunity Match at Hirevo 🎯",
-#                         recipients=[email],
-#                         body=email_body
-#                     )
-
-#                     mail.send(msg)
-#                     # Save the answer to the database
-
-#                     save_response = requests.post(f"{BACKEND_API_URL}/add_best_match", json={
-#                         "applicant_id": applicant_id,
-#                         'job_id': job_id,
-#                         "evaluation": evaluation
-
-#                     })
-#                 else:
-#                     email_body = """"
-#                     Dear {first_name} {last_name},
-
-#                     Thank you for taking the time to interview with us for the {job_title} position at Hirevo. We appreciate the effort you put into the process and the opportunity to learn more about your skills and experience.
-
-#                     After careful consideration, we regret to inform you that your profile does not currently meet the specific requirements for this role or other open positions at Hirevo. {final_reason}
-
-#                     While we don’t have a match for you at this time, we encourage you to stay connected with us for future opportunities that may align better with your background.
-
-#                     We sincerely appreciate your interest in joining our team and wish you the best in your job search.
-
-#                     Warm regards,
-#                     Hirevo HR Team
-#                     hr@hirevo.com
-#                     """
 
         flash('Your answers have been submitted successfully', 'success')
         return redirect(url_for('weekly_questions'))
@@ -1621,7 +1415,9 @@ def submit_answers(interview_id):
         flash(f'Error processing answers: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
 
-# # -------- VIEW INTERVIEW ANSWERS AND THEIR QUESTIONS  --------
+# ===========================
+#   VIEW ANSWER
+# ==========================  
 @app.route('/view_answer/<int:question_id>')
 def view_answer(question_id):
     """View a previously submitted answer."""
@@ -1682,13 +1478,6 @@ def view_answer(question_id):
         flash(f'Error loading answer: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
 
-import logging
-
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,  # Set the logging level to DEBUG
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=3000)
