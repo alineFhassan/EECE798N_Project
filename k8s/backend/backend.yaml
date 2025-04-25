@@ -24,18 +24,23 @@ spec:
       - name: backend
         image: {{DOCKERHUB_USERNAME}}/eece798n-backend:{{IMAGE_TAG}}
         env:
-      - name: DB_HOST
-        value: mysql-service  # Matches the MySQL service name
-      - name: DB_PORT
-        value: "3306"
-      - name: DB_NAME
-        value: eece798
-      - name: DB_USER
-        valueFrom:
-          secretKeyRef:
-            name: backend-secrets
-            key: db-user
-
+        - name: DB_HOST
+          value: mysql-service  # Matches the MySQL service name
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          value: eece798
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: db-user
+              
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: db-password
         ports:
         - containerPort: 5000
         resources:
