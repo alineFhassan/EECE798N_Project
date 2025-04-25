@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: {{DOCKERHUB_USERNAME}}/eece798n-backend:latest
+        image: {{DOCKERHUB_USERNAME}}/eece798n-backend:{{IMAGE_TAG}}
         envFrom:
         - secretRef:
             name: backend-secrets
