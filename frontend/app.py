@@ -785,71 +785,67 @@ def schedule_meeting(applicant_id, job_id):
     if 'user_id' not in session:
         flash('Please login', 'error')
         return redirect(url_for('login'))
-
+    
+    # Store original IDs before they might get overwritten
+    original_applicant_id = applicant_id
+    original_job_id = job_id
+    
+    print(f"Original IDs - Applicant: {original_applicant_id}, Job: {original_job_id}", flush=True)
+    
     if request.method == 'POST':
         meeting_id = request.form.get('meeting_id', '')
         meeting_title = request.form['title']
         meeting_date = request.form['date']
         start_time = request.form['start_time']
         end_time = request.form['end_time']
-        #Get applicant_id and job_id from form
-        form_applicant_id = request.form.get('applicant_id', '')
-        form_job_id = request.form.get('job_id', '')
-        print(meeting_title)
+        
+        print(f"Meeting Title: {meeting_title}", flush=True)
     
-    # Check if we're updating an existing meeting
+        # Check if we're updating an existing meeting
         if meeting_id:
-            print(meeting_id)
+            print(f"Updating meeting ID: {meeting_id}", flush=True)
              
             updated_meeting = {
-            'meeting_id': meeting_id,
-            'meeting_title': request.form.get('title', ''),
-            'meeting_date': request.form.get('date', ''),
-            'start_time': request.form.get('start_time', ''),
-            'end_time': request.form.get('end_time', ''),
-            'applicant_id': request.form.get('applicant_id', ''),
-            'job_id': request.form.get('job_id', '')
+                'meeting_id': meeting_id,
+                'meeting_title': meeting_title,
+                'meeting_date': meeting_date,
+                'start_time': start_time,
+                'end_time': end_time,
+                'applicant_id': original_applicant_id,  # Use original ID
+                'job_id': original_job_id              # Use original ID
             }
+            
             if meeting_title == "HR Interview":
-                # Make the API call to update the meeting in your database
                 update_response = requests.put(f"{BACKEND_API_URL}/update_interview/{meeting_id}", json=updated_meeting)
-                if update_response.status_code == 200:
-                    print('Meeting updated successfully!')
-                    flash('Meeting updated successfully!', 'success')
             else:
-                  update_response = requests.put(f"{BACKEND_API_URL}/update_technical_interview/{meeting_id}", json=updated_meeting)
-            # Update existing meeting
-            # In a real app, you would update the meeting in your database
-            print('Meeting updated successfully!')
-            flash('Meeting updated successfully!', 'success')
+                update_response = requests.put(f"{BACKEND_API_URL}/update_technical_interview/{meeting_id}", json=updated_meeting)
+                
+            if update_response.status_code == 200:
+                print('Meeting updated successfully!', flush=True)
+                flash('Meeting updated successfully!', 'success')
+            else:
+                flash('Failed to update meeting', 'error')
         else:
             if meeting_title == "HR Interview":
-                print("schedule is submitted", flush=True)
-               # Create new meeting
-            
-                user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
+                print("HR Interview schedule is being submitted", flush=True)
+                user_response = requests.get(f"{BACKEND_API_URL}/get_user/{original_applicant_id}")
                 if user_response.status_code != 200:
                     flash('Error fetching user data', 'error')
-                    return redirect(url_for('schedule_meeting'))
+                    return redirect(url_for('schedule_meeting', applicant_id=original_applicant_id, job_id=original_job_id))
                 user_data = user_response.json().get('user', {})
 
-                offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-                if  offered_job_response.status_code != 200:
+                offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{original_job_id}")
+                if offered_job_response.status_code != 200:
                     flash('Error fetching job data', 'error')
-                    return redirect(url_for('schedule_meeting'))
-                offered_job_response = user_response.json().get('', {})
-
+                    return redirect(url_for('schedule_meeting', applicant_id=original_applicant_id, job_id=original_job_id))
+                offered_job_data = offered_job_response.json().get('job', {})
                 
-                # Assume you've extracted this data:
                 first_name = user_data.get('first_name', '')
                 last_name = user_data.get('last_name', '')
                 email = user_data.get('email', '')
-                job_title =  offered_job_response.get('job_title', '')  
-                job_level = offered_job_response.get('job_level', '')  
+                job_title = offered_job_data.get('job_title', '')  
+                job_level = offered_job_data.get('job_level', '')  
         
-        
-                # Construct a professional message body
-            # Construct email body for in-person interview
                 email_body = f"""
                 Dear {first_name} {last_name},
 
@@ -869,39 +865,38 @@ def schedule_meeting(applicant_id, job_id):
                 - A copy of your resume
                 - A valid ID for entry
 
-                If you have any questions or need to reschedule, please reply to this email or contact us directly.
-
                 We look forward to meeting you in person!
 
                 Warm regards,  
                 **Hirevo HR Team**  
                 hr@hirevo.com
                 """
-                job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+                
+                job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{original_job_id}")
                 if job_response.status_code != 200:
                     flash('Error fetching job details', 'error')
                     return redirect(url_for('jobseeker_dashboard'))
                         
                 job_data = job_response.json().get('job', {})
                         
-                        # check if the status of job is open
                 if job_data.get('status', '').lower() != 'open':
                     flash('This job is no longer available', 'error')
                     return redirect(url_for('jobseeker_dashboard'))
                     
-                cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
+                cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{original_applicant_id}")
                 cv_data = cv_response.json().get('cv_data', {})
                 generate_question_response = requests.post(
-                            f"{INTERVIEW_QUESTIONS_URL}/generate-questions",
-                            json={
-                                'cv': cv_data,
-                                'job': job_data
-                            }
-                        )
+                    f"{INTERVIEW_QUESTIONS_URL}/generate-questions",
+                    json={
+                        'cv': cv_data,
+                        'job': job_data
+                    }
+                )
+                
                 try:
                     questions_data = generate_question_response.json()
                 except ValueError as e:
-                    print("Failed to decode questions JSON:", e , flush=True)
+                    print("Failed to decode questions JSON:", e, flush=True)
                     print("Raw response:", generate_question_response.text, flush=True)
                     flash('Failed to parse questions', 'error')
                     return redirect(url_for('jobseeker_dashboard'))
@@ -914,53 +909,44 @@ def schedule_meeting(applicant_id, job_id):
 
                 save_interview = requests.post(f"{BACKEND_API_URL}/add_interview", json={
                     'interview': {
-                        "applicant_id": applicant_id,
-                        "job_id": job_id,
-                        'meeting_title': request.form['title'],
-                        'meeting_date': request.form['date'],
-                        'start_time': request.form['start_time'],
-                        'end_time': request.form['end_time']
+                        "applicant_id": original_applicant_id,
+                        "job_id": original_job_id,
+                        'meeting_title': meeting_title,
+                        'meeting_date': meeting_date,
+                        'start_time': start_time,
+                        'end_time': end_time
                     },
                     'questions': questions_data
                 })
+                
                 if save_interview.status_code != 201:
-                    print("Add interview failed:", save_interview.status_code, save_interview.text , flush=True)
+                    print("Add interview failed:", save_interview.status_code, save_interview.text, flush=True)
                     flash('Failed to save interview', 'error')
                     return redirect(url_for('jobseeker_dashboard'))
 
-                print("Sending email to", email, flush=True)
                 mail.send(msg)
-                print("Email sent!", flush=True)
-                # Redirect to prevent form resubmission
-                return redirect(url_for('schedule_meeting', 
-                                    applicant_id=applicant_id, 
-                                job_id=job_id))  
-            else:
-                   # Create new meeting
-            
-                user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
+                flash('HR Interview scheduled successfully!', 'success')
+                
+            else:  # Technical Interview
+                print("Technical Interview schedule is being submitted", flush=True)
+                user_response = requests.get(f"{BACKEND_API_URL}/get_user/{original_applicant_id}")
                 if user_response.status_code != 200:
                     flash('Error fetching user data', 'error')
-                    return redirect(url_for('schedule_meeting'))
+                    return redirect(url_for('schedule_meeting', applicant_id=original_applicant_id, job_id=original_job_id))
                 user_data = user_response.json().get('user', {})
 
-                offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-                if  offered_job_response.status_code != 200:
+                offered_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{original_job_id}")
+                if offered_job_response.status_code != 200:
                     flash('Error fetching job data', 'error')
-                    return redirect(url_for('schedule_meeting'))
-                offered_job_response = user_response.json().get('', {})
-
+                    return redirect(url_for('schedule_meeting', applicant_id=original_applicant_id, job_id=original_job_id))
+                offered_job_data = offered_job_response.json().get('job', {})
                 
-                # Assume you've extracted this data:
                 first_name = user_data.get('first_name', '')
                 last_name = user_data.get('last_name', '')
                 email = user_data.get('email', '')
-                job_title =  offered_job_response.get('job_title', '')  
-                job_level = offered_job_response.get('job_level', '')  
+                job_title = offered_job_data.get('job_title', '')  
+                job_level = offered_job_data.get('job_level', '')  
         
-        
-            # Construct a professional message body
-            # Construct email body for in-person interview
                 email_body = f"""
                 Dear {first_name} {last_name},
 
@@ -984,27 +970,13 @@ def schedule_meeting(applicant_id, job_id):
                 - A laptop (if applicable or requested)
                 - Any supporting materials or portfolios you wish to share
 
-                Make sure to arrive at least 10 minutes early. If you have any questions or need to reschedule, feel free to reply to this email or contact us directly.
-
-                We’re excited to dive deeper into your skills and experience!
+                We're excited to dive deeper into your skills and experience!
 
                 Best regards,  
                 **Hirevo HR Team**  
                 hr@hirevo.com
                 """
-                job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-                if job_response.status_code != 200:
-                    flash('Error fetching job details', 'error')
-                    return redirect(url_for('jobseeker_dashboard'))
-                        
-                job_data = job_response.json().get('job', {})
-                        
-                        # check if the status of job is open
-                if job_data.get('status', '').lower() != 'open':
-                    flash('This job is no longer available', 'error')
-                    return redirect(url_for('jobseeker_dashboard'))
                 
-
                 msg = Message(
                     subject="You're Invited: Technical Interview at Hirevo 🧠",
                     recipients=[email],
@@ -1013,184 +985,68 @@ def schedule_meeting(applicant_id, job_id):
 
                 save_interview = requests.post(f"{BACKEND_API_URL}/add_technical_interview", json={
                     'interview': {
-                        "applicant_id": applicant_id,
-                        "job_id": job_id,
-                        'meeting_title': request.form['title'],
-                        'meeting_date': request.form['date'],
-                        'start_time': request.form['start_time'],
-                        'end_time': request.form['end_time']
+                        "applicant_id": original_applicant_id,
+                        "job_id": original_job_id,
+                        'meeting_title': meeting_title,
+                        'meeting_date': meeting_date,
+                        'start_time': start_time,
+                        'end_time': end_time
                     }
                 })
 
                 mail.send(msg)
-                return redirect(url_for('schedule_meeting', 
-                                    applicant_id=applicant_id, 
-                                job_id=job_id))  
-    
+                flash('Technical Interview scheduled successfully!', 'success')
 
+        return redirect(url_for('schedule_meeting', 
+                            applicant_id=original_applicant_id, 
+                            job_id=original_job_id))
+
+    # GET request handling
     get_interview_response = requests.get(f"{BACKEND_API_URL}/get_interview")
     stats_response = requests.get(f"{BACKEND_API_URL}/get_dashboard_stats")
     stats = stats_response.json().get('stats', {}) if stats_response.status_code == 200 else {}
+    
     if get_interview_response.status_code != 200:
-            flash('Error fetching interviews', 'error')
-            return render_template('schedule_interview.html', applicant_id=applicant_id, job_id=job_id)
+        flash('Error fetching interviews', 'error')
+        return render_template('schedule_interview.html', 
+                             applicant_id=original_applicant_id, 
+                             job_id=original_job_id)
 
     interviews = get_interview_response.json().get('interviews', [])
-
     meeting_data = []
 
     for interview in interviews:
-            applicant_id = interview.get('applicant_id')
-            job_id = interview.get('job_id')
+        current_applicant_id = interview.get('applicant_id')
+        current_job_id = interview.get('job_id')
 
-            # Skip if missing data
-            if not applicant_id or not job_id:
-                continue
+        if not current_applicant_id or not current_job_id:
+            continue
 
-            # Get applicant info
-            user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-            if user_response.status_code != 200:
-                continue
-            user_data = user_response.json()
-            full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
-
-            # Get job info
-            job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-            if job_response.status_code != 200:
-                continue
-            job_data = job_response.json()
-            job_title = job_data.get('job_title', 'Unknown Job')
-
-            # Append full info per interview
-            meeting_data.append({
-                "applicant_name": full_name,
-                "job_title": job_title,
-                "meeting_title": interview.get('meeting_title', 'Untitled'),
-                "meeting_date": interview.get('meeting_date', ''),
-                "start_time": interview.get('start_time', ''),
-                "end_time": interview.get('end_time', '')
-            })
-
-
-    # Send all interview data to the template
-    return render_template('schedule_interview.html', meetings=meeting_data, applicant_id=applicant_id,job_id =job_id)
-
-# -------- SEND REJECT EMAIL IF DOESN'T MATCH BEST SCORE --------
-
-logging.basicConfig(level=logging.DEBUG,  # Change to INFO or ERROR as needed
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-
-logger = logging.getLogger()
-
-@app.route('/reject-applicant/<int:applicant_id>/<int:job_id>')
-def reject_applicant(applicant_id, job_id):
-    try:
-        # Log the start of the process
-        logger.info(f"Rejecting applicant {applicant_id} for job {job_id}")
-
-        # Get applicant details
-        logger.debug(f"Fetching applicant details for applicant_id: {applicant_id}")
-        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-        
-        # Debugging: Check if the response status is OK
-        logger.debug(f"Applicant data response status: {user_response.status_code}")
+        user_response = requests.get(f"{BACKEND_API_URL}/get_user/{current_applicant_id}")
         if user_response.status_code != 200:
-            flash('Error fetching applicant data', 'error')
-            return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
-        
+            continue
         user_data = user_response.json()
-        logger.debug(f"Applicant data fetched: {user_data}")
+        full_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}"
 
-        # Access the 'user' key in the response data
-        user_info = user_data.get('user', {})
-
-        first_name = user_info.get('first_name', '')
-        last_name = user_info.get('last_name', '')
-        email = user_info.get('email', '')
-
-        logger.info(f"Applicant Name: {first_name} {last_name}, Email: {email}")
-
-        # Get job details
-        logger.debug(f"Fetching job details for job_id: {job_id}")
-        job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
-        
-        # Debugging: Check if the response status is OK
-        logger.debug(f"Job data response status: {job_response.status_code}")
+        job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{current_job_id}")
         if job_response.status_code != 200:
-            flash('Error fetching job data', 'error')
-            return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
-        
+            continue
         job_data = job_response.json()
-        logger.debug(f"Job data fetched: {job_data}")
-        
-        job_title = job_data.get('job_title', 'the position')
-        company_name = "Hirevo"  # You might want to fetch this from your database
-        logger.info(f"Job Title: {job_title}, Company Name: {company_name}")
+        job_title = job_data.get('job_title', 'Unknown Job')
 
-        email_body = f"""
-        Dear {first_name} {last_name},
-
-        Thank you for taking the time to apply for the {job_title} position at {company_name} 
-        and for sharing your qualifications with us.
-
-        After careful consideration, we regret to inform you that we have decided to move forward 
-        with other candidates whose qualifications more closely match our current needs.
-
-        We genuinely appreciate your interest in {company_name} and the effort you put into your 
-        application. This decision was not easy to make, as we were impressed with many aspects 
-        of your background.
-
-        We encourage you to apply for future openings that may be a better fit for your skills 
-        and experience. We'll keep your resume on file and will reach out if any suitable 
-        opportunities arise.
-
-        We wish you the best in your job search and future career endeavors.
-
-        Sincerely,
-        The Hiring Team
-        {company_name}
-        hr@{company_name.lower()}.com
-        """
-
-        # Log email content for debugging
-        logger.debug(f"Sending rejection email: {email_body}")
-
-        # Send email (assuming you have Flask-Mail configured)
-        msg = Message(
-            subject="Application Follow-up",
-            recipients=[email],
-            body=email_body
-        )
-        
-        # Attempt to send the email and catch any errors
-        try:
-            logger.info("Attempting to send the rejection email...")
-            mail.send(msg)
-            logger.info("Email sent successfully.")
-        except Exception as e:
-            logger.error(f"Error sending email: {str(e)}")
-
-        # Update applicant status in the database (optional)
-        # Uncomment the following lines if you want to update the status in the backend
-        update_response = requests.put(f"{BACKEND_API_URL}/update_application_status", json={
-            'applicant_id': applicant_id,
-            'job_id': job_id,
-            'status': 'rejected'
+        meeting_data.append({
+            "applicant_name": full_name,
+            "job_title": job_title,
+            "meeting_title": interview.get('meeting_title', 'Untitled'),
+            "meeting_date": interview.get('meeting_date', ''),
+            "start_time": interview.get('start_time', ''),
+            "end_time": interview.get('end_time', '')
         })
 
-        if update_response.status_code == 200:
-            logger.info('Applicant has been rejected and status updated successfully')
-        else:
-            logger.error(f"Failed to update status: {update_response.json().get('message', 'Unknown error')}")
-
-        # Redirect to the HR view with the updated applicant status
-        return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
-
-    except Exception as e:
-        logger.error(f"Error rejecting applicant: {str(e)}")
-        flash('An error occurred while processing the rejection', 'error')
-        return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
-
+    return render_template('schedule_interview.html', 
+                         meetings=meeting_data, 
+                         applicant_id=original_applicant_id,
+                         job_id=original_job_id)
 # -------- DISPLAY ALL JOB OFFERED  --------
 ### Offered Job List ###
 @app.route('/offered_job')
