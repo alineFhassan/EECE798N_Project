@@ -1277,7 +1277,7 @@ def submit_answers(interview_id):
         job_level = offered_job_response.get('job_level', '')  
 
         # Get all answers
-        if final_average >= 0.1:
+        if final_average >= 0.4:
             email_body = f"""
             Dear {first_name} {last_name},
 

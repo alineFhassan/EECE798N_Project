@@ -17,39 +17,6 @@
   </header>
 
   <main class="dashboard-main">
-    <!-- Overall Evaluation Card -->
-    <div class="evaluation-card">
-      <div class="evaluation-header">
-        <h2>Overall Evaluation</h2>
-        <div class="evaluation-score {{ 'good' if answer.evaluation >= 80 else 'average' if answer.evaluation >= 60 else 'poor' }}">
-          {{ answer.evaluation }}%
-        </div>
-      </div>
-      <div class="evaluation-progress">
-        <div class="progress-bar">
-          <div class="progress-fill {{ 'good' if answer.evaluation >= 80 else 'average' if answer.evaluation >= 60 else 'poor' }}" style="width: {{ answer.evaluation }}%;"></div>
-        </div>
-      </div>
-      <div class="evaluation-summary">
-        {% if answer.evaluation >= 80 %}
-          <div class="summary-message good">
-            <i class="fas fa-check-circle"></i>
-            <span>Excellent performance! The answers demonstrate strong understanding and expertise.</span>
-          </div>
-        {% elif answer.evaluation >= 60 %}
-          <div class="summary-message average">
-            <i class="fas fa-info-circle"></i>
-            <span>Good performance with some areas for improvement.</span>
-          </div>
-        {% else %}
-          <div class="summary-message poor">
-            <i class="fas fa-exclamation-circle"></i>
-            <span>Needs significant improvement. Review the feedback carefully.</span>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-
     <!-- Questions and Answers -->
     <div class="qa-container">
       <h2 class="qa-title">Questions & Answers</h2>

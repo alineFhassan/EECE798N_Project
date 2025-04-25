@@ -111,6 +111,7 @@ services:
       - eece-network
     environment:
       - PORT=3004
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
   # Answer Evaluation API
   answer-evaluation-api:
     stdin_open: true
