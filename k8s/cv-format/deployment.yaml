@@ -4,7 +4,7 @@ metadata:
   name: cv-format
   namespace: eece-system
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: cv-format
@@ -36,11 +36,11 @@ spec:
         - containerPort: 3001
         resources:
           limits:
-            memory: "2Gi"
-            cpu: "2000m"
+            memory: "150Mi"
+            cpu: "40m"
           requests:
-            memory: "1Gi"
-            cpu: "1000m"
+            memory: "128Mi"
+            cpu: "30m"
 ---
 apiVersion: v1
 kind: Service

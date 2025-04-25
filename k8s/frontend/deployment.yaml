@@ -4,7 +4,7 @@ metadata:
   name: frontend
   namespace: eece-system
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -38,11 +38,11 @@ spec:
         - containerPort: 3000
         resources:
           limits:
-            memory: "1Gi"
-            cpu: "1000m"
+            memory: "148Mi"
+            cpu: "100m"
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "118Mi"
+            cpu: "80m"
         livenessProbe:
           httpGet:
             path: /health

@@ -10,7 +10,7 @@ spec:
       team: frontend
   resources:
     requests:
-      memory: 400Mi
+      memory: 110Mi
   enableAdminAPI: false
 
 ---

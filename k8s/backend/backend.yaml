@@ -4,7 +4,7 @@ metadata:
   name: backend
   namespace: eece-system
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -22,19 +22,34 @@ spec:
     spec:
       containers:
       - name: backend
-        image: your-registry/eece798n-backend:latest
-        envFrom:
-        - secretRef:
-            name: backend-secrets
+        image: {{DOCKERHUB_USERNAME}}/eece798n-backend:{{IMAGE_TAG}}
+        env:
+        - name: DB_HOST
+          value: mysql-service  # Matches the MySQL service name
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          value: eece798
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: db-user
+              
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: db-password
         ports:
         - containerPort: 5000
         resources:
           requests:
-            cpu: "200m"  # Reduced from 500m
-            memory: "256Mi"
+            cpu: "70m"  # Reduced from 500m
+            memory: "128Mi"
           limits:
-            cpu: "500m"  # Reduced from 1000m
-            memory: "512Mi"
+            cpu: "90m"  # Reduced from 1000m
+            memory: "150Mi"
         livenessProbe:
           httpGet:
             path: /health

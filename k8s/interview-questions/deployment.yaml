@@ -4,7 +4,7 @@ metadata:
   name: interview-questions
   namespace: eece-system
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: interview-questions
