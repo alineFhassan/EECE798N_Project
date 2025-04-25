@@ -124,44 +124,44 @@
         visibleCount++;
       }
     }
-
     function filterJobs() {
-      const searchTerm = jobSearch.value.toLowerCase();
-      const experienceLevel = experienceFilter.value;
+  const searchTerm = jobSearch.value.toLowerCase();
+  const experienceLevel = experienceFilter.value;
 
-      let visibleCount = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const title = rows[i].getAttribute('data-title').toLowerCase();
+    const company = rows[i].getAttribute('data-company').toLowerCase();
+    const experience = parseFloat(rows[i].getAttribute('data-experience'));
 
-      for (let i = 0; i < rows.length; i++) {
-        const title = rows[i].getAttribute('data-title');
-        const company = rows[i].getAttribute('data-company');
-        const experience = parseFloat(rows[i].getAttribute('data-experience'));
+    const titleMatch = title.includes(searchTerm);
+    const companyMatch = company.includes(searchTerm);
 
-        const titleMatch = title.includes(searchTerm);
-        const companyMatch = company.includes(searchTerm);
-
-        let experienceMatch = true;
-        if (experienceLevel !== '') {
-          if (experienceLevel.includes('-')) {
-            const [min, max] = experienceLevel.split('-').map(Number);
-            experienceMatch = experience >= min && experience <= max;
-          } else if (experienceLevel.endsWith('+')) {
-            const min = parseInt(experienceLevel);
-            experienceMatch = experience >= min;
-          }
-        }
-
-        if ((titleMatch || companyMatch) && experienceMatch) {
-          rows[i].style.display = '';
-          visibleCount++;
-        } else {
-          rows[i].style.display = 'none';
-        }
+    let experienceMatch = true;
+    if (experienceLevel !== '') {
+      if (experienceLevel === '0-2') {
+        experienceMatch = experience >= 0 && experience <= 1;  // includes 2
+      } 
+      else if (experienceLevel === '2-5') {
+        experienceMatch = experience >= 2 && experience <= 5;  // starts after 2
       }
-
-      currentPage = 1;
-      updatePagination();
+      else if (experienceLevel === '5-10') {
+        experienceMatch = experience > 5 && experience <= 10;  // starts after 5
+      }
+      else if (experienceLevel === '10+') {
+        experienceMatch = experience > 10;  // starts after 10
+      }
     }
 
+    if ((searchTerm === '' || titleMatch || companyMatch) && experienceMatch) {
+      rows[i].style.display = '';
+    } else {
+      rows[i].style.display = 'none';
+    }
+  }
+
+  currentPage = 1;
+  updatePagination();
+}
     searchBtn.addEventListener('click', filterJobs);
     jobSearch.addEventListener('keyup', function (e) {
       if (e.key === 'Enter') {
