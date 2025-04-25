@@ -27,8 +27,7 @@ The **EECE798N_Project** is a comprehensive job application management system de
 ---
 
 ## Project Structure
-The project is organized into multiple services, each with its own functionality:
-EECE798N_Project ├── backend/ # Backend service for core logic ├── cv-job-matching/ # Service for matching CVs to job descriptions ├── CV-Format/ # Service for CV extraction and formatting ├── frontend/ # Frontend service for user interaction ├── Interview-Questions/ # Service for generating interview questions ├── Evaluate-Answers/ # Service for evaluating interview answers ├── job-description/ # Service for generating job descriptions ├── mysql/ # MySQL database schema and initialization ├── docker-compose.yml # Docker Compose configuration ├── k8s/ # Kubernetes deployment files └── README.md # Project documentation
+<pre lang="text"> <code>```bash The project is organized into multiple services, each with its own functionality: EECE798N_Project ├── backend/ # Backend service for core logic ├── cv-job-matching/ # Service for matching CVs to job descriptions ├── CV-Format/ # Service for CV extraction and formatting ├── frontend/ # Frontend service for user interaction ├── Interview-Questions/ # Service for generating interview questions ├── Evaluate-Answers/ # Service for evaluating interview answers ├── job-description/ # Service for generating job descriptions ├── mysql/ # MySQL database schema and initialization ├── docker-compose.yml # Docker Compose configuration ├── k8s/ # Kubernetes deployment files └── README.md # Project documentation ```</code> </pre>
 
 ---
 
