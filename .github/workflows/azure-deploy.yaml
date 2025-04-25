@@ -81,6 +81,7 @@ jobs:
         # Create namespace
         kubectl apply -f k8s/namespace.yaml --wait
 
+
         # Deploy MySQL
         kubectl apply -f k8s/database/mysql.yaml --namespace=eece-system
 
