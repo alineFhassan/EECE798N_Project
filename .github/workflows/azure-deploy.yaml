@@ -4,19 +4,27 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'EECE798N_Project/tree/main**'
+      - '**'  # Monitor all directories
   workflow_dispatch:
 
 env:
   DOCKERHUB_REPO_PREFIX: ${{ secrets.DOCKERHUB_USERNAME }}/eece798n
-  PROJECT_DIR: EECE798N_Project
+  PROJECT_DIR: .  # Changed to root directory
 
 jobs:
   build-push:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ['CV-Format',  'Interview-Questions', 'backend', 'cv-job-matching', 'frontend', 'job-description']
+        service: [
+          'Interview-Questions',
+          'CV-Format',
+          'Evaluate-Answers',
+          'backend',
+          'cv-job-matching',
+          'frontend',
+          'job-description'
+        ]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -27,36 +35,8 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-
     - name: Build & Push ${{ matrix.service }}
       run: |
-        cd ${{ env.PROJECT_DIR }}/${{ matrix.service }}
-        docker build -t ${{ env.DOCKERHUB_REPO_PREFIX }}-$(echo "${{ matrix.service }}" | tr '[:upper:]' '[:lower:]'):${{ github.sha }} .
-        docker push ${{ env.DOCKERHUB_REPO_PREFIX }}-$(echo "${{ matrix.service }}" | tr '[:upper:]' '[:lower:]'):${{ github.sha }}
-
-  deploy:
-    needs: build-push
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        enable-federated-identity: true
-        
-
-    - name: Deploy to AKS
-      run: |
-        az aks get-credentials \
-          --name Test \
-          --resource-group Test_Group \
-          --overwrite-existing
+        cd ${{ matrix.service }}  # Directly access service directories
+        docker build -t ${{ env.DOCKERHUB_REPO_PREFIX }}-$(echo "${{ matrix.service }}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]'):${{ github.sha }} .
+        docker push ${{ env.DOCKERHUB_REPO_PREFIX }}-$(echo "${{ matrix.service }}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]'):${{ github.sha }}
