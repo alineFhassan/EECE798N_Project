@@ -29,12 +29,12 @@ spec:
         ports:
         - containerPort: 5000
         resources:
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
           requests:
+            cpu: "200m"  # Reduced from 500m
+            memory: "256Mi"
+          limits:
+            cpu: "500m"  # Reduced from 1000m
             memory: "512Mi"
-            cpu: "500m"
         livenessProbe:
           httpGet:
             path: /health
