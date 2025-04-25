@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'EECE798N_Project/**'
+      - 'EECE798N_Project/tree/main**'
   workflow_dispatch:
 
 env:
