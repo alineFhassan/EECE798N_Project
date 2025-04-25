@@ -35,7 +35,7 @@
           <select name="user_type" required>
               <option value="">-- Select Type --</option>
               <option value="applicant">Applicant</option>
-              <option value="company">Company</option>
+              <option value="company">Department</option>
           </select>
           <div class="underline"></div>
       </div>
@@ -45,4 +45,90 @@
       </form>
     </div>
   </body>
-</html>
+  <style>
+    /* Add these styles to your existing CSS file */
+
+.select-box {
+  position: relative;
+  margin-bottom: 17px;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-box select {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  font-size: 16px;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: #1a1a1a;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+
+.select-box .select-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #1a1a1a;
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.select-box select option {
+  background-color: white;
+  color: #1a1a1a;
+  padding: 10px;
+}
+
+.select-box .underline {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+}
+
+.select-box .underline:before {
+  position: absolute;
+  content: "";
+  height: 100%;
+  width: 100%;
+  background: #ccc;
+  transform: scaleX(1);
+}
+
+.select-box select:focus ~ .underline:before,
+.select-box select:valid ~ .underline:before {
+  transform: scaleX(1);
+  background: #4158d0;
+  background: -webkit-linear-gradient(
+    left,
+    #4158d0,
+    #c850c0,
+    #ffcc70
+  );
+}
+
+/* For dark mode or different themes if needed */
+@media (prefers-color-scheme: dark) {
+  .select-box select {
+    color: #f2f2f2;
+  }
+  
+  .select-box .select-icon {
+    color: #f2f2f2;
+  }
+  
+  .select-box select option {
+    background-color: #333;
+    color: #f2f2f2;
+  }
+}
+  </style></html>
