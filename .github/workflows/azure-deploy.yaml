@@ -97,16 +97,34 @@ jobs:
 
    
         # Configure ingress
+        echo "Deploying Nginx Ingress Controller..."
         kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
-    
-        # Wait for LoadBalancer IP
-        kubectl wait --namespace ingress-nginx \
-          --for=condition=ready pod \
-          --selector=app.kubernetes.io/component=controller \
-          --timeout=120s
-
-        # Apply your ingress rules
+        
+        # Add diagnostic information
+        echo "Checking ingress controller status:"
+        kubectl get pods -n ingress-nginx -w &
+        kubectl get svc -n ingress-nginx -w &
+        
+        # Increase timeout and add retries
+        for i in {1..5}; do
+          if kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=120s; then
+            break
+          else
+            echo "Retry $i/5: Waiting for ingress controller..."
+            sleep 10
+          fi
+        done
+        
+        # Apply ingress rules
         kubectl apply -f k8s/networking/ingress.yaml --namespace=eece-system
+        
+        # Final verification
+        echo "Ingress controller details:"
+        kubectl get svc -n ingress-nginx
+        kubectl get ingress -n eece-system
 
         # Verify deployments
         kubectl rollout status --namespace=eece-system deployment/backend --timeout=300s
