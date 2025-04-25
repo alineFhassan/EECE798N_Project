@@ -146,10 +146,7 @@ def evaluate_answers(
 def handle_evaluation():
     try:
         data = request.json
-
-        required_fields = ['interview_questions', 'interview_answers', 'requirements', 'responsibilities']
-        if not all(field in data for field in required_fields):
-            return jsonify({"error": "Missing one or more required fields"}), 400
+        summary_only = request.args.get('summary', 'false').lower() == 'true'
 
         combined_texts = combine_questions_and_answers(
             questions=data["interview_questions"],
@@ -162,21 +159,23 @@ def handle_evaluation():
             responsibilities=data["responsibilities"]
         )
 
+        if summary_only:
+            return jsonify({
+                "status": "success",
+                "evaluation": {
+                    "overall_scores": evaluation["overall_scores"]
+                }
+            })
+
         return jsonify({
             "status": "success",
             "evaluation": evaluation
         })
 
-    except requests.exceptions.HTTPError as e:
-        return jsonify({
-            "error": "Hugging Face API error",
-            "details": str(e),
-            "response": e.response.text if e.response else None
-        }), 502
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 # --- ENTRY POINT ---
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3005, , debug=True)
+    app.run(host='0.0.0.0', port=3005, debug=True)

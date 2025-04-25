@@ -1422,44 +1422,48 @@ def submit_answers(interview_id):
         if save_response.status_code != 201:
             flash(f'Error saving answer for question {question_id}', 'error')
          
-                
-        interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
-        if interview_response.status_code != 201:
-                flash(f'Error getting question', 'error')
-                return redirect(url_for('weekly_questions'))
+        print("int", interview_id)        
         # get interview table 
-        interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{question_id}")    
-        if interview_response.status_code != 201:
+        interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{interview_id}")    
+        if interview_response.status_code != 200:
                 flash(f'Error getting question', 'error')
                 return redirect(url_for('weekly_questions'))
-             
-        job_id =   interview_response.json().get('job_id') 
-        applicant_id = interview_response.json().get('applicant_id') 
-        questions =   interview_response.json().get('questions') 
+        interview_data = interview_response.json().get('interview', {})
+        job_id = interview_data.get('job_id')
+        applicant_id = interview_data.get('applicant_id')
+        questions = interview_data.get('questions', {}).get('questions', {})
 
-    #     applied_job_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")    
-    #     if applied_job_response.status_code != 201:
-    #             flash(f'Error getting job', 'error')
-    #             return redirect(url_for('weekly_questions'))
-      
-        requirements = applied_job_response.json().get("requirements")
-        responsibilities = applied_job_response.json().get("responsibilities")
+        print("Job ID:", job_id, flush=True)
+        print("Applicant ID:", applicant_id, flush=True)
+        print("Questions:", questions, flush=True)
+
+        applied_job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")    
+        if applied_job_response.status_code != 200:
+            flash(f'Error getting job', 'error')
+            return redirect(url_for('weekly_questions'))
+        print("applied_job_response", applied_job_response.json(), flush=True)
+        applied_data = applied_job_response.json().get('job', {})
+        requirements = applied_data.get("requirements")
+        responsibilities = applied_data.get("responsibilities")
 
         # Evaluate the answer using the Evaluation_Question model
-        eval_response = requests.post(f"{EVALUATE_ANSWERS_URL}/evaluate", json={
-               'interview_questions': questions, 
-               'interview_answers': answers,
-                'requirements': requirements,
-                'responsibilities':responsibilities
-            })
-            
+        answers_dict = {q_id: ans for q_id, ans in answers}
+        print("answers_dict", answers_dict, flush=True)
+        # Now call the evaluation API
+        eval_response = requests.post(f"{ANSWER_EVALUATION_URL}/evaluate", json={
+            'interview_questions': questions, 
+            'interview_answers': answers_dict,
+            'requirements': requirements,
+            'responsibilities': responsibilities
+        })
+        print("eval_response", eval_response.json(), flush=True)    
         if eval_response.status_code != 200:
                 flash(f'Answer saved but evaluation failed for question ', 'warning')
                 return redirect(url_for('weekly_questions'))
                
-        evaluation = eval_response.json().get('evaluation') 
-
-        overall_scores = evaluation.get("overall_scores", {})
+        evaluation = eval_response.json().get('evaluation', {})
+        overall_scores = evaluation.get('overall_scores', {})
+        print("Overall Scores:", overall_scores, flush=True)
         requirements_scores = overall_scores.get("requirements", {})
         responsibilities_scores = overall_scores.get("responsibilities", {})
 
@@ -1524,8 +1528,17 @@ def submit_answers(interview_id):
            
 
             mail.send(msg)    
-            get_interview = requests.post(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
-            answer_id = get_interview.json().get('id')    
+            try:
+                get_interview = requests.post(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
+                if get_interview.status_code == 200:
+                    answer_id = get_interview.json().get('id')
+                    if not answer_id:
+                        raise ValueError("Answer ID not found in the response")
+                else:
+                    raise ValueError(f"Failed to fetch interview answers: {get_interview.status_code}")
+            except Exception as e:
+                flash(f"Error fetching answer ID: {str(e)}", 'error')
+                return redirect(url_for('weekly_questions'))
 
             # Save the answer to the database
             save_response = requests.post(f"{BACKEND_API_URL}/add_answer_evaluation", json={
