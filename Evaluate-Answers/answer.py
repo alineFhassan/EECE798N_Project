@@ -83,7 +83,7 @@ def evaluate_answers(
     resp_coverage_count = 0
 
     for i, embedding in enumerate(answer_embeddings):
-        # Requirement comparison
+        # Requirement comparison (max match)
         req_scores_batch = [cosine_similarity(embedding, req) for req in req_embeddings]
         best_req_score = max(req_scores_batch) if req_scores_batch else 0
         best_req_idx = req_scores_batch.index(best_req_score) if best_req_score > 0 else -1
@@ -100,7 +100,7 @@ def evaluate_answers(
                 "supporting_answer": combined_texts[i]
             })
 
-        # Responsibility comparison
+        # Responsibility comparison (max match)
         resp_scores_batch = [cosine_similarity(embedding, resp) for resp in resp_embeddings]
         best_resp_score = max(resp_scores_batch) if resp_scores_batch else 0
         best_resp_idx = resp_scores_batch.index(best_resp_score) if best_resp_score > 0 else -1
@@ -128,13 +128,38 @@ def evaluate_answers(
 
     total_answers = len(answer_embeddings)
 
+    # --- NEW AVERAGE COMPARISON LOGIC ---
+
+    # Convert lists to numpy arrays
+    answer_matrix = np.array(answer_embeddings)
+    req_matrix = np.array(req_embeddings)
+    resp_matrix = np.array(resp_embeddings)
+
+    def normalize(x): return x / np.linalg.norm(x, axis=1, keepdims=True)
+    answer_matrix = normalize(answer_matrix)
+    req_matrix = normalize(req_matrix)
+    resp_matrix = normalize(resp_matrix)
+
+    # Cosine similarity: each answer with ALL requirements/responsibilities
+    req_sim_matrix = np.matmul(answer_matrix, req_matrix.T)  # shape (num_answers, num_requirements)
+    resp_sim_matrix = np.matmul(answer_matrix, resp_matrix.T)  # shape (num_answers, num_responsibilities)
+
+    req_avg_per_answer = np.mean(req_sim_matrix, axis=1)
+    resp_avg_per_answer = np.mean(resp_sim_matrix, axis=1)
+
+    req_matches = np.sum(req_avg_per_answer >= COVERAGE_THRESHOLD)
+    resp_matches = np.sum(resp_avg_per_answer >= COVERAGE_THRESHOLD)
+
+    req_match_percentage = round(req_matches / total_answers, 4) if total_answers else 0.0
+    resp_match_percentage = round(resp_matches / total_answers, 4) if total_answers else 0.0
+
     # Requirement scores
-    results["overall_scores"]["requirements"]["average_score_all_answers"] = round(sum(req_scores_all)/total_answers, 4) if total_answers else 0
+    results["overall_scores"]["requirements"]["average_score_all_answers"] = req_match_percentage
     results["overall_scores"]["requirements"]["average_score_matched_only"] = round(sum(req_scores_matched)/len(req_scores_matched), 4) if req_scores_matched else 0
     results["overall_scores"]["requirements"]["coverage_percentage"] = f"{round((req_coverage_count / total_answers) * 100)}%" if total_answers else "0%"
 
     # Responsibility scores
-    results["overall_scores"]["responsibilities"]["average_score_all_answers"] = round(sum(resp_scores_all)/total_answers, 4) if total_answers else 0
+    results["overall_scores"]["responsibilities"]["average_score_all_answers"] = resp_match_percentage
     results["overall_scores"]["responsibilities"]["average_score_matched_only"] = round(sum(resp_scores_matched)/len(resp_scores_matched), 4) if resp_scores_matched else 0
     results["overall_scores"]["responsibilities"]["coverage_percentage"] = f"{round((resp_coverage_count / total_answers) * 100)}%" if total_answers else "0%"
 

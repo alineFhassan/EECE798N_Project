@@ -661,7 +661,7 @@ def format_date_filter(date_str):
 #         passed, total = map(int, match_score_str.split("/"))
 
 #         # Calculate the passed_criteria_percent
-#         passed_criteria_percent = (passed / total) * 100 if total != 0 else 0  # Avoid division by zero
+#         passed_criteria_percent = (passed / total) * 100 if total != 0  # Avoid division by zero
 
 #         # Create the dictionary to include the percentage
 #         match_score = {
@@ -1178,13 +1178,15 @@ def reject_applicant(applicant_id, job_id):
             'status': 'rejected'
         })
 
-        logger.info('Applicant has been rejected')
+        if update_response.status_code == 200:
+            logger.info('Applicant has been rejected and status updated successfully')
+        else:
+            logger.error(f"Failed to update status: {update_response.json().get('message', 'Unknown error')}")
 
         # Redirect to the HR view with the updated applicant status
-        return redirect(url_for('hr_view_applied_applicant', job_id=job_id, applicants=applicant_id))
+        return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
 
     except Exception as e:
-        # If there's any exception, log it
         logger.error(f"Error rejecting applicant: {str(e)}")
         flash('An error occurred while processing the rejection', 'error')
         return redirect(url_for('hr_view_applied_applicant', job_id=job_id))
@@ -1528,6 +1530,53 @@ def submit_answers(interview_id):
 
             mail.send(msg)
 
+            # Update the status in the backend
+            update_status_response = requests.put(f"{BACKEND_API_URL}/update_application_status", json={
+                "applicant_id": applicant_id,
+                "job_id": job_id,
+                "status": "technical_interview"
+            })
+
+            if update_status_response.status_code == 200:
+                print("Status updated successfully", flush=True)
+            else:
+                print(f"Failed to update status: {update_status_response.status_code}", flush=True)
+        else:
+            # Send rejection email
+            email_body = f"""
+            Dear {first_name} {last_name},
+
+            Thank you for taking the time to apply for the **{job_title} ({job_level})** position at Hirevo.  
+
+            After careful consideration, we regret to inform you that we have decided to move forward with other candidates whose qualifications more closely match our current needs.  
+
+            We genuinely appreciate your interest in Hirevo and encourage you to apply for future opportunities.  
+
+            Wishing you the best in your job search and future career endeavors.  
+
+            Warm regards,  
+            **Hirevo HR Team**  
+            hr@hirevo.com  
+            """
+            msg = Message(
+                subject="Application Update – Thank You for Applying",
+                recipients=[email],
+                body=email_body
+            )
+
+            mail.send(msg)
+
+            # Update the status in the backend
+            update_status_response = requests.put(f"{BACKEND_API_URL}/update_application_status", json={
+                "applicant_id": applicant_id,
+                "job_id": job_id,
+                "status": "rejected"
+            })
+
+            if update_status_response.status_code == 200:
+                print("Status updated to rejected successfully", flush=True)
+            else:
+                print(f"Failed to update status to rejected: {update_status_response.status_code}", flush=True)
         # Fetch the interview answers
         get_interview = requests.get(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
         if get_interview.status_code == 200:
@@ -1753,134 +1802,58 @@ def view_answer(question_id):
         flash(f'Error loading answer: {str(e)}', 'error')
         return redirect(url_for('weekly_questions'))
 
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the logging level to DEBUG
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
 # -------- LIST OF APPLICANT APPLIED TO A JOB--------
 @app.route('/hr_view_technical_interview_applicant/<int:job_id>')
-def hr_view_technical_interview_applicant(job_id): 
-    #   # Get job details
-    # job_response = requests.get(f"{BACKEND_API_URL}/get_offered_jobs/{job_id}")
-    # if job_response.status_code != 200:
-    #     flash('Error fetching your offered jobs', 'error')
-    #     return render_template('hr_view_applied_applicant.html', jobs=[])
+def hr_view_technical_interview_applicant(job_id):
+    try:
+        logger.debug(f"Fetching job details for job_id: {job_id}")
+        job_response = requests.get(f"{BACKEND_API_URL}/get_offered_job/{job_id}")
+        logger.debug(f"Job Response: {job_response.json()}")
 
-    # job = job_response.json()
+        if job_response.status_code != 200:
+            flash('Error fetching job details', 'error')
+            return render_template('hr_view_applied_applicant.html', job={}, applicants=[])
 
-    # # Get applied applicants
-    # applied_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
-    # if applied_response.status_code != 200:
-    #     flash('Error fetching your applicants', 'error')
-    #     return render_template('hr_view_applied_applicant.html', jobs=[])
-
-    # applicants_data = []
-    # technical_interview_names = []
-
-    # for application in applied_response.json():
-    #     applicant_id = application['applicant_id']
-    #     status = application['status']
-
-    #     # Get user details
-    #     user_response = requests.get(f"{BACKEND_API_URL}/get_user/{applicant_id}")
-    #     if user_response.status_code != 200:
-    #         continue
-    #     user = user_response.json()
-
-    #     # Get CV
-    #     cv_response = requests.get(f"{BACKEND_API_URL}/get_applicant/{applicant_id}")
-    #     cv = cv_response.json()[0] if cv_response.status_code == 200 and cv_response.json() else None
-
-    #     # --------------------------
-    #     # Interview score evaluation
-    #     # --------------------------
-    #     avg_req = avg_resp = qualified_interview_score = 0
-
-    #     interview_response = requests.get(f"{BACKEND_API_URL}/get_interview/{applicant_id}/{job_id}")
-    #     if interview_response.status_code == 200:
-    #         interview_data = interview_response.json()
-    #         if interview_data:
-    #             interview_id = interview_data['id']
-
-    #             # Get interview answers
-    #             answers_response = requests.get(f"{BACKEND_API_URL}/get_interview_answers/{interview_id}")
-    #             if answers_response.status_code == 200:
-    #                 answers_data = answers_response.json()
-    #                 if answers_data:
-    #                     answer_id = answers_data['id']
-
-    #                     # Get evaluation scores
-    #                     eval_response = requests.get(f"{BACKEND_API_URL}/get_answer_evaluation/{answer_id}")
-    #                     if eval_response.status_code == 200:
-    #                         eval_data = eval_response.json()
-    #                         avg_req = eval_data.get('average_score_requirements', 0)
-    #                         avg_resp = eval_data.get('average_score_responsibility', 0)
-    #                         qualified_interview_score = (avg_req + avg_resp) / 2
-
-        # # Track applicants in technical_interview status
-        # if status == 'technical_interview':
-           
-
-        #     # Collect applicant data
-        #     applicants_data.append({
-        #         'id': user['ID'],
-        #         'name': f"{user['first_name']} {user['last_name']}",
-        #         'similarity_score': qualified_interview_score,
-        #         'exp_years': cv['experience_years'] if cv else 0,
-        #         'email': user['email'],
-        #         'phone_number': user['phone_number'],
-        #         'skills': cv['skills'].split(',') if cv and cv['skills'] else [],
-        #         'qualified': True,
-        #         "status": "Technical_Interview"
-        #     })
-
-
-    job = {
-        "id": 101,
-        "job_title": "Senior Backend Engineer",
-        "job_level": "Mid-Senior",
-        "years_experience": 5,
-        "date_offering": "2024-12-01",
-        "status": "open"
-    }
-
-    applicants = [
-        {
-            "id": 202,
-            "name": "Michael Chen",
-            "similarity_score_technical": 62,
-            "similarity_score": 0,
-            "exp_years": 5,
-            "email": "michael.c@example.com",
-            "phone_number": "+12345550102",
-            "skills": ["Java", "Spring", "SQL"],
-            "qualified": True,
-            "status": "Technical_interview"
-        },
-        {
-            "id": 203,
-            "name": "Sara Ibrahim",
-            "similarity_score_technical": 60,
-            "similarity_score": 0,
-            "exp_years": 2,
-            "email": "zynab.ahamd.saad@gmail.com",
-            "phone_number": "+12345550103",
-            "skills": ["HTML", "CSS", "Bootstrap", "JavaScript", "Vue.js"],
-            "qualified": True,
-            "status": "rejected"
-        },
-        {
-            "id": 204,
-            "name": "David O'Connor",
-            "similarity_score_technical": 88,
-            "similarity_score": 0,
-            "exp_years": 7,
-            "email": "zynab.ahamd.saad@gmail.com",
-            "phone_number": "+12345550104",
-            "skills": ["Python", "Django", "PostgreSQL", "Docker"],
-            "qualified": True,
-            "status": "interview_scheduled"
+        job_data = job_response.json().get('job', {})
+        job = {
+            "job": {
+                "id": job_data.get('id'),
+                "job_title": job_data.get('title'),  # Corrected key
+                "job_level": job_data.get('job_level'),
+                "years_experience": job_data.get('years_experience'),
+                "date_offering": job_data.get('date_offered'),  # Corrected key
+                "status": job_data.get('status')
+            }
         }
-    ]
-    
-    return render_template('hr_view_applied_applicant.html', 
-                         job=job, 
-                         applicants=applicants)
+        logger.debug(f"Parsed Job Data: {job}")
+
+        # Fetch applicants for this job
+        applied_response = requests.get(f"{BACKEND_API_URL}/get_applied_job/{job_id}")
+        logger.debug(f"Applied Response: {applied_response.json()}")
+
+        if applied_response.status_code != 200:
+            flash('Error fetching applicants', 'error')
+            return render_template('hr_view_applied_applicant.html', job=job, applicants=[])
+
+        applicants_data = []
+        for application in applied_response.json().get('applications', []):
+            logger.debug(f"Processing application: {application}")
+            # Process each application...
+
+        return render_template('hr_view_applied_applicant.html', job=job, applicants=applicants_data)
+
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        flash(f'Error: {str(e)}', 'error')
+        return render_template('hr_view_applied_applicant.html', job={}, applicants=[])
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=3000)  
+    app.run(debug=True, host='0.0.0.0', port=3000)
