@@ -1420,26 +1420,38 @@ def get_interview_answers(interview_id):
             cursor.close()
         if 'conn' in locals():
             conn.close()
-
 @app.route('/add_answer_evaluation', methods=['POST'])
 def add_answer_evaluation():
     try:
         data = request.json
+        app.logger.debug(f"Received data: {data}")
+
         required_fields = ['answer_id', 'avg_score_requirements', 'avg_score_responsibilities', 'full_evaluation', 'qualified_interview']
         
         # Validate required fields
         if not all(field in data for field in required_fields):
+            app.logger.error("Missing required fields in the request")
             return jsonify({"status": "error", "message": "Missing required fields"}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
         # Check if the answer exists
+        app.logger.debug(f"Checking if Answer ID {data['answer_id']} exists in interview_answers")
         cursor.execute("SELECT id FROM interview_answers WHERE id = %s", (data['answer_id'],))
         if not cursor.fetchone():
+            app.logger.error(f"Answer ID {data['answer_id']} not found in the database")
             return jsonify({"status": "error", "message": "Answer not found"}), 404
 
+        # Extract only the required fields from full_evaluation
+        full_evaluation = data['full_evaluation']
+        reduced_evaluation = {
+            "average_score_all_answers_requirements": full_evaluation["overall_scores"]["requirements"]["average_score_all_answers"],
+            "average_score_all_answers_responsibilities": full_evaluation["overall_scores"]["responsibilities"]["average_score_all_answers"]
+        }
+
         # Insert the evaluation
+        app.logger.debug(f"Inserting evaluation for Answer ID {data['answer_id']}")
         cursor.execute("""
             INSERT INTO answer_evaluations (
                 answer_id, avg_score_requirements, avg_score_responsibilities, 
@@ -1449,13 +1461,14 @@ def add_answer_evaluation():
             data['answer_id'],
             data['avg_score_requirements'],
             data['avg_score_responsibilities'],
-            data['full_evaluation'],
+            json.dumps(reduced_evaluation),  # Save only the reduced evaluation
             data['qualified_interview']
         ))
 
         evaluation_id = cursor.lastrowid
         conn.commit()
 
+        app.logger.debug(f"Evaluation added successfully with ID: {evaluation_id}")
         return jsonify({
             "status": "success",
             "message": "Evaluation submitted successfully",
@@ -1463,8 +1476,7 @@ def add_answer_evaluation():
         }), 201
 
     except Exception as e:
-        if 'conn' in locals():
-            conn.rollback()
+        app.logger.error(f"Error in add_answer_evaluation: {str(e)}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
         if 'cursor' in locals():
