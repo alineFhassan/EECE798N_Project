@@ -9,6 +9,7 @@
 - [Running the Application](#running-the-application)
 - [Azure Link](#azure-link)
 - [Report Link](#report-link)
+- [Presentation Link](#presentation-link)
 
 
 ---
@@ -135,3 +136,7 @@ For better experience, run locally.
 ## Report Link
 Below is the link to the documentation of the project:
 [Report Link](https://mailaub-my.sharepoint.com/:b:/g/personal/afh29_mail_aub_edu/EUnBWkqJIlFHsNKMculZcD8BoYYwf8YiPIGfbuOUXHlLHA?e=T0ADTR)
+
+## Presentation Link
+Below is the link for the Presentation:
+[Presentation Link](https://www.canva.com/design/DAGlrHcHP5M/FZUSjPjCWcEc5_xbutpFQg/edit?utm_content=DAGlrHcHP5M&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
