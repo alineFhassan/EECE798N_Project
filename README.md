@@ -7,8 +7,8 @@
 - [Technologies Used](#technologies-used)
 - [Setup and Installation](#setup-and-installation)
 - [Running the Application](#running-the-application)
-- [Azure Link](#Azure)
-- [Report Link](#Report)
+- [Azure Link](#azure-link)
+- [Report Link](#report-link)
 
 
 ---
