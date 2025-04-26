@@ -7,8 +7,9 @@
 - [Technologies Used](#technologies-used)
 - [Setup and Installation](#setup-and-installation)
 - [Running the Application](#running-the-application)
-- [Azure Link](#Azure)
-- [Report Link](#Report)
+- [Azure Link](#azure-link)
+- [Report Link](#report-link)
+- [Presentation Link](#presentation-link)
 
 
 ---
@@ -129,6 +130,13 @@ docker-compose --env-file \your-path\EECE798N_Project-1\.github\.env up --build
 ## Azure Link
 After adding the containers to Kubernetes, they were deployed on Azure AKS. Below is the link: 
 [AKS Link](http://134.33.246.110/)
+Please note that due to limited resources, some features will take time to run and some will show bad gateway error. Try to refresh the page. 
+For better experience, run locally.
 
 ## Report Link
 Below is the link to the documentation of the project:
+[Report Link](https://mailaub-my.sharepoint.com/:b:/g/personal/afh29_mail_aub_edu/EUnBWkqJIlFHsNKMculZcD8BoYYwf8YiPIGfbuOUXHlLHA?e=T0ADTR)
+
+## Presentation Link
+Below is the link for the Presentation:
+[Presentation Link](https://www.canva.com/design/DAGlrHcHP5M/FZUSjPjCWcEc5_xbutpFQg/edit?utm_content=DAGlrHcHP5M&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
