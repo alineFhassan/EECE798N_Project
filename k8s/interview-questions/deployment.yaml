@@ -40,8 +40,8 @@ spec:
         - name: OPENAI_KEY
           valueFrom:
             secretKeyRef:
-              name: openai-secret
-              key: api-key
+              name:  api-keys
+              key: OPENAI_API_KEY
 ---
 apiVersion: v1
 kind: Service

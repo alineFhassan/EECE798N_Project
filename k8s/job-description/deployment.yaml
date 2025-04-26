@@ -32,16 +32,17 @@ spec:
             secretKeyRef:
               name: api-keys
               key: MISTRAL_API_KEY
-        ports:
-        - containerPort: 3002
-        env:
         - name: NLP_MODEL
           value: "en_core_web_lg"
+    
+        ports:
+        - containerPort: 3002
+      
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: job-description
+  name: job-description-api
   namespace: eece-system
 spec:
   selector:

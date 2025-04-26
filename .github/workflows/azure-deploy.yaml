@@ -76,10 +76,19 @@ jobs:
           --from-literal=MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }} \
           --dry-run=client -o yaml | kubectl apply -f -
 
+    - name: Create MySQL Init ConfigMap
+      run: |
+        kubectl create configmap mysql-init-script \
+          -n eece-system \
+          --from-file=./mysql/schema.sql \
+          --dry-run=client -o yaml | kubectl apply -f -
+
     - name: Deploy to AKS
       run: |
         # Create namespace
         kubectl apply -f k8s/namespace.yaml --wait
+        
+     
 
 
         # Deploy MySQL

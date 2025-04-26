@@ -4,7 +4,7 @@ metadata:
   name: cv-job-matching
   namespace: eece-system
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: cv-job-matching

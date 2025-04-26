@@ -208,9 +208,9 @@ def logout():
 # ===========================================
 #       PROMETHEUS MONITORING
 # ===========================================
-# @app.route('/metrics')
-# def metrics():
-#     return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 @app.route('/monitoring_dashboard')
 def monitoring_dashboard():
@@ -1006,6 +1006,7 @@ def offered_job():
             dept_response.raise_for_status()
             department = dept_response.json().get('department', [])
             job['department_name'] = department['department_name']
+        print("jobs", jobs, flush=True)
         return render_template('offered_job.html', jobs=jobs, stats=stats)
     
     except Exception as e:
