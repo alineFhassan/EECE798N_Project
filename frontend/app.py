@@ -680,9 +680,11 @@ def hr_view_applied_applicant(job_id):
         logger.debug(f"CV response: {cv_response.json()}")
         cv_json = cv_response.json()
         cv = cv_json.get('cv_data') if cv_response.status_code == 200 and cv_json.get('status') == 'success' else None
-
+        logger.debug(f"CV: {cv}")
+        logger.debug(f"User: {user_data}")
+        logger.debug(f"Application: {application}")
         # Calculate match score
-        match_score_str = application.get("passed_criteria", "0/0")
+        match_score_str = application.get("passed_criteria")
         passed, total = map(int, match_score_str.split("/"))
         passed_criteria_percent = (passed / total) * 100 if total != 0 else 0
 
