@@ -34,16 +34,6 @@ spec:
               key: MISTRAL_API_KEY
         ports:
         - containerPort: 3005
-        env:
-        - name: MODEL_PATH
-          value: "/app/models/evaluation_model.pkl"
-        volumeMounts:
-        - name: model-storage
-          mountPath: "/app/models"
-      volumes:
-      - name: model-storage
-        persistentVolumeClaim:
-          claimName: model-pvc
 ---
 apiVersion: v1
 kind: Service
