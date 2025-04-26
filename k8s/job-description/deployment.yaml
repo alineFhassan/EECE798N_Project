@@ -42,7 +42,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: job-description
+  name: job-description-api
   namespace: eece-system
 spec:
   selector:
