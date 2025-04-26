@@ -116,7 +116,7 @@ def evaluate(cv_data, job_data):
                  else f"Disqualified: Only {passed}/{total} criteria met"
     }
 
-@app.route('/cv-job-match', methods=['POST'])
+@app.route('/cv-job-matching', methods=['POST'])
 def evaluate_endpoint():
     try:
         data = request.json

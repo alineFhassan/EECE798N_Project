@@ -23,7 +23,7 @@ spec:
       containers:
       - name: frontend
         image: {{DOCKERHUB_USERNAME}}/eece798n-frontend:{{IMAGE_TAG}}
-        env:
+        env:kubectl exec -it db-client-pod -- mysql -h <database-host> -u <username> -p'<password>' <database-name>
         - name: CV_EXTRACTION_URL
           value: "http://cv-format.eece-system.svc.cluster.local:3001"
         - name: JOB_DESCRIPTION_URL
