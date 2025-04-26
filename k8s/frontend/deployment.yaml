@@ -38,15 +38,15 @@ spec:
         - containerPort: 3000
         resources:
           limits:
-            memory: "148Mi"
-            cpu: "100m"
+            memory: "248Mi"
+            cpu: "200m"
           requests:
             memory: "118Mi"
             cpu: "80m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
+        # livenessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: 3000
 ---
 apiVersion: v1
 kind: Service
