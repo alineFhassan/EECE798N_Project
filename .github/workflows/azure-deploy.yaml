@@ -80,7 +80,7 @@ jobs:
       run: |
         # Create namespace
         kubectl apply -f k8s/namespace.yaml --wait
-
+        kubectl create secret generic openai-secret -n eece-system --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
 
         # Deploy MySQL
         kubectl apply -f k8s/database/mysql.yaml --namespace=eece-system
