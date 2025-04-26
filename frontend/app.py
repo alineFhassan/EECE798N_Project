@@ -36,6 +36,8 @@ mail = Mail(app)
 # ===========================================
 app.secret_key = 'dev-key-123-abc!@#'
 
+
+
 BACKEND_API_URL = "http://backend:5000"
 CV_EXTRACTION_URL="http://cv-extraction-api:3001"
 JOB_DESCRIPTION_URL="http://job-description-api:3002" 
