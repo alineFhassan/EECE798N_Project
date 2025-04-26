@@ -129,6 +129,9 @@ docker-compose --env-file \your-path\EECE798N_Project-1\.github\.env up --build
 ## Azure Link
 After adding the containers to Kubernetes, they were deployed on Azure AKS. Below is the link: 
 [AKS Link](http://134.33.246.110/)
+Please note that due to limited resources, some features will take time to run and some will show bad gateway error. Try to refresh the page. 
+For better experience, run locally.
 
 ## Report Link
 Below is the link to the documentation of the project:
+[Report Link](https://mailaub-my.sharepoint.com/:b:/g/personal/afh29_mail_aub_edu/EUnBWkqJIlFHsNKMculZcD8BoYYwf8YiPIGfbuOUXHlLHA?e=T0ADTR)
