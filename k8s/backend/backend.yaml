@@ -35,7 +35,7 @@ spec:
             secretKeyRef:
               name: backend-secrets
               key: db-user
-              
+
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -50,12 +50,7 @@ spec:
           limits:
             cpu: "90m"  # Reduced from 1000m
             memory: "150Mi"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 15
-          periodSeconds: 20
+      
 ---
 apiVersion: v1
 kind: Service
