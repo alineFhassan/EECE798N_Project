@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-pvc
+  namespace: eece-system
+spec:
+  accessModes:
+    - ReadWriteOnce  # Adjust based on your storage needs
+  resources:
+    requests:
+      storage: 120Mi  # Adjust size as needed
+  storageClassName: <your-storage-class>
