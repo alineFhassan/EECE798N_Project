@@ -7,6 +7,8 @@
 - [Technologies Used](#technologies-used)
 - [Setup and Installation](#setup-and-installation)
 - [Running the Application](#running-the-application)
+- [Azure Link](#Azure)
+- [Report Link](#Report)
 
 
 ---
@@ -123,3 +125,10 @@ docker-compose --env-file \your-path\EECE798N_Project-1\.github\.env up --build
 5. The answers of the interview are generated automatically to be used by the HR for conducting the interview.
 
 6. After/during the interview, the HR can go and fill the applicant's answers, who will either be qualified or disqualified based on the answers and will receive emails anyway.
+
+## Azure Link
+After adding the containers to Kubernetes, they were deployed on Azure AKS. Below is the link: 
+[AKS Link](http://134.33.246.110/)
+
+## Report Link
+Below is the link to the documentation of the project:
