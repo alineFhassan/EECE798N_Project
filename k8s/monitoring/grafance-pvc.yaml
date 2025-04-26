@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: eece-system
+spec:
+  accessModes:
+    - ReadWriteOnce  # Adjust based on your storage needs
+  resources:
+    requests:
+      storage: 256Mi 
