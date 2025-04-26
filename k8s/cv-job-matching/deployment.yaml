@@ -34,9 +34,6 @@ spec:
               key: MISTRAL_API_KEY
         ports:
         - containerPort: 3003
-        env:
-        - name: EMBEDDING_MODEL
-          value: "sentence-transformers/all-mpnet-base-v2"
         resources:
           limits:
             memory: "120Mi"
