@@ -80,9 +80,7 @@ jobs:
       run: |
         # Create namespace
         kubectl apply -f k8s/namespace.yaml --wait
-        kubectl create secret generic api-keys -n eece-system --from-literal=HF_TOKEN=${{ secrets.HF_TOKEN }} 
-        kubectl create secret generic api-keys -n eece-system --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-        kubectl create secret generic api-keys -n eece-system --from-literal=MISTRAL_API_KEY=${{ secrets.MISTRAL_API_KEY }}
+       
   
 
 
