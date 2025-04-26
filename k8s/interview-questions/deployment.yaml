@@ -34,14 +34,6 @@ spec:
               key: MISTRAL_API_KEY
         ports:
         - containerPort: 3004
-        env:
-        - name: QUESTION_GEN_MODEL
-          value: "gpt-3.5-turbo"
-        - name: OPENAI_KEY
-          valueFrom:
-            secretKeyRef:
-              name:  api-keys
-              key: OPENAI_API_KEY
 ---
 apiVersion: v1
 kind: Service
