@@ -24,16 +24,7 @@ spec:
       - name: backend
         image: {{DOCKERHUB_USERNAME}}/eece798n-backend:{{IMAGE_TAG}}
         env:
-        - name: CV_EXTRACTION_URL
-          value: "http://cv-format.eece-system.svc.cluster.local:3001"
-        - name: JOB_DESCRIPTION_URL
-          value: "http://job-description.eece-system.svc.cluster.local:3002"
-        - name: CV_JOB_MATCHING_URL
-          value: "http://cv-job-matching.eece-system.svc.cluster.local:3003"
-        - name: INTERVIEW_QUESTIONS_URL
-          value: "http://interview-questions.eece-system.svc.cluster.local:3004"
-        - name: ANSWER_EVALUATION_URL
-          value: "http://answer-evaluation.eece-system.svc.cluster.local:3005"
+        
         - name: DB_HOST
           value: mysql-service  # Matches the MySQL service name
         - name: DB_PORT

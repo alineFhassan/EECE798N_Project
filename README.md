@@ -73,7 +73,7 @@ EECE798N_Project
    ```bash
    git clone https://github.com/alineFhassan/EECE798N_Project.git
    cd EECE798N_Project
-2. Create a .env file in the root directory and add the required environment variables.
+2. Create a .env file in the root directory and add the required environment variables. For the API keys, We will send you them with the submission.
    ```
    # API Keys
    OPENAI_API_KEY=your_openai_api_key

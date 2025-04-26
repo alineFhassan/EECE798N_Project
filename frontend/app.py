@@ -36,10 +36,12 @@ mail = Mail(app)
 # ===========================================
 app.secret_key = 'dev-key-123-abc!@#'
 
+
+
 BACKEND_API_URL = "http://backend:5000"
 CV_EXTRACTION_URL = os.getenv('CV_EXTRACTION_URL')
 JOB_DESCRIPTION_URL = os.getenv('JOB_DESCRIPTION_URL')
-CV_JOB_MATCHING_URL = os.getenv('CV_JOB_MATCHING_URL')
+CV_JOB_MATCHING_URL = 'http://cv-job-matching:3003'
 INTERVIEW_QUESTIONS_URL = os.getenv('INTERVIEW_QUESTIONS_URL')
 ANSWER_EVALUATION_URL = os.getenv('ANSWER_EVALUATION_URL')
 # ========================
