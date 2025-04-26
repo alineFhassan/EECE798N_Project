@@ -9,6 +9,7 @@
 - [Running the Application](#running-the-application)
 - [Azure Link](#azure-link)
 - [Report Link](#report-link)
+- [Presentation Link](#presentation-link)
 
 
 ---
@@ -78,7 +79,13 @@ EECE798N_Project
    OPENAI_API_KEY=your_openai_api_key
    HF_TOKEN=your_huggingface_api_token
    MISTRAL_API_KEY=your_mistral_api_key
+   CV_EXTRACTION_URL=http://cv-extraction-api:3001
+   JOB_DESCRIPTION_URL=http://job-description-api:3002
+   CV_JOB_MATCHING_URL=http://cv-job-matching-api:3003
+   INTERVIEW_QUESTIONS_URL= http://interview-questions-api:3004
+   ANSWER_EVALUATION_URL= http://answer-evaluation-api:3005
 
+   # 
    ```
 3. Build and start the services using Docker Compose:
 docker-compose --env-file \your-path\EECE798N_Project-1\.github\.env up --build
@@ -86,7 +93,6 @@ docker-compose --env-file \your-path\EECE798N_Project-1\.github\.env up --build
 4. Access the application:
 
 - Frontend: http://localhost:3000
-- Backend: http://localhost:5000
 
 ## Running the application
 ### As an Applicant
@@ -135,3 +141,7 @@ For better experience, run locally.
 ## Report Link
 Below is the link to the documentation of the project:
 [Report Link](https://mailaub-my.sharepoint.com/:b:/g/personal/afh29_mail_aub_edu/EUnBWkqJIlFHsNKMculZcD8BoYYwf8YiPIGfbuOUXHlLHA?e=T0ADTR)
+
+## Presentation Link
+Below is the link for the Presentation:
+[Presentation Link](https://www.canva.com/design/DAGlrHcHP5M/FZUSjPjCWcEc5_xbutpFQg/edit?utm_content=DAGlrHcHP5M&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)

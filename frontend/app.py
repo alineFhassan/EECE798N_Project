@@ -39,11 +39,11 @@ app.secret_key = 'dev-key-123-abc!@#'
 
 
 BACKEND_API_URL = "http://backend:5000"
-CV_EXTRACTION_URL="http://cv-extraction-api:3001"
-JOB_DESCRIPTION_URL="http://job-description-api:3002" 
-CV_JOB_MATCHING_URL="http://cv-job-matching-api:3003"
-INTERVIEW_QUESTIONS_URL= "http://interview-questions-api:3004"
-ANSWER_EVALUATION_URL= "http://answer-evaluation-api:3005"
+CV_EXTRACTION_URL = os.getenv('CV_EXTRACTION_URL')
+JOB_DESCRIPTION_URL = os.getenv('JOB_DESCRIPTION_URL')
+CV_JOB_MATCHING_URL = os.getenv('CV_JOB_MATCHING_URL')
+INTERVIEW_QUESTIONS_URL = os.getenv('INTERVIEW_QUESTIONS_URL')
+ANSWER_EVALUATION_URL = os.getenv('ANSWER_EVALUATION_URL')
 # ========================
 #  MAIN APPLICATION ENTRY
 # ========================
@@ -682,9 +682,11 @@ def hr_view_applied_applicant(job_id):
         logger.debug(f"CV response: {cv_response.json()}")
         cv_json = cv_response.json()
         cv = cv_json.get('cv_data') if cv_response.status_code == 200 and cv_json.get('status') == 'success' else None
-
+        logger.debug(f"CV: {cv}")
+        logger.debug(f"User: {user_data}")
+        logger.debug(f"Application: {application}")
         # Calculate match score
-        match_score_str = application.get("passed_criteria", "0/0")
+        match_score_str = application.get("passed_criteria")
         passed, total = map(int, match_score_str.split("/"))
         passed_criteria_percent = (passed / total) * 100 if total != 0 else 0
 
