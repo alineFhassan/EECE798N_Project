@@ -9,4 +9,3 @@ spec:
   resources:
     requests:
       storage: 120Mi  # Adjust size as needed
-  storageClassName: <your-storage-class>
