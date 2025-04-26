@@ -208,9 +208,9 @@ def logout():
 # ===========================================
 #       PROMETHEUS MONITORING
 # ===========================================
-# @app.route('/metrics')
-# def metrics():
-#     return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 @app.route('/monitoring_dashboard')
 def monitoring_dashboard():
