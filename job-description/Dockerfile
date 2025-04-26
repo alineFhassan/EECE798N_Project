@@ -9,6 +9,8 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
+RUN pip install spacy
+RUN python -m spacy download en_core_web_lg  # 👈 Critical addition
 # Expose the port your app runs on
 EXPOSE 3002
 

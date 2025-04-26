@@ -80,7 +80,8 @@ jobs:
       run: |
         # Create namespace
         kubectl apply -f k8s/namespace.yaml --wait
-       
+        
+        kubectl create configmap mysql-init-script -n eece-system --from-file=./mysql/schema.sql
   
 
 
